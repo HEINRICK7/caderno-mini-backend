@@ -25,6 +25,12 @@ O código está sendo finalizado em `feature/sprint-1-backend-foundation`. O flu
 
 As definições reais dos 16 modelos ainda precisam ser fornecidas; os testes usam um fixture de exemplo e não publicam modelos fictícios.
 
+### Catálogo de modelos
+
+Quando as definições reais estiverem disponíveis, salve os 16 itens em um array JSON em `catalog/templates.json`. Cada item informa `id`, `version`, `name`, `description`, `definition` e `isActive`; `definition.fields` aceita `text`, `textarea`, `number`, `boolean`, `select`, `url`, `color` e `date`. O carregador valida a definição pelo mesmo contrato usado nos rascunhos, insere o lote em uma transação, impede alterações no conteúdo de uma versão já publicada e desativa a versão anterior quando uma nova versão é ativada. Não há rota pública para editar o catálogo.
+
+Execute `npm run db:seed:catalog` localmente. No container de produção, após atualizar a imagem com o arquivo de catálogo, execute `docker compose exec api npm run db:seed:catalog:prod`. A operação aplica migrations pendentes antes da importação e pode ser repetida com segurança.
+
 ## Rodar localmente
 
 Requer Node.js 24 e npm. Copie o arquivo de exemplo e instale as dependências:

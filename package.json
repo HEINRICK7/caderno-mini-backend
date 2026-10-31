@@ -20,6 +20,8 @@
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "npm run build && node --env-file-if-exists=.env dist/migrate-cli.js",
     "db:seed:dev": "node --env-file-if-exists=.env --import=tsx apps/api/src/infrastructure/database/seed-dev.ts",
+    "db:seed:catalog": "npm run build && node --env-file-if-exists=.env dist/catalog-seed-cli.js",
+    "db:seed:catalog:prod": "node --env-file-if-exists=.env dist/catalog-seed-cli.js",
     "db:backup": "node --env-file-if-exists=.env dist/backup-cli.js",
     "db:backup:dev": "node --env-file-if-exists=.env --import=tsx apps/api/src/backup-cli.ts"
   },

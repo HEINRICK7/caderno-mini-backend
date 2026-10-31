@@ -54,6 +54,10 @@ export function validateTemplateInput(definition: JsonObject, data: JsonObject):
   }
 }
 
+export function validateTemplateDefinition(definition: JsonObject): void {
+  parseFields(definition);
+}
+
 function parseFields(definition: JsonObject): TemplateField[] {
   const rawFields = definition.fields;
   if (!Array.isArray(rawFields) || rawFields.length > 100) {

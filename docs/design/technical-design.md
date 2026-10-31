@@ -96,6 +96,8 @@ O rascunho guarda `id`, `templateId`, `templateVersion`, `data`, `createdAt` e `
 
 O conteúdo de `data` é um objeto JSON validado no limite HTTP. As regras campo a campo dependem das definições dos 16 modelos, que ainda não foram fornecidas; até lá o catálogo de produção não terá modelos inventados. Testes e desenvolvimento usarão um fixture explicitamente marcado como exemplo.
 
+O catálogo de produção é importado por `npm run db:seed:catalog` a partir do caminho `TEMPLATE_CATALOG_FILE` e precisa conter exatamente os 16 modelos oficiais. A carga é transacional e idempotente; uma versão existente só pode ter seu estado ativo alterado, enquanto mudanças de nome, descrição ou definição exigem nova versão. A nova versão ativa desativa a anterior. A importação usa o mesmo validador de campos da API, e o catálogo permanece fora de rotas públicas de escrita.
+
 ## Persistência
 
 SQLite é suficiente para uma única instância inicial na VPS e evita administrar um serviço de banco separado. O acesso ocorre por Drizzle e `better-sqlite3`; schema e migrations ficam versionados. A conexão habilita chaves estrangeiras e WAL. O arquivo fica em volume persistente fora da imagem Docker.

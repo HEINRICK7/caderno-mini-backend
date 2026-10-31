@@ -21,6 +21,7 @@ COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/apps/api/src/infrastructure/database/migrations ./apps/api/src/infrastructure/database/migrations
+COPY --from=build --chown=node:node /app/catalog ./catalog
 
 RUN apt-get update \
   && apt-get install --no-install-recommends -y fontconfig fonts-dejavu-core \
