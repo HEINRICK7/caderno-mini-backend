@@ -80,6 +80,21 @@ describe('validateTemplateInput', () => {
     })).not.toThrow();
   });
 
+  it('accepts catalog segment/category metadata and rejects values outside the contract', () => {
+    expect(() => validateTemplateDefinition({
+      fields: [],
+      catalog: { segment: 'both', category: 'Cobrança' },
+    })).not.toThrow();
+    expect(() => validateTemplateDefinition({
+      fields: [],
+      catalog: { segment: 'anything', category: 'Cobrança' },
+    })).toThrow(InvalidTemplateDefinitionError);
+    expect(() => validateTemplateDefinition({
+      fields: [],
+      catalog: { segment: 'both', category: 'Fora do catálogo' },
+    })).toThrow(InvalidTemplateDefinitionError);
+  });
+
   it('rejects card bindings to missing fields and unknown illustration tokens', () => {
     expect(() => validateTemplateDefinition({
       fields: [{ id: 'recipientName', type: 'text' }],

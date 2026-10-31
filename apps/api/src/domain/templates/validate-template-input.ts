@@ -3,6 +3,7 @@ import { InvalidTemplateDefinitionError, TemplateInputValidationError } from './
 import type { TemplateValidationIssue } from './errors.js';
 import { validateTemplateCard } from './template-card.js';
 import { resolveTemplateVisuals } from './template-visuals.js';
+import { resolveTemplateCatalog } from './template-catalog.js';
 
 type SupportedFieldType = 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'url' | 'color' | 'date';
 
@@ -60,12 +61,13 @@ export function validateTemplateInput(definition: JsonObject, data: JsonObject):
 }
 
 export function validateTemplateDefinition(definition: JsonObject): void {
-  if (Object.keys(definition).some((key) => !['fields', 'visual', 'card'].includes(key))) {
+  if (Object.keys(definition).some((key) => !['fields', 'visual', 'card', 'catalog'].includes(key))) {
     throw new InvalidTemplateDefinitionError();
   }
   const fields = parseFields(definition);
   validateTemplateCard(definition, fields);
   resolveTemplateVisuals(definition);
+  resolveTemplateCatalog(definition);
 }
 
 function parseFields(definition: JsonObject): TemplateField[] {

@@ -2,7 +2,7 @@ import type { JsonObject, JsonValue } from '../shared/json-value.js';
 import { InvalidTemplateDefinitionError } from './errors.js';
 
 export type TemplateCard = {
-  illustration: 'wave' | 'shopping-bag-heart' | 'gift';
+  illustration: 'wave' | 'shopping-bag-heart' | 'installment-calendar' | 'due-calendar' | 'overdue-warning' | 'pix-qr' | 'payment-check' | 'trophy' | 'service-clipboard' | 'service-seal' | 'gift' | 'product-tag' | 'offer-tag' | 'collection-bag' | 'reactivation-heart' | 'approval-hourglass';
   heading: string;
   message?: string;
   footer: 'heart';
@@ -10,7 +10,24 @@ export type TemplateCard = {
 
 type TemplateField = { id: string; type: string };
 
-const illustrations = new Set<TemplateCard['illustration']>(['wave', 'shopping-bag-heart', 'gift']);
+const illustrations = new Set<TemplateCard['illustration']>([
+  'wave',
+  'shopping-bag-heart',
+  'installment-calendar',
+  'due-calendar',
+  'overdue-warning',
+  'pix-qr',
+  'payment-check',
+  'trophy',
+  'service-clipboard',
+  'service-seal',
+  'gift',
+  'product-tag',
+  'offer-tag',
+  'collection-bag',
+  'reactivation-heart',
+  'approval-hourglass',
+]);
 const cardKeys = new Set(['illustration', 'heading', 'message', 'footer']);
 const fieldIdPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 

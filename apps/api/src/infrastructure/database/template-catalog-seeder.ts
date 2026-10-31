@@ -4,6 +4,7 @@ import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { validateTemplateDefinition } from '../../domain/templates/validate-template-input.js';
+import { resolveTemplateCatalog } from '../../domain/templates/template-catalog.js';
 import type { JsonObject, JsonValue } from '../../domain/shared/json-value.js';
 import type { AppDatabase } from './connection.js';
 import { templates } from './schema.js';
@@ -61,6 +62,11 @@ export function seedTemplateCatalog(
     if (!Object.hasOwn(definition, 'card')) {
       throw new InvalidTemplateCatalogError(
         `O modelo "${entry.id}" precisa declarar a composição do cartão no catálogo oficial.`,
+      );
+    }
+    if (!resolveTemplateCatalog(definition)) {
+      throw new InvalidTemplateCatalogError(
+        `O modelo "${entry.id}" precisa declarar segmento e categoria no catálogo oficial.`,
       );
     }
 

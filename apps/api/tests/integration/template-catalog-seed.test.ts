@@ -20,6 +20,7 @@ const templateV1 = {
   name: 'Mensagem afetuosa',
   description: 'Definição de teste para o importador.',
   definition: {
+    catalog: { segment: 'both', category: 'Boas-vindas' },
     fields: [{ id: 'recipientName', type: 'text', required: true, label: 'Nome do cliente' }],
     visual: {
       layout: 'card',
@@ -115,6 +116,15 @@ describe('seedTemplateCatalog', () => {
       Object.entries(templateV1.definition).filter(([key]) => key !== 'card'),
     );
     expect(() => seedTemplateCatalog(db, [{ ...templateV1, definition: legacyDefinition }]))
+      .toThrow(InvalidTemplateCatalogError);
+    expect(db.select().from(templates).all()).toHaveLength(0);
+  });
+
+  it('requires segment and category metadata for official templates', () => {
+    const definitionWithoutCatalog = Object.fromEntries(
+      Object.entries(templateV1.definition).filter(([key]) => key !== 'catalog'),
+    );
+    expect(() => seedTemplateCatalog(db, [{ ...templateV1, definition: definitionWithoutCatalog }]))
       .toThrow(InvalidTemplateCatalogError);
     expect(db.select().from(templates).all()).toHaveLength(0);
   });
