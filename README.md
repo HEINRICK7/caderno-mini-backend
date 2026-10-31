@@ -17,7 +17,7 @@ O código está sendo finalizado em `feature/sprint-1-backend-foundation`. O flu
 ## Recursos da API
 
 - Sessões revogáveis por magic link, com rate limits, cookies seguros e checagem de origem em mutações de navegador.
-- Templates versionados, validação por campo e rascunhos anônimos que podem ser associados à conta após uma compra confirmada.
+- Templates versionados, validação por campo, rascunhos anônimos associados à conta após compra confirmada e prévia PNG gratuita, reduzida e com marca d'água, respeitando a propriedade.
 - Checkout hospedado pela Cakto, inbox durável de webhooks assinados, processamento idempotente e licenças concedidas/revogadas exclusivamente no backend.
 - Estado de compras e acesso da conta, publicação por slug aleatório, página pública e exportação PNG protegidas por licença ativa.
 - Analytics de produto e conversão com deduplicação, retenção apenas do host de referência e endpoint de leitura protegido por token.
@@ -90,8 +90,8 @@ Fluxo de promoção: feature abre PR para `dev`; depois da revisão e merge, `de
 
 ## Deploy na Hostinger
 
-O job de deploy roda após push em `main`, depois da CI, mas permanece desativado até configurar o ambiente `production` no GitHub. Para ativá-lo, configure `HOSTINGER_DEPLOY_ENABLED=true`, as variáveis `HOSTINGER_HOST`, `HOSTINGER_USER`, `HOSTINGER_SSH_PORT`, `HOSTINGER_APP_PATH` e `PRODUCTION_URL`, além dos segredos `HOSTINGER_SSH_PRIVATE_KEY` e `HOSTINGER_KNOWN_HOSTS`.
+Os jobs de deploy de `development` (`dev`), `staging` e `production` rodam após push na branch correspondente, depois da CI, mas permanecem desativados até configurar as variáveis de habilitação. Para cada ambiente do GitHub, configure `HOSTINGER_HOST`, `HOSTINGER_USER`, `HOSTINGER_SSH_PORT`, `HOSTINGER_APP_PATH` e `PUBLIC_URL`, além dos segredos `HOSTINGER_SSH_PRIVATE_KEY` e `HOSTINGER_KNOWN_HOSTS`. Habilite somente os destinos desejados com as variáveis de repositório `DEVELOPMENT_DEPLOY_ENABLED`, `STAGING_DEPLOY_ENABLED` e `PRODUCTION_DEPLOY_ENABLED` iguais a `true`.
 
-Antes de ativar, o diretório da aplicação na VPS precisa ter um `.env` válido e Docker Compose instalado. O deploy preserva `.env` e o volume persistente. Configure o ambiente `production` com as proteções de aprovação desejadas e mantenha o HTTPS no proxy Nginx.
+Antes de ativar, cada diretório de aplicação na VPS precisa ter um `.env` válido, Docker Compose instalado e um caminho/volume próprio do ambiente. O deploy preserva `.env` e o volume persistente. Configure `staging` e `production` com as proteções de aprovação desejadas e mantenha o HTTPS no proxy Nginx.
 
 O `main` do GitHub exige uma aprovação de revisão e o check `quality` para merge. Branch protection e variáveis/secrets são configurações do repositório, não arquivos versionados.

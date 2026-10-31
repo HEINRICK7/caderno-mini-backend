@@ -39,6 +39,7 @@ import type {
   CommerceServices,
   IdentityServices,
   PublishingServices,
+  PreviewServices,
 } from './services.js';
 
 // Request bodies have already passed through Fastify's JSON parser; arbitrary JSON values are valid here.
@@ -164,6 +165,7 @@ export type BuildAppOptions = {
   commerceServices?: CommerceServices;
   identityServices?: IdentityServices;
   publishingServices?: PublishingServices;
+  previewServices?: PreviewServices;
   analyticsServices?: AnalyticsServices;
   analyticsReadToken?: string;
   authCookieSecure?: boolean;
@@ -524,6 +526,49 @@ export function buildApp(options: BuildAppOptions = {}) {
         return { data: serializeDraft(draft) };
       },
     );
+    }
+
+    if (options.previewServices) {
+      app.get(
+        '/api/v1/drafts/:id/preview.png',
+        {
+          schema: {
+            tags: ['drafts'],
+            summary: 'Gera uma prévia PNG sem exigir licença',
+            params: idParamsSchema,
+            response: {
+              200: z.any().meta({ type: 'string', format: 'binary' }),
+              404: errorResponseSchema,
+              429: errorResponseSchema,
+            },
+          },
+          preHandler: app.rateLimit({
+            max: 60,
+            timeWindow: '1 minute',
+            errorResponseBuilder: () => ({
+              statusCode: 429,
+              error: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
+            }),
+          }),
+        },
+        async (request, response) => {
+          const user = getAuthenticatedUser(request);
+          const image = await options.previewServices!.previewDraft({
+            draftId: request.params.id,
+            ...(user ? { userId: user.id } : {}),
+          });
+          options.analyticsServices?.recordServerEvent({
+            name: 'preview_viewed',
+            entityKey: randomUUID(),
+            draftId: request.params.id,
+            ...(user ? { userId: user.id } : {}),
+          });
+          return response
+            .header('cache-control', 'no-store')
+            .header('content-type', 'image/png')
+            .send(image);
+        },
+      );
     }
 
     if (options.identityServices) {

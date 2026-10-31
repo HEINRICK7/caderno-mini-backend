@@ -9,6 +9,7 @@ import { listTemplates } from '../application/use-cases/list-templates.js';
 import { getTemplate } from '../application/use-cases/get-template.js';
 import { validateActiveTemplateInput } from '../application/use-cases/validate-template-input.js';
 import { updateDraft } from '../application/use-cases/update-draft.js';
+import { previewDraft, type PreviewDraftDependencies } from '../application/use-cases/preview-draft.js';
 import { createCheckout } from '../application/use-cases/create-checkout.js';
 import { getPurchaseStatus, listUserAccess, userHasActiveGrantForDraft } from '../application/use-cases/get-purchase-status.js';
 import { CheckoutNotConfiguredError, WebhookNotConfiguredError } from '../application/errors.js';
@@ -64,6 +65,20 @@ export function createApplicationServices(
     getDraft: (input: Parameters<typeof getDraft>[0]) => getDraft(input, { drafts }),
     updateDraft: (input: Parameters<typeof updateDraft>[0]) =>
       updateDraft(input, { drafts, templates, clock }),
+  };
+}
+
+export type PreviewServices = ReturnType<typeof createPreviewServices>;
+
+export function createPreviewServices(db: AppDatabase, renderer: PngRenderer) {
+  const dependencies: PreviewDraftDependencies = {
+    drafts: new SqliteDraftRepository(db),
+    templates: new SqliteTemplateRepository(db),
+    renderer,
+  };
+
+  return {
+    previewDraft: (input: Parameters<typeof previewDraft>[0]) => previewDraft(input, dependencies),
   };
 }
 

@@ -79,6 +79,7 @@ Prefixo versionado: `/api/v1`. Respostas de sucesso usam um envelope `data`; err
 | `POST /api/v1/drafts` | Cria um rascunho anônimo associado a um modelo/versão |
 | `GET /api/v1/drafts/:id` | Recupera um rascunho pelo identificador opaco |
 | `PUT /api/v1/drafts/:id` | Substitui os dados personalizados do rascunho |
+| `GET /api/v1/drafts/:id/preview.png` | Renderiza prévia PNG reduzida e com marca d'água sem licença, respeitando a propriedade do rascunho |
 | `POST /api/v1/auth/magic-link` | Solicita um link de acesso por e-mail; resposta não revela cadastro |
 | `POST /api/v1/auth/verify` | Consome o link e abre sessão por cookie seguro |
 | `GET /api/v1/auth/session`, `DELETE /api/v1/auth/session` | Consulta ou revoga a sessão atual |
@@ -151,7 +152,7 @@ O `callback` da Cakto é um identificador definido pelo nosso sistema, aparece n
 
 ## CI e entrega
 
-GitHub Actions roda em push e pull request para `dev`, `staging` e `main`: `npm ci`, lint, testes unitários, de integração e E2E, build TypeScript, build Docker e auditoria de dependências. O fluxo é `feature/* → dev → staging → main`, promovido por PR e CI verde. A publicação em VPS exige segredos e caminho de deploy da Hostinger; o job de produção só roda após push em `main` e quando `HOSTINGER_DEPLOY_ENABLED=true`.
+GitHub Actions roda em push e pull request para `dev`, `staging` e `main`: `npm ci`, lint, testes unitários, de integração e E2E, build TypeScript, build Docker e auditoria de dependências. O fluxo é `feature/* → dev → staging → main`, promovido por PR e CI verde. Jobs de CD para desenvolvimento, homologação e produção só rodam após push na branch correspondente, CI verde e habilitação explícita por variável de ambiente.
 
 Docker Compose fornece execução local/na VPS, volume persistente do SQLite e health check HTTP. O CI valida a configuração e constrói a imagem, sem publicar ou implantar produção a partir da branch de feature.
 
@@ -178,7 +179,7 @@ Docker Compose fornece execução local/na VPS, volume persistente do SQLite e h
 ## Critérios de finalização do backend
 
 - Identity permite solicitar e consumir link de uso único, manter/consultar/revogar sessão e associar rascunho sem expor se um e-mail já está cadastrado.
-- Templates e rascunhos oferecem catálogo versionado, validação de conteúdo, prévia e recuperação autenticada quando houver proprietário.
+- Templates e rascunhos oferecem catálogo versionado, validação de conteúdo, prévia PNG reduzida e com marca d'água sem licença e recuperação autenticada quando houver proprietário.
 - Commerce cria o checkout configurado, recebe eventos Cakto assinados em inbox durável, processa-os com idempotência e expõe estado de compra/licença derivado no servidor.
 - Somente `purchase_approved` com estado `paid` concede acesso; `pix_gerado`, outros estados pendentes, redirect do navegador e campos do cliente nunca concedem licença. Reembolso efetivo/chargeback atualizam e podem revogar o acesso; `refund_requested` sozinho não revoga.
 - Publishing cria, atualiza, remove, serve por link público não enumerável e exporta mensagens sem permitir acesso a rascunhos privados.

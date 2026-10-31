@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
@@ -112,6 +113,16 @@ describe('templates and anonymous drafts API', () => {
       data: { recipient: 'Lia', message: 'Com carinho!' },
     });
     expect(updatedResponse.json().data.createdAt).toBe(created.createdAt);
+
+    const preview = await app.inject({
+      method: 'GET',
+      url: `/api/v1/drafts/${created.id}/preview.png`,
+    });
+    expect(preview.statusCode).toBe(200);
+    expect(preview.headers['content-type']).toContain('image/png');
+    expect(preview.headers['cache-control']).toBe('no-store');
+    expect(preview.rawPayload.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    expect((await sharp(preview.rawPayload).metadata()).width).toBe(540);
   });
 
   it('binds drafts created by a signed-in user to that account', async () => {
@@ -137,9 +148,15 @@ describe('templates and anonymous drafts API', () => {
     expect(created.statusCode).toBe(201);
     expect(database.db.select().from(drafts).get()?.ownerUserId).toBe(verify.json().data.user.id);
     expect((await app.inject({ method: 'GET', url: `/api/v1/drafts/${draftId}` })).statusCode).toBe(404);
+    expect((await app.inject({ method: 'GET', url: `/api/v1/drafts/${draftId}/preview.png` })).statusCode).toBe(404);
     expect((await app.inject({
       method: 'GET',
       url: `/api/v1/drafts/${draftId}`,
+      headers: { cookie },
+    })).statusCode).toBe(200);
+    expect((await app.inject({
+      method: 'GET',
+      url: `/api/v1/drafts/${draftId}/preview.png`,
       headers: { cookie },
     })).statusCode).toBe(200);
   });
@@ -184,6 +201,7 @@ describe('templates and anonymous drafts API', () => {
     expect(paths['/api/v1/drafts'].post).toBeDefined();
     expect(paths['/api/v1/drafts/{id}'].get).toBeDefined();
     expect(paths['/api/v1/drafts/{id}'].put).toBeDefined();
+    expect(paths['/api/v1/drafts/{id}/preview.png'].get).toBeDefined();
 
     const references = JSON.stringify(paths).matchAll(/#\/components\/schemas\/([^"/]+)/g);
     for (const [, schemaName] of references) {

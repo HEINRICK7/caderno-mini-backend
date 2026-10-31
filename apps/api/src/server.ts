@@ -7,6 +7,7 @@ import {
   createAnalyticsServices,
   createCommerceServices,
   createIdentityServices,
+  createPreviewServices,
   createPublishingServices,
 } from './bootstrap/services.js';
 import { createDatabase } from './infrastructure/database/connection.js';
@@ -25,11 +26,13 @@ const commerceServices = createCommerceServices(database.db, {
   ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
   ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
 });
+const renderer = new SharpPngRenderer();
 const app = buildApp({
   logger: { level: config.logLevel },
   services: createApplicationServices(database.db),
   commerceServices,
-  publishingServices: createPublishingServices(database.db, new SharpPngRenderer()),
+  previewServices: createPreviewServices(database.db, renderer),
+  publishingServices: createPublishingServices(database.db, renderer),
   analyticsServices: createAnalyticsServices(database.db),
   ...(config.analyticsReadToken ? { analyticsReadToken: config.analyticsReadToken } : {}),
   authPublicAppUrl: config.authPublicAppUrl,

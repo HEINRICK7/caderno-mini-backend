@@ -14,9 +14,17 @@ export class SharpPngRenderer implements PngRenderer {
     const svg = renderSvg(template, data);
     return sharp(Buffer.from(svg)).png().toBuffer();
   }
+
+  async renderPreview(template: Template, data: JsonObject): Promise<Buffer> {
+    const svg = renderSvg(template, data, { watermark: true });
+    return sharp(Buffer.from(svg))
+      .resize({ width: 540, height: 10_000, fit: 'inside', withoutEnlargement: true })
+      .png()
+      .toBuffer();
+  }
 }
 
-function renderSvg(template: Template, data: JsonObject): string {
+function renderSvg(template: Template, data: JsonObject, options: { watermark?: boolean } = {}): string {
   const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
   const labels = new Map<string, string>();
   for (const field of fields) {
@@ -53,7 +61,11 @@ function renderSvg(template: Template, data: JsonObject): string {
   });
 
   const height = Math.max(1_350, y + 90);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${height}" viewBox="0 0 ${WIDTH} ${height}"><rect width="100%" height="100%" fill="#f7f1e8"/><text x="64" y="112" class="brand">Cadernô</text><text x="64" y="172" class="title">${escapeXml(template.name.slice(0, 120))}</text>${content.join('')}<style>.brand{font:600 28px sans-serif;fill:#8b6245}.title{font:700 42px sans-serif;fill:#30271f}.label{font:600 26px sans-serif;fill:#705a49}.value{font:400 34px sans-serif;fill:#2f2a27}</style></svg>`;
+  const watermarkY = Math.floor(height / 2);
+  const watermark = options.watermark
+    ? `<text x="${WIDTH / 2}" y="${watermarkY}" transform="rotate(-24 ${WIDTH / 2} ${watermarkY})" text-anchor="middle" class="watermark">PRÉVIA · CADERNÔ</text>`
+    : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${height}" viewBox="0 0 ${WIDTH} ${height}"><rect width="100%" height="100%" fill="#f7f1e8"/><text x="64" y="112" class="brand">Cadernô</text><text x="64" y="172" class="title">${escapeXml(template.name.slice(0, 120))}</text>${content.join('')}${watermark}<style>.brand{font:600 28px sans-serif;fill:#8b6245}.title{font:700 42px sans-serif;fill:#30271f}.label{font:600 26px sans-serif;fill:#705a49}.value{font:400 34px sans-serif;fill:#2f2a27}.watermark{font:700 82px sans-serif;fill:#8b6245;fill-opacity:.36;stroke:#f7f1e8;stroke-opacity:.32;stroke-width:2}</style></svg>`;
   if (svg.length > MAX_SVG_LENGTH || height > 20_000) {
     throw new ExportContentTooLargeError();
   }

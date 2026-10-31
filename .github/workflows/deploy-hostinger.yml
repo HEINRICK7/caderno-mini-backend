@@ -1,0 +1,99 @@
+name: Deploy to Hostinger
+
+on:
+  workflow_call:
+    inputs:
+      deploy_environment:
+        description: GitHub environment providing the isolated Hostinger configuration
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.deploy_environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.deploy_environment }}
+      url: ${{ vars.PUBLIC_URL }}
+    env:
+      HOSTINGER_HOST: ${{ vars.HOSTINGER_HOST }}
+      HOSTINGER_USER: ${{ vars.HOSTINGER_USER }}
+      HOSTINGER_SSH_PORT: ${{ vars.HOSTINGER_SSH_PORT }}
+      HOSTINGER_APP_PATH: ${{ vars.HOSTINGER_APP_PATH }}
+      HOSTINGER_SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
+      HOSTINGER_KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Prepare SSH access
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${HOSTINGER_HOST:?Set HOSTINGER_HOST in the selected GitHub environment}"
+          : "${HOSTINGER_USER:?Set HOSTINGER_USER in the selected GitHub environment}"
+          : "${HOSTINGER_APP_PATH:?Set HOSTINGER_APP_PATH in the selected GitHub environment}"
+          : "${HOSTINGER_SSH_PRIVATE_KEY:?Set HOSTINGER_SSH_PRIVATE_KEY in the selected GitHub environment}"
+          : "${HOSTINGER_KNOWN_HOSTS:?Set HOSTINGER_KNOWN_HOSTS in the selected GitHub environment}"
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          case "$HOSTINGER_SSH_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
+          esac
+          case "$HOSTINGER_APP_PATH" in
+            /*) ;;
+            *) echo "HOSTINGER_APP_PATH must be an absolute path" >&2; exit 1 ;;
+          esac
+          case "$HOSTINGER_APP_PATH" in
+            *[!A-Za-z0-9_./-]*) echo "HOSTINGER_APP_PATH may contain only letters, numbers, slash, dot, underscore, and hyphen" >&2; exit 1 ;;
+          esac
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$HOSTINGER_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$HOSTINGER_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+
+      - name: Create application directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          case "$HOSTINGER_SSH_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
+          esac
+          ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+            "$HOSTINGER_USER@$HOSTINGER_HOST" \
+            "mkdir -p '$HOSTINGER_APP_PATH'"
+
+      - name: Copy release to the VPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          case "$HOSTINGER_SSH_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
+          esac
+          rsync -az --delete -e "ssh -o StrictHostKeyChecking=yes -p $HOSTINGER_SSH_PORT" \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='dist/' \
+            --exclude='coverage/' \
+            --exclude='data/' \
+            --exclude='backups/' \
+            --exclude='.env' \
+            ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_APP_PATH/"
+
+      - name: Build and restart the service
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          case "$HOSTINGER_SSH_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
+          esac
+          ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+            "$HOSTINGER_USER@$HOSTINGER_HOST" \
+            "cd '$HOSTINGER_APP_PATH' && docker compose up -d --build"

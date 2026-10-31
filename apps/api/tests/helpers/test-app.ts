@@ -8,6 +8,7 @@ import {
   createAnalyticsServices,
   createCommerceServices,
   createIdentityServices,
+  createPreviewServices,
   createPublishingServices,
 } from '../../src/bootstrap/services.js';
 import { buildApp } from '../../src/bootstrap/app.js';
@@ -41,6 +42,7 @@ export async function createTestApp(
     callbackGenerator: randomUUID,
     clock: () => new Date(),
   });
+  const renderer = new SharpPngRenderer();
   const app = buildApp({
     logger: false,
     services: createApplicationServices(database.db, {
@@ -48,7 +50,8 @@ export async function createTestApp(
       clock: () => new Date(),
     }),
     commerceServices,
-    publishingServices: createPublishingServices(database.db, new SharpPngRenderer(), {
+    previewServices: createPreviewServices(database.db, renderer),
+    publishingServices: createPublishingServices(database.db, renderer, {
       clock: () => new Date(),
     }),
     analyticsServices: createAnalyticsServices(database.db, { clock: () => new Date() }),
