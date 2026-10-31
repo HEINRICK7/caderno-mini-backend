@@ -73,7 +73,7 @@ Prefixo versionado: `/api/v1`. Respostas de sucesso usam um envelope `data`; err
 | `POST /api/v1/drafts` | Cria um rascunho anônimo associado a um modelo/versão |
 | `GET /api/v1/drafts/:id` | Recupera um rascunho pelo identificador opaco |
 | `PUT /api/v1/drafts/:id` | Substitui os dados personalizados do rascunho |
-| `GET /openapi.json` e `/docs` | Especificação OpenAPI e interface da documentação |
+| `GET /openapi.json` | Especificação OpenAPI gerada a partir das rotas |
 
 O rascunho guarda `id`, `templateId`, `templateVersion`, `data`, `createdAt` e `updatedAt`. A versão do modelo fica fixa no rascunho para que mudanças futuras no catálogo não alterem criações existentes.
 
