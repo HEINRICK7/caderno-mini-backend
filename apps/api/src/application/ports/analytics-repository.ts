@@ -3,6 +3,7 @@ export type AnalyticsEventName =
   | 'template_viewed'
   | 'template_selected'
   | 'preview_viewed'
+  | 'whatsapp_share_clicked'
   | 'draft_created'
   | 'draft_updated'
   | 'login_link_requested'

@@ -15,6 +15,7 @@ const clientEventNames = new Set<AnalyticsEventName>([
   'template_viewed',
   'template_selected',
   'preview_viewed',
+  'whatsapp_share_clicked',
 ]);
 const MAX_PERIOD_MS = 90 * 24 * 60 * 60 * 1000;
 

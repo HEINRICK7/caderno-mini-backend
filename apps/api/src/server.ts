@@ -35,6 +35,8 @@ const app = buildApp({
   publishingServices: createPublishingServices(database.db, renderer),
   analyticsServices: createAnalyticsServices(database.db),
   ...(config.analyticsReadToken ? { analyticsReadToken: config.analyticsReadToken } : {}),
+  publicApiUrl: config.publicApiUrl,
+  publicAppUrl: config.publicAppUrl,
   authPublicAppUrl: config.authPublicAppUrl,
   identityServices: createIdentityServices(database.db, {
     emailSender: new NodemailerEmailSender({

@@ -10,6 +10,7 @@ import {
 import { createDatabase } from '../../src/infrastructure/database/connection.js';
 import { migrateDatabase } from '../../src/infrastructure/database/migrate.js';
 import { templates } from '../../src/infrastructure/database/schema.js';
+import { SqliteTemplateRepository } from '../../src/infrastructure/database/repositories/sqlite-template-repository.js';
 import type { AppDatabase } from '../../src/infrastructure/database/connection.js';
 import type { Database } from 'better-sqlite3';
 
@@ -19,7 +20,25 @@ const templateV1 = {
   name: 'Mensagem afetuosa',
   description: 'Definição de teste para o importador.',
   definition: {
-    fields: [{ id: 'message', type: 'text', required: true, label: 'Mensagem' }],
+    fields: [{ id: 'recipientName', type: 'text', required: true, label: 'Nome do cliente' }],
+    visual: {
+      layout: 'card',
+      background: '#F7F1E8',
+      surface: '#FFFFFF',
+      accent: '#8B6245',
+      heading: '#30271F',
+      text: '#2F2A27',
+      muted: '#705A49',
+      headingFont: 'sans',
+      bodyFont: 'sans',
+      frame: 'none',
+    },
+    card: {
+      illustration: 'wave',
+      heading: 'Olá, {{recipientName}}!',
+      message: 'Que bom ter você por aqui!',
+      footer: 'heart',
+    },
   },
   isActive: true,
 };
@@ -45,6 +64,21 @@ describe('seedTemplateCatalog', () => {
     expect(db.select().from(templates).all()).toHaveLength(1);
   });
 
+  it('lists models in backend catalog insertion order', () => {
+    seedTemplateCatalog(db, [
+      templateV1,
+      { ...templateV1, id: 'modelo-seguinte', name: 'Modelo seguinte' },
+    ], { clock: (() => {
+      let tick = 0;
+      return () => new Date(Date.UTC(2026, 0, 1, 0, 0, tick++));
+    })() });
+
+    expect(new SqliteTemplateRepository(db).findActive().map((template) => template.id)).toEqual([
+      templateV1.id,
+      'modelo-seguinte',
+    ]);
+  });
+
   it('activates a new immutable version and deactivates the previous one', () => {
     seedTemplateCatalog(db, [templateV1]);
     seedTemplateCatalog(db, [{ ...templateV1, version: 2, name: 'Mensagem afetuosa v2' }]);
@@ -65,6 +99,23 @@ describe('seedTemplateCatalog', () => {
       },
     ])).toThrow();
 
+    expect(db.select().from(templates).all()).toHaveLength(0);
+  });
+
+  it('requires visual tokens in catalog definitions so each official model can be rendered by the backend', () => {
+    const legacyDefinition = { ...templateV1.definition };
+    delete legacyDefinition.visual;
+    expect(() => seedTemplateCatalog(db, [{ ...templateV1, definition: legacyDefinition }]))
+      .toThrow(InvalidTemplateCatalogError);
+    expect(db.select().from(templates).all()).toHaveLength(0);
+  });
+
+  it('requires a semantic card composition in official catalog definitions', () => {
+    const legacyDefinition = Object.fromEntries(
+      Object.entries(templateV1.definition).filter(([key]) => key !== 'card'),
+    );
+    expect(() => seedTemplateCatalog(db, [{ ...templateV1, definition: legacyDefinition }]))
+      .toThrow(InvalidTemplateCatalogError);
     expect(db.select().from(templates).all()).toHaveLength(0);
   });
 

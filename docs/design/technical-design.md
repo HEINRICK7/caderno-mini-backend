@@ -6,9 +6,9 @@
 
 ## Contexto e objetivo
 
-O Cadernô Express permite que uma pessoa escolha um modelo, personalize uma mensagem, veja uma prévia e solicite compartilhamento ou exportação. O visitante poderá começar sem cadastro. Compras serão feitas no checkout da Cakto; o backend manterá os estados locais de compra e licença e controlará todo acesso pago.
+O Cadernô Express permite que uma pessoa escolha um modelo, personalize uma mensagem, veja uma prévia e solicite compartilhamento ou exportação. O visitante poderá começar sem cadastro. Compras serão feitas no checkout da Cakto; o backend manterá os estados locais de compra e licença e controlará todo acesso pago. O frontend Next.js interpreta os contratos do backend e não define catálogo, conteúdo ou estado de acesso por conta própria.
 
-A API inclui identidade, validação de modelos, rascunhos e associação pós-compra, checkout e licenças Cakto, publicação/exportação PNG, analytics, e-mail transacional e persistência em SQLite. A interface web continua fora do escopo.
+A API inclui identidade, validação de modelos, rascunhos e associação pós-compra, checkout e licenças Cakto, publicação/exportação, analytics, e-mail transacional e persistência em SQLite. A aplicação Next.js fica no repositório `mini-frontend` e transforma a definição de cartão versionada em componentes HTML/CSS.
 
 ## Princípios
 
@@ -96,7 +96,9 @@ O rascunho guarda `id`, `templateId`, `templateVersion`, `data`, `createdAt` e `
 
 O conteúdo de `data` é um objeto JSON validado no limite HTTP. As regras campo a campo dependem das definições dos 16 modelos, que ainda não foram fornecidas; até lá o catálogo de produção não terá modelos inventados. Testes e desenvolvimento usarão um fixture explicitamente marcado como exemplo.
 
-O catálogo de produção é importado por `npm run db:seed:catalog` a partir do caminho `TEMPLATE_CATALOG_FILE` e precisa conter exatamente os 16 modelos oficiais. A carga é transacional e idempotente; uma versão existente só pode ter seu estado ativo alterado, enquanto mudanças de nome, descrição ou definição exigem nova versão. A nova versão ativa desativa a anterior. A importação usa o mesmo validador de campos da API, e o catálogo permanece fora de rotas públicas de escrita.
+O catálogo de produção é importado por `npm run db:seed:catalog` a partir do caminho `TEMPLATE_CATALOG_FILE` e precisa conter exatamente os 16 modelos oficiais. A definição contém campos do formulário, uma composição semântica obrigatória do cartão (ilustração permitida, título, mensagem e referências a campos) e um estilo visual declarativo obrigatório, validado pelo backend; HTML/CSS arbitrário não é aceito. O Next.js mapeia essa definição para HTML/SVG e CSS na prévia do editor e na página pública. O backend também renderiza SVG e PNG para exportação e para metadados de compartilhamento; a página aberta pelo link exibe o cartão HTML, não a imagem PNG. A carga é transacional e idempotente; uma versão existente só pode ter seu estado ativo alterado, enquanto mudanças de nome, descrição ou definição exigem nova versão. A nova versão ativa desativa a anterior. A importação usa o mesmo validador de campos da API, e o catálogo permanece fora de rotas públicas de escrita.
+
+Publicações retornam `publicUrl`, construído a partir de `PUBLIC_APP_URL` confiável. A página Next.js `/p/:slug` busca JSON versionado da API, renderiza o cartão em HTML e gera os metadados Open Graph/Twitter. A imagem de metadados é fornecida por `PUBLIC_API_URL` para a prévia automática do WhatsApp; ela não é exibida como conteúdo da página. O slug e o renderizador continuam subordinados à licença ativa.
 
 ## Persistência
 

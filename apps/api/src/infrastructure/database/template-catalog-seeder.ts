@@ -53,6 +53,16 @@ export function seedTemplateCatalog(
       throw new InvalidTemplateCatalogError(`A definição do modelo "${entry.id}" precisa ser um objeto JSON.`);
     }
     validateTemplateDefinition(definition);
+    if (!Object.hasOwn(definition, 'visual')) {
+      throw new InvalidTemplateCatalogError(
+        `O modelo "${entry.id}" precisa declarar o estilo visual no catálogo oficial.`,
+      );
+    }
+    if (!Object.hasOwn(definition, 'card')) {
+      throw new InvalidTemplateCatalogError(
+        `O modelo "${entry.id}" precisa declarar a composição do cartão no catálogo oficial.`,
+      );
+    }
 
     const versionKey = `${entry.id}:${entry.version}`;
     if (keys.has(versionKey)) {

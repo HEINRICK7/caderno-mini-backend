@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 
+import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createTestApp } from '../helpers/test-app.js';
@@ -8,6 +9,7 @@ import {
   accessGrants,
   analyticsEvents,
   purchases,
+  templates,
   users,
   webhookEvents,
 } from '../../src/infrastructure/database/schema.js';
@@ -28,7 +30,20 @@ describe('Cakto webhook API', () => {
       await app.close();
       database.close();
     };
-    insertTemplate(database.db);
+    insertTemplate(database.db, {
+      definition: {
+        fields: [
+          { id: 'message', type: 'text' },
+          { id: 'recipient', type: 'text' },
+        ],
+        card: {
+          illustration: 'wave',
+          heading: 'Olá, Maria!',
+          message: 'Que bom ter você por aqui!',
+          footer: 'heart',
+        },
+      },
+    });
 
     const draftResponse = await app.inject({
       method: 'POST',
@@ -36,6 +51,19 @@ describe('Cakto webhook API', () => {
       payload: { templateId: 'mensagem-exemplo', data: { message: 'Olá' } },
     });
     const draftId = draftResponse.json().data.id as string;
+    database.db.update(templates)
+      .set({ isActive: false })
+      .where(eq(templates.id, 'mensagem-exemplo'))
+      .run();
+    database.db.insert(templates).values({
+      id: 'mensagem-exemplo',
+      version: 2,
+      name: 'Modelo atualizado',
+      description: 'Outra versão do modelo.',
+      definition: { fields: [{ id: 'newMessage', type: 'text' }] },
+      isActive: true,
+      createdAt: new Date(),
+    }).run();
     const checkoutResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/checkout',
@@ -66,6 +94,19 @@ describe('Cakto webhook API', () => {
     });
     expect(trackedPreview.statusCode).toBe(202);
     expect(trackedPreview.json().data.accepted).toBe(true);
+    const shareEvent = {
+      eventId: '00000000-0000-4000-8000-000000000125',
+      name: 'whatsapp_share_clicked',
+      draftId,
+      templateId: 'mensagem-exemplo',
+    };
+    const trackedShare = await app.inject({
+      method: 'POST',
+      url: '/api/v1/analytics/events',
+      payload: shareEvent,
+    });
+    expect(trackedShare.statusCode).toBe(202);
+    expect(trackedShare.json().data.accepted).toBe(true);
     const duplicatePreview = await app.inject({
       method: 'POST',
       url: '/api/v1/analytics/events',
@@ -119,6 +160,7 @@ describe('Cakto webhook API', () => {
       expect.objectContaining({ name: 'checkout_started', count: 1 }),
       expect.objectContaining({ name: 'purchase_paid', count: 1 }),
       expect.objectContaining({ name: 'preview_viewed', count: 1 }),
+      expect.objectContaining({ name: 'whatsapp_share_clicked', count: 1 }),
     ]));
     expect(summary.json().data.purchaseSources).toContainEqual({
       source: 'newsletter',
@@ -156,21 +198,51 @@ describe('Cakto webhook API', () => {
     });
     expect(published.statusCode).toBe(200);
     const publicPath = published.json().data.publicPath as string;
+    const publicUrl = published.json().data.publicUrl as string;
+    expect(publicUrl).toBe(`https://app.example.test${publicPath}`);
+    const slug = published.json().data.slug as string;
     const publicPage = await app.inject({ method: 'GET', url: publicPath });
     expect(publicPage.statusCode).toBe(200);
     expect(publicPage.headers['content-type']).toContain('text/html');
+    expect(publicPage.body).toContain('<meta property="og:title" content="Modelo de exemplo · Cadernô">');
+    expect(publicPage.body).toContain(`<meta property="og:url" content="${publicUrl}">`);
+    expect(publicPage.body).toContain(
+      `<meta property="og:image" content="https://api.example.test/api/v1/publications/${slug}.png">`,
+    );
+    expect(publicPage.body).toContain('<meta name="twitter:card" content="summary_large_image">');
+    const hostileHostPage = await app.inject({
+      method: 'GET',
+      url: publicPath,
+      headers: { host: 'attacker.example' },
+    });
+    expect(hostileHostPage.body).toContain(`<meta property="og:url" content="${publicUrl}">`);
     const publicMessage = await app.inject({
       method: 'GET',
-      url: `/api/v1/publications/${published.json().data.slug}`,
+      url: `/api/v1/publications/${slug}`,
     });
     expect(publicMessage.statusCode).toBe(200);
     expect(publicMessage.json().data).toMatchObject({
       templateId: 'mensagem-exemplo',
+      templateVersion: 1,
+      templateName: 'Modelo de exemplo',
+      publicUrl,
+      templateDefinition: {
+        fields: [
+          { id: 'message', type: 'text' },
+          { id: 'recipient', type: 'text' },
+        ],
+        card: {
+          illustration: 'wave',
+          heading: 'Olá, Maria!',
+          message: 'Que bom ter você por aqui!',
+          footer: 'heart',
+        },
+      },
       data: { message: 'Olá' },
     });
     const publicPng = await app.inject({
       method: 'GET',
-      url: `/api/v1/publications/${published.json().data.slug}.png`,
+      url: `/api/v1/publications/${slug}.png`,
     });
     expect(publicPng.statusCode).toBe(200);
     expect(publicPng.headers['content-type']).toContain('image/png');

@@ -119,6 +119,7 @@ const publicationResponseSchema = z.object({
     slug: z.string(),
     status: z.literal('published'),
     publicPath: z.string(),
+    publicUrl: z.url(),
     publishedAt: z.string().datetime(),
   }),
 });
@@ -126,13 +127,23 @@ const publicMessageResponseSchema = z.object({
   data: z.object({
     templateId: z.string(),
     templateVersion: z.number().int(),
+    templateName: z.string(),
+    templateDescription: z.string().nullable(),
+    templateDefinition: jsonObjectSchema,
+    publicUrl: z.url(),
     data: jsonObjectSchema,
     publishedAt: z.string().datetime(),
   }),
 });
 const analyticsEventBodySchema = z.object({
   eventId: z.uuid(),
-  name: z.enum(['landing_viewed', 'template_viewed', 'template_selected', 'preview_viewed']),
+  name: z.enum([
+    'landing_viewed',
+    'template_viewed',
+    'template_selected',
+    'preview_viewed',
+    'whatsapp_share_clicked',
+  ]),
   draftId: z.uuid().optional(),
   templateId: z.string().min(1).max(120).optional(),
   source: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/).optional(),
@@ -170,6 +181,8 @@ export type BuildAppOptions = {
   analyticsReadToken?: string;
   authCookieSecure?: boolean;
   authPublicAppUrl?: string;
+  publicApiUrl?: string;
+  publicAppUrl?: string;
   trustedProxyAddresses?: string[];
   healthCheck?: () => unknown | Promise<unknown>;
 };
@@ -186,6 +199,8 @@ export function buildApp(options: BuildAppOptions = {}) {
   app.register(fastifyRawBody, { global: false, encoding: false });
   const authCookieSecure = options.authCookieSecure ?? false;
   const authPublicOrigin = options.authPublicAppUrl ? new URL(options.authPublicAppUrl).origin : undefined;
+  const publicApiOrigin = new URL(options.publicApiUrl ?? 'http://localhost:3000').origin;
+  const publicAppOrigin = new URL(options.publicAppUrl ?? 'http://localhost:3001').origin;
   const sessionCookieName = authCookieSecure ? '__Host-caderno_session' : 'caderno_session';
   const getAuthenticatedUser = (request: FastifyRequest) => {
     const token = request.cookies[sessionCookieName];
@@ -865,6 +880,7 @@ export function buildApp(options: BuildAppOptions = {}) {
               slug: publication.slug,
               status: 'published' as const,
               publicPath: `/p/${publication.slug}`,
+              publicUrl: new URL(`/p/${publication.slug}`, `${publicAppOrigin}/`).toString(),
               publishedAt: publication.publishedAt.toISOString(),
             },
           });
@@ -902,6 +918,7 @@ export function buildApp(options: BuildAppOptions = {}) {
               slug: publication.slug,
               status: 'published' as const,
               publicPath: `/p/${publication.slug}`,
+              publicUrl: new URL(`/p/${publication.slug}`, `${publicAppOrigin}/`).toString(),
               publishedAt: publication.publishedAt.toISOString(),
             },
           });
@@ -950,7 +967,11 @@ export function buildApp(options: BuildAppOptions = {}) {
             });
           }
           return {
-            data: { ...message, publishedAt: message.publishedAt.toISOString() },
+            data: {
+              ...message,
+              publicUrl: new URL(`/p/${request.params.slug}`, `${publicAppOrigin}/`).toString(),
+              publishedAt: message.publishedAt.toISOString(),
+            },
           };
         },
       );
@@ -1010,13 +1031,45 @@ export function buildApp(options: BuildAppOptions = {}) {
           }),
         },
         async (request, response) => {
-          const imagePath = `/api/v1/publications/${request.params.slug}.png`;
-          if (!publishing.getPublicMessage(request.params)) {
+          const message = publishing.getPublicMessage(request.params);
+          if (!message) {
             return response.code(404).send({
               error: { code: 'PUBLICATION_NOT_FOUND', message: 'Publicação não encontrada.' },
             });
           }
-          const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cadernô</title></head><body><main><img src="${imagePath}" alt="Mensagem compartilhada"></main></body></html>`;
+          const publicUrl = new URL(`/p/${request.params.slug}`, `${publicAppOrigin}/`).toString();
+          const imageUrl = new URL(
+            `/api/v1/publications/${request.params.slug}.png`,
+            `${publicApiOrigin}/`,
+          ).toString();
+          const title = `${message.templateName} · Cadernô`;
+          const description = message.templateDescription || 'Veja esta mensagem criada no Cadernô Express.';
+          const safeTitle = escapeHtmlAttribute(title);
+          const safeDescription = escapeHtmlAttribute(description);
+          const safePublicUrl = escapeHtmlAttribute(publicUrl);
+          const safeImageUrl = escapeHtmlAttribute(imageUrl);
+          const html = `<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>${safeTitle}</title>
+    <meta name="description" content="${safeDescription}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Cadernô">
+    <meta property="og:title" content="${safeTitle}">
+    <meta property="og:description" content="${safeDescription}">
+    <meta property="og:url" content="${safePublicUrl}">
+    <meta property="og:image" content="${safeImageUrl}">
+    <meta property="og:image:secure_url" content="${safeImageUrl}">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${safeTitle}">
+    <meta name="twitter:description" content="${safeDescription}">
+    <meta name="twitter:image" content="${safeImageUrl}">
+  </head>
+  <body><main><img src="${safeImageUrl}" alt="Mensagem compartilhada"></main></body>
+</html>`;
           return response
             .header('cache-control', 'no-store')
             .header('content-security-policy', "default-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -1154,6 +1207,15 @@ function serializeDraft(draft: Draft) {
     createdAt: draft.createdAt.toISOString(),
     updatedAt: draft.updatedAt.toISOString(),
   };
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll("'", '&#39;');
 }
 
 function serializeTemplate(template: ReturnType<ApplicationServices['getTemplate']>) {

@@ -13,7 +13,7 @@ export class SqliteTemplateRepository implements TemplateRepository {
       .select()
       .from(templates)
       .where(eq(templates.isActive, true))
-      .orderBy(templates.id)
+      .orderBy(templates.createdAt, templates.id)
       .all();
   }
 

@@ -1,12 +1,17 @@
 import type { JsonObject, JsonValue } from '../shared/json-value.js';
 import { InvalidTemplateDefinitionError, TemplateInputValidationError } from './errors.js';
 import type { TemplateValidationIssue } from './errors.js';
+import { validateTemplateCard } from './template-card.js';
+import { resolveTemplateVisuals } from './template-visuals.js';
 
 type SupportedFieldType = 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'url' | 'color' | 'date';
 
 type TemplateField = {
   id: string;
   type: SupportedFieldType;
+  label?: string;
+  placeholder?: string;
+  helpText?: string;
   required?: boolean;
   maxLength?: number;
   options?: string[];
@@ -55,7 +60,12 @@ export function validateTemplateInput(definition: JsonObject, data: JsonObject):
 }
 
 export function validateTemplateDefinition(definition: JsonObject): void {
-  parseFields(definition);
+  if (Object.keys(definition).some((key) => !['fields', 'visual', 'card'].includes(key))) {
+    throw new InvalidTemplateDefinitionError();
+  }
+  const fields = parseFields(definition);
+  validateTemplateCard(definition, fields);
+  resolveTemplateVisuals(definition);
 }
 
 function parseFields(definition: JsonObject): TemplateField[] {
@@ -70,12 +80,16 @@ function parseFields(definition: JsonObject): TemplateField[] {
     if (!isRecord(rawField)) {
       throw new InvalidTemplateDefinitionError();
     }
-    const { id, type, required, maxLength, options } = rawField;
+    const { id, type, label, placeholder, helpText, required, maxLength, options } = rawField;
     if (
+      Object.keys(rawField).some((key) => !['id', 'type', 'label', 'placeholder', 'helpText', 'required', 'maxLength', 'options'].includes(key)) ||
       typeof id !== 'string' ||
       !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(id) ||
       typeof type !== 'string' ||
       !supportedFieldTypes.has(type as SupportedFieldType) ||
+      (label !== undefined && (typeof label !== 'string' || label.trim().length === 0 || label.length > 120)) ||
+      (placeholder !== undefined && (typeof placeholder !== 'string' || placeholder.length > 200)) ||
+      (helpText !== undefined && (typeof helpText !== 'string' || helpText.length > 500)) ||
       (required !== undefined && typeof required !== 'boolean') ||
       (maxLength !== undefined && (!Number.isInteger(maxLength) || (maxLength as number) < 1 || (maxLength as number) > 20_000)) ||
       (options !== undefined && (!Array.isArray(options) || options.some((option) => typeof option !== 'string' || option.length === 0 || option.length > 120)))
@@ -92,6 +106,9 @@ function parseFields(definition: JsonObject): TemplateField[] {
     fields.push({
       id,
       type: type as SupportedFieldType,
+      ...(typeof label === 'string' ? { label } : {}),
+      ...(typeof placeholder === 'string' ? { placeholder } : {}),
+      ...(typeof helpText === 'string' ? { helpText } : {}),
       ...(typeof required === 'boolean' ? { required } : {}),
       ...(typeof maxLength === 'number' ? { maxLength } : {}),
       ...(Array.isArray(options) ? { options: options as string[] } : {}),

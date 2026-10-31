@@ -20,7 +20,7 @@ import { SharpPngRenderer } from '../../src/infrastructure/rendering/sharp-png-r
 
 export async function createTestApp(
   databaseFile = ':memory:',
-  options: { authCookieSecure?: boolean } = {},
+  options: { authCookieSecure?: boolean; publicApiUrl?: string; publicAppUrl?: string } = {},
 ): Promise<{
   app: FastifyInstance;
   database: ReturnType<typeof createDatabase>;
@@ -56,6 +56,8 @@ export async function createTestApp(
     }),
     analyticsServices: createAnalyticsServices(database.db, { clock: () => new Date() }),
     analyticsReadToken: 'test-analytics-read-token-with-at-least-32-chars',
+    publicApiUrl: options.publicApiUrl ?? 'https://api.example.test',
+    publicAppUrl: options.publicAppUrl ?? 'https://app.example.test',
     authPublicAppUrl: 'http://localhost:3000',
     identityServices: createIdentityServices(database.db, {
       emailSender: {

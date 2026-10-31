@@ -18,6 +18,34 @@ const configSchema = z.object({
       return !parsed.username && !parsed.password;
     })
     .default('http://localhost:3000'),
+  PUBLIC_API_URL: z
+    .url()
+    .refine((value) => {
+      const parsed = new URL(value);
+      return (
+        ['http:', 'https:'].includes(parsed.protocol) &&
+        !parsed.username &&
+        !parsed.password &&
+        parsed.pathname === '/' &&
+        !parsed.search &&
+        !parsed.hash
+      );
+    }, 'PUBLIC_API_URL must be an HTTP(S) origin without credentials, path, query, or fragment.')
+    .default('http://localhost:3000'),
+  PUBLIC_APP_URL: z
+    .url()
+    .refine((value) => {
+      const parsed = new URL(value);
+      return (
+        ['http:', 'https:'].includes(parsed.protocol) &&
+        !parsed.username &&
+        !parsed.password &&
+        parsed.pathname === '/' &&
+        !parsed.search &&
+        !parsed.hash
+      );
+    }, 'PUBLIC_APP_URL must be an HTTP(S) origin without credentials, path, query, or fragment.')
+    .default('http://localhost:3001'),
   SMTP_URL: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.string().url().refine((value) => value.startsWith('smtp://') || value.startsWith('smtps://')).optional(),
@@ -52,6 +80,8 @@ export type AppConfig = {
   databaseFile: string;
   trustedProxyAddresses: string[];
   authPublicAppUrl: string;
+  publicApiUrl: string;
+  publicAppUrl: string;
   smtpUrl?: string;
   emailFrom?: string;
   caktoCheckoutUrl?: string;
@@ -66,6 +96,12 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
   if (parsed.NODE_ENV === 'production' && new URL(parsed.AUTH_PUBLIC_APP_URL).protocol !== 'https:') {
     throw new Error('AUTH_PUBLIC_APP_URL must use HTTPS in production.');
   }
+  if (parsed.NODE_ENV === 'production' && new URL(parsed.PUBLIC_API_URL).protocol !== 'https:') {
+    throw new Error('PUBLIC_API_URL must use HTTPS in production.');
+  }
+  if (parsed.NODE_ENV === 'production' && new URL(parsed.PUBLIC_APP_URL).protocol !== 'https:') {
+    throw new Error('PUBLIC_APP_URL must use HTTPS in production.');
+  }
 
   return {
     nodeEnv: parsed.NODE_ENV,
@@ -75,6 +111,8 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     databaseFile: parsed.DATABASE_FILE,
     trustedProxyAddresses: parsed.TRUST_PROXY,
     authPublicAppUrl: parsed.AUTH_PUBLIC_APP_URL,
+    publicApiUrl: parsed.PUBLIC_API_URL,
+    publicAppUrl: parsed.PUBLIC_APP_URL,
     ...(parsed.SMTP_URL ? { smtpUrl: parsed.SMTP_URL } : {}),
     ...(parsed.EMAIL_FROM ? { emailFrom: parsed.EMAIL_FROM } : {}),
     ...(parsed.CAKTO_CHECKOUT_URL ? { caktoCheckoutUrl: parsed.CAKTO_CHECKOUT_URL } : {}),

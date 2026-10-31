@@ -1,6 +1,6 @@
 # Cadernô Express — backend
 
-API do Cadernô Express. O backend oferece identidade por magic link, catálogo versionado e rascunhos, checkout e licenças Cakto, publicação/exportação PNG e analytics. O backend é a autoridade para compras, acesso e conteúdo persistido. A interface web continua fora do escopo deste repositório.
+API do Cadernô Express. O backend oferece identidade por magic link, catálogo versionado e rascunhos, checkout e licenças Cakto, publicação/exportação e analytics. O backend é a autoridade para compras, acesso e conteúdo persistido; o frontend Next.js interpreta as definições versionadas de cartão.
 
 ## Decisões técnicas
 
@@ -27,7 +27,7 @@ As definições reais dos 16 modelos ainda precisam ser fornecidas; os testes us
 
 ### Catálogo de modelos
 
-Quando as definições reais estiverem disponíveis, salve os 16 itens em um array JSON em `catalog/templates.json`. Cada item informa `id`, `version`, `name`, `description`, `definition` e `isActive`; `definition.fields` aceita `text`, `textarea`, `number`, `boolean`, `select`, `url`, `color` e `date`. O carregador valida a definição pelo mesmo contrato usado nos rascunhos, insere o lote em uma transação, impede alterações no conteúdo de uma versão já publicada e desativa a versão anterior quando uma nova versão é ativada. Não há rota pública para editar o catálogo.
+Quando as definições reais estiverem disponíveis, salve os 16 itens em um array JSON em `catalog/templates.json`. Cada item informa `id`, `version`, `name`, `description`, `definition` e `isActive`; `definition.fields` aceita `text`, `textarea`, `number`, `boolean`, `select`, `url`, `color` e `date`, além de rótulo, placeholder e texto de ajuda. `definition.card` declara, por uma lista fechada de opções, a ilustração, o título, a mensagem e os campos dinâmicos. `definition.visual` define a paleta e aceita somente valores validados. O frontend converte essa estrutura semântica em HTML/SVG com CSS próprio; o backend renderiza SVG/PNG para exportação e metadados de compartilhamento, sem aceitar HTML ou CSS arbitrário. O carregador insere o lote em uma transação, impede alterações no conteúdo de uma versão já publicada e desativa a versão anterior quando uma nova versão é ativada. Não há rota pública para editar o catálogo.
 
 Execute `npm run db:seed:catalog` localmente. No container de produção, após atualizar a imagem com o arquivo de catálogo, execute `docker compose exec api npm run db:seed:catalog:prod`. A operação aplica migrations pendentes antes da importação e pode ser repetida com segurança.
 
@@ -54,7 +54,7 @@ O SQLite usa um volume Docker persistente. Não apague o volume ao atualizar a a
 
 ### Login e pagamentos
 
-Configure `AUTH_PUBLIC_APP_URL`, `SMTP_URL` e `EMAIL_FROM` para enviar links de acesso. Em produção, `AUTH_PUBLIC_APP_URL` precisa usar HTTPS; o cookie de sessão fica `Secure` e `HttpOnly`.
+Configure `AUTH_PUBLIC_APP_URL`, `PUBLIC_API_URL`, `PUBLIC_APP_URL`, `SMTP_URL` e `EMAIL_FROM` para enviar links de acesso e compartilhar publicações. `PUBLIC_APP_URL` é a origem do frontend Next.js usada nos links compartilhados; `PUBLIC_API_URL` fornece a imagem Open Graph para a prévia automática do WhatsApp. A página Next.js monta a versão publicada do cartão em HTML; a imagem Open Graph não substitui o cartão exibido ao abrir o link. Em produção, as URLs públicas precisam usar HTTPS; o cookie de sessão fica `Secure` e `HttpOnly`.
 
 Para habilitar checkout, configure a URL da oferta hospedada em `CAKTO_CHECKOUT_URL` e o UUID do produto em `CAKTO_PRODUCT_ID`. Configure `CAKTO_WEBHOOK_SECRET` com o segredo do webhook criado no painel Cakto. Cadastre o endpoint `POST /api/v1/webhooks/cakto` e habilite os eventos de compra, pagamento, reembolso e chargeback. A URL de redirect do comprador não confirma pagamento; o acesso só muda após o worker processar o webhook assinado.
 

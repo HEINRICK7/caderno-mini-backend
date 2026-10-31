@@ -55,7 +55,15 @@ export function unpublishMessage(
 export function getPublicMessage(
   input: { slug: string },
   dependencies: PublicationDependencies,
-): { templateId: string; templateVersion: number; data: Draft['data']; publishedAt: Date } | undefined {
+): {
+  templateId: string;
+  templateVersion: number;
+  templateName: string;
+  templateDescription: string | null;
+  templateDefinition: Template['definition'];
+  data: Draft['data'];
+  publishedAt: Date;
+} | undefined {
   const publication = dependencies.publications.findPublishedBySlug(input.slug);
   if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId)) {
     return undefined;
@@ -65,9 +73,16 @@ export function getPublicMessage(
   if (!draft) {
     return undefined;
   }
+  const template = dependencies.templates.findByIdAndVersion(draft.templateId, draft.templateVersion);
+  if (!template) {
+    return undefined;
+  }
   return {
     templateId: draft.templateId,
     templateVersion: draft.templateVersion,
+    templateName: template.name,
+    templateDescription: template.description,
+    templateDefinition: template.definition,
     data: draft.data,
     publishedAt: publication.publishedAt,
   };

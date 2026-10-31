@@ -4,7 +4,10 @@ import {
   InvalidTemplateDefinitionError,
   TemplateInputValidationError,
 } from '../../../src/domain/templates/errors.js';
-import { validateTemplateInput } from '../../../src/domain/templates/validate-template-input.js';
+import {
+  validateTemplateDefinition,
+  validateTemplateInput,
+} from '../../../src/domain/templates/validate-template-input.js';
 
 describe('validateTemplateInput', () => {
   const definition = {
@@ -43,5 +46,71 @@ describe('validateTemplateInput', () => {
   it('rejects malformed template definitions instead of silently accepting data', () => {
     expect(() => validateTemplateInput({ fields: [{ id: 'x', type: 'unsupported' }] }, { x: 'value' }))
       .toThrow(InvalidTemplateDefinitionError);
+  });
+
+  it('accepts a declarative visual style with controlled values', () => {
+    expect(() =>
+      validateTemplateDefinition({
+        fields: [{ id: 'message', type: 'text', label: 'Mensagem', placeholder: 'Escreva aqui' }],
+        visual: {
+          layout: 'editorial',
+          background: '#F7F1E8',
+          surface: '#FFFFFF',
+          accent: '#8B6245',
+          heading: '#30271F',
+          text: '#2F2A27',
+          muted: '#705A49',
+          headingFont: 'serif',
+          bodyFont: 'sans',
+          frame: 'single',
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts a semantic card composition with a field binding', () => {
+    expect(() => validateTemplateDefinition({
+      fields: [{ id: 'recipientName', type: 'text', label: 'Nome', required: true }],
+      card: {
+        illustration: 'wave',
+        heading: 'Olá, {{recipientName}}!',
+        message: 'Que bom ter você por aqui!',
+        footer: 'heart',
+      },
+    })).not.toThrow();
+  });
+
+  it('rejects card bindings to missing fields and unknown illustration tokens', () => {
+    expect(() => validateTemplateDefinition({
+      fields: [{ id: 'recipientName', type: 'text' }],
+      card: { illustration: 'wave', heading: 'Olá, {{unknown}}!', footer: 'heart' },
+    })).toThrow(InvalidTemplateDefinitionError);
+    expect(() => validateTemplateDefinition({
+      fields: [{ id: 'recipientName', type: 'text' }],
+      card: { illustration: 'photo', heading: 'Olá, {{recipientName}}!', footer: 'heart' },
+    })).toThrow(InvalidTemplateDefinitionError);
+  });
+
+  it('rejects arbitrary HTML, CSS, and unsupported visual tokens in catalog definitions', () => {
+    expect(() => validateTemplateDefinition({ fields: [], html: '<script>alert(1)</script>' })).toThrow(
+      InvalidTemplateDefinitionError,
+    );
+    expect(() =>
+      validateTemplateDefinition({
+        fields: [],
+        visual: {
+          layout: 'card',
+          background: '#fff; color: red',
+          surface: '#FFFFFF',
+          accent: '#8B6245',
+          heading: '#30271F',
+          text: '#2F2A27',
+          muted: '#705A49',
+          headingFont: 'serif',
+          bodyFont: 'sans',
+          frame: 'none',
+        },
+      }),
+    ).toThrow(InvalidTemplateDefinitionError);
   });
 });

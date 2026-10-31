@@ -12,6 +12,8 @@ describe('loadConfig', () => {
       DATABASE_FILE: './data/test.sqlite',
       TRUST_PROXY: '127.0.0.1, 172.16.0.0/12',
       AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+      PUBLIC_API_URL: 'https://api.example.com',
+      PUBLIC_APP_URL: 'https://app.example.com',
       SMTP_URL: 'smtps://mailer:secret@mail.example.com:465',
       EMAIL_FROM: 'Cadernô <login@example.com>',
     });
@@ -24,6 +26,8 @@ describe('loadConfig', () => {
       databaseFile: './data/test.sqlite',
       trustedProxyAddresses: ['127.0.0.1', '172.16.0.0/12'],
       authPublicAppUrl: 'https://app.example.com',
+      publicApiUrl: 'https://api.example.com',
+      publicAppUrl: 'https://app.example.com',
       smtpUrl: 'smtps://mailer:secret@mail.example.com:465',
       emailFrom: 'Cadernô <login@example.com>',
     });
@@ -38,6 +42,8 @@ describe('loadConfig', () => {
       databaseFile: './data/caderno-mini.sqlite',
       trustedProxyAddresses: [],
       authPublicAppUrl: 'http://localhost:3000',
+      publicApiUrl: 'http://localhost:3000',
+      publicAppUrl: 'http://localhost:3001',
     });
   });
 
@@ -47,5 +53,25 @@ describe('loadConfig', () => {
 
   it('requires HTTPS for authentication links in production', () => {
     expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow('AUTH_PUBLIC_APP_URL must use HTTPS in production.');
+  });
+
+  it('requires HTTPS for public share links in production', () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: 'production',
+        AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+        PUBLIC_API_URL: 'http://api.example.com',
+        PUBLIC_APP_URL: 'https://app.example.com',
+      }),
+    ).toThrow('PUBLIC_API_URL must use HTTPS in production.');
+  });
+
+  it('requires HTTPS for public app links in production', () => {
+    expect(() => loadConfig({
+      NODE_ENV: 'production',
+      AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+      PUBLIC_API_URL: 'https://api.example.com',
+      PUBLIC_APP_URL: 'http://app.example.com',
+    })).toThrow('PUBLIC_APP_URL must use HTTPS in production.');
   });
 });
