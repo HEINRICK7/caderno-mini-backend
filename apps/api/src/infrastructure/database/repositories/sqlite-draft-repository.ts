@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 
 import type { DraftRepository } from '../../../application/ports/draft-repository.js';
 import type { Draft } from '../../../domain/drafts/draft.js';
@@ -9,11 +9,23 @@ export class SqliteDraftRepository implements DraftRepository {
   constructor(private readonly db: AppDatabase) {}
 
   findById(id: string): Draft | undefined {
-    return this.db.select().from(drafts).where(eq(drafts.id, id)).get();
+    const row = this.db.select().from(drafts).where(eq(drafts.id, id)).get();
+    return row ? toDraft(row) : undefined;
   }
 
-  insert(draft: Draft): void {
-    this.db.insert(drafts).values(draft).run();
+  findByIdForUser(id: string, userId?: string): Draft | undefined {
+    const row = this.db.select().from(drafts).where(eq(drafts.id, id)).get();
+    if (!row || (row.ownerUserId && row.ownerUserId !== userId)) {
+      return undefined;
+    }
+    return toDraft(row);
+  }
+
+  insert(draft: Draft, ownerUserId?: string): void {
+    this.db
+      .insert(drafts)
+      .values({ ...draft, ...(ownerUserId ? { ownerUserId } : {}) })
+      .run();
   }
 
   update(draft: Draft): void {
@@ -23,4 +35,27 @@ export class SqliteDraftRepository implements DraftRepository {
       .where(eq(drafts.id, draft.id))
       .run();
   }
+
+  updateForUser(draft: Draft, userId?: string): boolean {
+    const ownerPredicate = userId
+      ? or(isNull(drafts.ownerUserId), eq(drafts.ownerUserId, userId))
+      : isNull(drafts.ownerUserId);
+    const result = this.db
+      .update(drafts)
+      .set({ data: draft.data, updatedAt: draft.updatedAt })
+      .where(and(eq(drafts.id, draft.id), ownerPredicate))
+      .run();
+    return result.changes > 0;
+  }
+}
+
+function toDraft(row: typeof drafts.$inferSelect): Draft {
+  return {
+    id: row.id,
+    templateId: row.templateId,
+    templateVersion: row.templateVersion,
+    data: row.data,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }

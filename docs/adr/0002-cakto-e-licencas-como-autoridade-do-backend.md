@@ -11,13 +11,14 @@ O produto usará checkout Cakto. O comprador pode voltar ao site pelo navegador,
 
 - O backend é a única autoridade local para compras, licenças e acesso ao conteúdo pago.
 - A Cakto é a fonte externa de evidência do pagamento. O backend só concede licença após aceitar um evento autenticado de pagamento aprovado e aplicar as regras locais.
-- O backend associa uma sessão de checkout e um rascunho por token `callback` opaco, aleatório e sem dados pessoais. A relação entre token, pedido e rascunho fica persistida no backend.
+- O backend cria uma compra local pendente e associa o rascunho por token `callback` opaco, aleatório e sem dados pessoais. O token tem 32 bytes aleatórios em base64url, respeita o charset e limite de 255 caracteres aceitos pela Cakto, e sua relação com compra/rascunho fica persistida como hash.
+- O link hospedado da oferta é configuração do servidor; a API acrescenta `?callback=<token>` e não aceita URL, produto ou estado privilegiado vindo do navegador.
 - O redirect pós-pagamento é somente navegação. A tela de retorno consulta o backend; ela nunca envia um sinal que conceda licença.
 - O evento `purchase_approved` com estado `paid` pode conceder a licença. `pix_gerado`, boleto gerado e demais eventos de cobrança pendente não concedem acesso.
-- Reembolso e chargeback levam a atualização do estado e revogação conforme o estado final validado. `refund_requested` isoladamente representa solicitação e não confirma que o reembolso foi realizado.
+- Reembolso efetivo (`refund` com estado `refunded`) e chargeback levam a atualização do estado e revogação conforme o estado final validado. `refund_requested` isoladamente não confirma que o reembolso foi realizado e não revoga.
 - O adaptador verifica `X-Cakto-Timestamp` e `X-Cakto-Signature` sobre os bytes originais da requisição usando HMAC-SHA256, limite de cinco minutos e comparação em tempo constante. Segredo em variável de ambiente; HTTPS; sem registrar o segredo ou o corpo.
-- A entrada suporta `data` como objeto (V1) e lista (V2). Cada pedido da lista é validado e processado separadamente.
-- O sistema persiste uma inbox normalizada antes de responder `2xx`; o processamento de compra/licença ocorre de modo idempotente e transacional.
+- A entrada suporta `data` como objeto (V1) e lista (V2). Cada pedido da lista é validado e processado separadamente. `checkout_abandonment` não tem ID de pedido nem status de pagamento e usa deduplicação própria.
+- O sistema verifica a assinatura sobre o corpo bruto, persiste uma inbox normalizada antes de responder `2xx` e processa compra/licença em um worker local, de modo idempotente e transacional. A resposta precisa ocorrer antes do limite de 8 segundos da Cakto.
 - A deduplicação considera o ID do pedido, tipo do evento e hash do payload, permitindo ignorar repetição sem descartar atualização posterior do mesmo pedido.
 - Dados pessoais da entrega são minimizados e não armazenados na inbox se não forem necessários para correlação, suporte ou decisão de acesso.
 
@@ -25,7 +26,7 @@ O produto usará checkout Cakto. O comprador pode voltar ao site pelo navegador,
 
 - Webhook válido e persistido, não redirect, é a entrada de autoridade para a regra de licença.
 - Uma repetição de webhook não cria licenças duplicadas nem desfaz um estado mais recente.
-- Como a Cakto não retenta automaticamente respostas não-2xx, o endpoint só confirma após persistência durável. Falhas de persistência precisam de monitoramento e reconciliação/reenvio pelo histórico da Cakto.
+- O contrato atual prevê até cinco retentativas automáticas com espera crescente para falhas de rede/timeout antes de uma resposta. Respostas HTTP não-2xx não geram retentativa automática. Falhas de persistência recebem erro, precisam de monitoramento e reconciliação/reenvio manual pelo histórico da Cakto.
 - Integração requer acesso ao segredo do webhook e configuração HTTPS. A validação por assinatura usa o corpo bruto, que precisa ser capturado antes do parser JSON.
 - O recurso de redirect `{{callback}}` exige liberação da Cakto caso seja usado; checkout e licenças não dependem desse recurso.
 

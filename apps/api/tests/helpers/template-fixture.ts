@@ -11,7 +11,12 @@ export function insertTemplate(
       version: 1,
       name: 'Modelo de exemplo',
       description: 'Fixture local de integração',
-      definition: { fields: [{ id: 'message', type: 'text' }] },
+      definition: {
+        fields: [
+          { id: 'message', type: 'text' },
+          { id: 'recipient', type: 'text' },
+        ],
+      },
       isActive: true,
       createdAt: new Date('2026-10-01T10:00:00.000Z'),
       ...values,

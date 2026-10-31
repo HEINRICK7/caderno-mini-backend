@@ -25,4 +25,12 @@ export class SqliteTemplateRepository implements TemplateRepository {
       .orderBy(desc(templates.version))
       .get();
   }
+
+  findByIdAndVersion(id: string, version: number): Template | undefined {
+    return this.db
+      .select()
+      .from(templates)
+      .where(and(eq(templates.id, id), eq(templates.version, version)))
+      .get();
+  }
 }

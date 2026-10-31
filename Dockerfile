@@ -22,7 +22,12 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/apps/api/src/infrastructure/database/migrations ./apps/api/src/infrastructure/database/migrations
 
-RUN mkdir -p /app/data && chmod 700 /app/data && chown -R node:node /app/data
+RUN apt-get update \
+  && apt-get install --no-install-recommends -y fontconfig fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /app/data \
+  && chmod 700 /app/data \
+  && chown -R node:node /app/data
 USER node
 
 EXPOSE 3000

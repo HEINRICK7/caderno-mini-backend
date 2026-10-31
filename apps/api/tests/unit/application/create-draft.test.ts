@@ -8,7 +8,7 @@ const template = {
   version: 3,
   name: 'Modelo de exemplo',
   description: null,
-  definition: { fields: [] },
+  definition: { fields: [{ id: 'message', type: 'text' }] },
   isActive: true,
   createdAt: new Date('2026-10-01T10:00:00.000Z'),
 };
@@ -22,7 +22,7 @@ describe('createDraft', () => {
       { templateId: template.id, data: { message: 'Olá' } },
       {
         templates: { findActiveById: vi.fn().mockReturnValue(template) },
-        drafts: { insert, update: vi.fn(), findById: vi.fn() },
+        drafts: { insert, update: vi.fn(), findById: vi.fn(), findByIdForUser: vi.fn(), updateForUser: vi.fn() },
         idGenerator: () => 'opaque-draft-id',
         clock: () => now,
       },
@@ -36,7 +36,7 @@ describe('createDraft', () => {
       createdAt: now,
       updatedAt: now,
     });
-    expect(insert).toHaveBeenCalledWith(draft);
+    expect(insert).toHaveBeenCalledWith(draft, undefined);
   });
 
   it('rejects an unknown or inactive template without saving', () => {
@@ -47,7 +47,7 @@ describe('createDraft', () => {
         { templateId: 'missing', data: {} },
         {
           templates: { findActiveById: vi.fn().mockReturnValue(undefined) },
-          drafts: { insert, update: vi.fn(), findById: vi.fn() },
+          drafts: { insert, update: vi.fn(), findById: vi.fn(), findByIdForUser: vi.fn(), updateForUser: vi.fn() },
           idGenerator: () => 'unused-id',
           clock: () => new Date('2026-10-31T12:00:00.000Z'),
         },

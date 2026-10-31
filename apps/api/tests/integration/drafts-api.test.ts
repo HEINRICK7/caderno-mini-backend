@@ -4,13 +4,15 @@ import type { FastifyInstance } from 'fastify';
 import { createTestApp } from '../helpers/test-app.js';
 import { insertTemplate } from '../helpers/template-fixture.js';
 import type { createDatabase } from '../../src/infrastructure/database/connection.js';
+import { drafts } from '../../src/infrastructure/database/schema.js';
 
 describe('templates and anonymous drafts API', () => {
   let app: FastifyInstance;
   let database: ReturnType<typeof createDatabase>;
+  let sentMagicLinks: Awaited<ReturnType<typeof createTestApp>>['sentMagicLinks'];
 
   beforeEach(async () => {
-    ({ app, database } = await createTestApp());
+    ({ app, database, sentMagicLinks } = await createTestApp());
   });
 
   afterEach(async () => {
@@ -27,6 +29,45 @@ describe('templates and anonymous drafts API', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().data).toHaveLength(1);
     expect(response.json().data[0]).toMatchObject({ id: 'mensagem-exemplo', version: 2 });
+  });
+
+  it('returns the active definition and validates inputs before saving', async () => {
+    insertTemplate(database.db, {
+      definition: { fields: [{ id: 'message', type: 'text', required: true, maxLength: 12 }] },
+    });
+
+    const definition = await app.inject({ method: 'GET', url: '/api/v1/templates/mensagem-exemplo' });
+    expect(definition.statusCode).toBe(200);
+    expect(definition.json().data.definition.fields).toHaveLength(1);
+
+    const valid = await app.inject({
+      method: 'POST',
+      url: '/api/v1/templates/mensagem-exemplo/validate',
+      payload: { data: { message: 'Olá!' } },
+    });
+    expect(valid.statusCode).toBe(200);
+    expect(valid.json().data).toEqual({ valid: true });
+
+    const invalid = await app.inject({
+      method: 'POST',
+      url: '/api/v1/templates/mensagem-exemplo/validate',
+      payload: { data: { message: 'Esta mensagem é muito longa', extra: true } },
+    });
+    expect(invalid.statusCode).toBe(422);
+    expect(invalid.json().error).toMatchObject({
+      code: 'TEMPLATE_INPUT_INVALID',
+      details: expect.arrayContaining([
+        expect.objectContaining({ path: 'message', code: 'too_long' }),
+        expect.objectContaining({ path: 'extra', code: 'unknown_field' }),
+      ]),
+    });
+
+    const rejectedDraft = await app.inject({
+      method: 'POST',
+      url: '/api/v1/drafts',
+      payload: { templateId: 'mensagem-exemplo', data: { message: 'Esta mensagem é muito longa' } },
+    });
+    expect(rejectedDraft.statusCode).toBe(422);
   });
 
   it('creates, retrieves, and replaces draft data through the API', async () => {
@@ -71,6 +112,36 @@ describe('templates and anonymous drafts API', () => {
       data: { recipient: 'Lia', message: 'Com carinho!' },
     });
     expect(updatedResponse.json().data.createdAt).toBe(created.createdAt);
+  });
+
+  it('binds drafts created by a signed-in user to that account', async () => {
+    insertTemplate(database.db);
+    const requestLink = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/magic-link',
+      payload: { email: 'owner@example.com' },
+    });
+    expect(requestLink.statusCode).toBe(202);
+    const token = new URL(sentMagicLinks[0]!.link).searchParams.get('token');
+    const verify = await app.inject({ method: 'POST', url: '/api/v1/auth/verify', payload: { token } });
+    const cookie = String(verify.headers['set-cookie']).split(';')[0];
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/drafts',
+      headers: { cookie },
+      payload: { templateId: 'mensagem-exemplo', data: { message: 'Privado' } },
+    });
+    const draftId = created.json().data.id as string;
+
+    expect(created.statusCode).toBe(201);
+    expect(database.db.select().from(drafts).get()?.ownerUserId).toBe(verify.json().data.user.id);
+    expect((await app.inject({ method: 'GET', url: `/api/v1/drafts/${draftId}` })).statusCode).toBe(404);
+    expect((await app.inject({
+      method: 'GET',
+      url: `/api/v1/drafts/${draftId}`,
+      headers: { cookie },
+    })).statusCode).toBe(200);
   });
 
   it('returns stable not-found errors for missing templates and drafts', async () => {

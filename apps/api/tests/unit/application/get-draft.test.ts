@@ -14,19 +14,19 @@ const draft = {
 
 describe('getDraft', () => {
   it('returns the stored draft', () => {
-    const findById = vi.fn().mockReturnValue(draft);
+    const findByIdForUser = vi.fn().mockReturnValue(draft);
 
     expect(
-      getDraft({ id: draft.id }, { drafts: { findById, insert: vi.fn(), update: vi.fn() } }),
+      getDraft({ id: draft.id }, { drafts: { findById: vi.fn(), findByIdForUser, insert: vi.fn(), update: vi.fn(), updateForUser: vi.fn() } }),
     ).toEqual(draft);
-    expect(findById).toHaveBeenCalledWith(draft.id);
+    expect(findByIdForUser).toHaveBeenCalledWith(draft.id, undefined);
   });
 
   it('raises a stable not found error', () => {
     expect(() =>
       getDraft(
         { id: 'missing' },
-        { drafts: { findById: vi.fn().mockReturnValue(undefined), insert: vi.fn(), update: vi.fn() } },
+        { drafts: { findById: vi.fn(), findByIdForUser: vi.fn().mockReturnValue(undefined), insert: vi.fn(), update: vi.fn(), updateForUser: vi.fn() } },
       ),
     ).toThrow(DraftNotFoundError);
   });
