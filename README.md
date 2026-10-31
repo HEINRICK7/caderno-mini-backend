@@ -61,7 +61,7 @@ npm run test:unit
 npm run test:integration
 npm run test:e2e
 npm run build
-npm audit --audit-level=high
+npm audit --audit-level=moderate
 ```
 
 GitHub Actions executa essas verificações e constrói a imagem em push e pull request. A regra `quality` precisa estar verde antes do merge.
