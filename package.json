@@ -8,17 +8,17 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "tsx watch apps/api/src/server.ts",
+    "dev": "node --env-file-if-exists=.env --import=tsx --watch apps/api/src/server.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "start": "node --env-file-if-exists=.env dist/server.js",
     "lint": "eslint . --max-warnings=0",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run apps/api/tests/unit",
     "test:integration": "vitest run apps/api/tests/integration",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
-    "db:migrate": "node dist/infrastructure/database/migrate.js",
-    "db:seed:dev": "tsx apps/api/src/infrastructure/database/seed-dev.ts"
+    "db:migrate": "npm run build && node --env-file-if-exists=.env dist/migrate-cli.js",
+    "db:seed:dev": "node --env-file-if-exists=.env --import=tsx apps/api/src/infrastructure/database/seed-dev.ts"
   },
   "dependencies": {
     "@fastify/swagger": "^9.9.2",
