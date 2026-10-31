@@ -5,6 +5,7 @@ coverage/
 .env.*
 !.env.example
 data/
+backups/
 *.db
 *.db-shm
 *.db-wal

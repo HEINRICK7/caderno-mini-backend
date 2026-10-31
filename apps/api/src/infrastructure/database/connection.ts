@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import Database from 'better-sqlite3';
@@ -15,14 +15,25 @@ export type DatabaseConnection = {
 };
 
 export function createDatabase(filePath = ':memory:'): DatabaseConnection {
-  if (filePath !== ':memory:') {
-    mkdirSync(dirname(resolve(filePath)), { recursive: true });
+  const resolvedFile = filePath === ':memory:' ? filePath : resolve(filePath);
+
+  if (resolvedFile !== ':memory:') {
+    mkdirSync(dirname(resolvedFile), { recursive: true, mode: 0o700 });
   }
 
-  const sqlite = new Database(filePath);
+  const sqlite = new Database(resolvedFile);
   sqlite.pragma('foreign_keys = ON');
   sqlite.pragma('busy_timeout = 5000');
   sqlite.pragma('journal_mode = WAL');
+
+  if (resolvedFile !== ':memory:') {
+    for (const suffix of ['', '-wal', '-shm']) {
+      const databaseFile = `${resolvedFile}${suffix}`;
+      if (existsSync(databaseFile)) {
+        chmodSync(databaseFile, 0o600);
+      }
+    }
+  }
 
   return {
     db: drizzle(sqlite, { schema }),

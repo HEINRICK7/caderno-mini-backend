@@ -22,7 +22,7 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/apps/api/src/infrastructure/database/migrations ./apps/api/src/infrastructure/database/migrations
 
-RUN mkdir -p /app/data && chown -R node:node /app/data
+RUN mkdir -p /app/data && chmod 700 /app/data && chown -R node:node /app/data
 USER node
 
 EXPOSE 3000

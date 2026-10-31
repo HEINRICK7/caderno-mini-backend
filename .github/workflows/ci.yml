@@ -39,6 +39,9 @@ jobs:
       - name: Integration tests
         run: npm run test:integration
 
+      - name: End-to-end tests
+        run: npm run test:e2e
+
       - name: Build
         run: npm run build
 
@@ -125,6 +128,7 @@ jobs:
             --exclude='dist/' \
             --exclude='coverage/' \
             --exclude='data/' \
+            --exclude='backups/' \
             --exclude='.env' \
             ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_APP_PATH/"
 

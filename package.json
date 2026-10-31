@@ -12,13 +12,16 @@
     "build": "tsc -p tsconfig.json",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "lint": "eslint . --max-warnings=0",
-    "test": "npm run test:unit && npm run test:integration",
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:unit": "vitest run apps/api/tests/unit",
     "test:integration": "vitest run apps/api/tests/integration",
+    "test:e2e": "vitest run apps/api/tests/e2e",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "npm run build && node --env-file-if-exists=.env dist/migrate-cli.js",
-    "db:seed:dev": "node --env-file-if-exists=.env --import=tsx apps/api/src/infrastructure/database/seed-dev.ts"
+    "db:seed:dev": "node --env-file-if-exists=.env --import=tsx apps/api/src/infrastructure/database/seed-dev.ts",
+    "db:backup": "node --env-file-if-exists=.env dist/backup-cli.js",
+    "db:backup:dev": "node --env-file-if-exists=.env --import=tsx apps/api/src/backup-cli.ts"
   },
   "dependencies": {
     "@fastify/swagger": "^9.9.2",

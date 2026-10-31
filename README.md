@@ -34,12 +34,32 @@ docker compose up --build
 
 O SQLite usa um volume Docker persistente. Não apague o volume ao atualizar a aplicação.
 
+### Backup SQLite
+
+Gere um snapshot consistente do banco em execução e escolha um nome novo para cada arquivo. Em desenvolvimento, compile antes de usar o comando de produção ou use `db:backup:dev`:
+
+```sh
+npm run build
+BACKUP_FILE="./backups/caderno-mini-$(date +%Y%m%d-%H%M%S).sqlite" npm run db:backup
+```
+
+O comando cria o diretório quando necessário, grava o arquivo com permissão `0600` e recusa sobrescrever backups existentes. O banco SQLite e seus arquivos WAL também ficam com permissão `0600`. Armazene uma cópia fora da VPS para proteger contra perda do servidor. A suíte de integração verifica a restauração abrindo o snapshot e recuperando um rascunho persistido.
+
+No Compose, o comando de produção roda dentro da API e grava um snapshot no volume persistente:
+
+```sh
+docker compose exec -e BACKUP_FILE="/app/data/backups/caderno-mini-$(date +%Y%m%d-%H%M%S).sqlite" api npm run db:backup
+```
+
+Transfira esse arquivo para armazenamento fora da VPS. A etapa de transferência e retenção deve ser agendada no ambiente de produção.
+
 ## Verificações locais
 
 ```sh
 npm run lint
 npm run test:unit
 npm run test:integration
+npm run test:e2e
 npm run build
 npm audit --audit-level=high
 ```

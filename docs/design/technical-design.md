@@ -83,6 +83,8 @@ O conteúdo de `data` é um objeto JSON validado no limite HTTP. As regras campo
 
 SQLite é suficiente para uma única instância inicial na VPS e evita administrar um serviço de banco separado. O acesso ocorre por Drizzle e `better-sqlite3`; schema e migrations ficam versionados. A conexão habilita chaves estrangeiras e WAL. O arquivo fica em volume persistente fora da imagem Docker.
 
+O banco SQLite e arquivos auxiliares WAL ficam com permissão `0600`; novos diretórios de banco são criados com `0700`. O comando `npm run db:backup`, com `BACKUP_FILE` apontando para um caminho novo, usa a API de backup do SQLite para gerar um snapshot consistente e restringe as permissões do arquivo. O teste de integração abre esse snapshot como banco restaurado e recupera um rascunho. A cópia deve ser transferida e retida fora da VPS; a agenda dessa transferência será configurada na operação do ambiente.
+
 Tabelas da Sprint 1:
 
 - `templates`: id, versão, nome, descrição, definição JSON, ativo e data de criação. Versões publicadas são imutáveis.
