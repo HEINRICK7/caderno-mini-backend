@@ -25,6 +25,8 @@ jobs:
       HOSTINGER_USER: ${{ vars.HOSTINGER_USER }}
       HOSTINGER_SSH_PORT: ${{ vars.HOSTINGER_SSH_PORT }}
       HOSTINGER_APP_PATH: ${{ vars.HOSTINGER_APP_PATH }}
+      HOSTINGER_API_PORT: ${{ vars.HOSTINGER_API_PORT }}
+      HOSTINGER_DEPLOY_NETWORK: caderno-mini-production
       HOSTINGER_SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_PRIVATE_KEY }}
       HOSTINGER_KNOWN_HOSTS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
     steps:
@@ -38,6 +40,7 @@ jobs:
           : "${HOSTINGER_HOST:?Set HOSTINGER_HOST in the selected GitHub environment}"
           : "${HOSTINGER_USER:?Set HOSTINGER_USER in the selected GitHub environment}"
           : "${HOSTINGER_APP_PATH:?Set HOSTINGER_APP_PATH in the selected GitHub environment}"
+          : "${HOSTINGER_API_PORT:?Set HOSTINGER_API_PORT to a free, loopback-only port in the selected GitHub environment}"
           : "${HOSTINGER_SSH_PRIVATE_KEY:?Set HOSTINGER_SSH_PRIVATE_KEY in the selected GitHub environment}"
           : "${HOSTINGER_KNOWN_HOSTS:?Set HOSTINGER_KNOWN_HOSTS in the selected GitHub environment}"
           HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
@@ -51,12 +54,23 @@ jobs:
           case "$HOSTINGER_APP_PATH" in
             *[!A-Za-z0-9_./-]*) echo "HOSTINGER_APP_PATH may contain only letters, numbers, slash, dot, underscore, and hyphen" >&2; exit 1 ;;
           esac
+          case "$HOSTINGER_APP_PATH" in
+            */caderno-mini/backend) ;;
+            *) echo "HOSTINGER_APP_PATH must be a dedicated directory ending in /caderno-mini/backend" >&2; exit 1 ;;
+          esac
+          case "$HOSTINGER_API_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_API_PORT must be numeric" >&2; exit 1 ;;
+          esac
+          if [ "$HOSTINGER_API_PORT" -lt 1024 ] || [ "$HOSTINGER_API_PORT" -gt 65535 ]; then
+            echo "HOSTINGER_API_PORT must be between 1024 and 65535" >&2
+            exit 1
+          fi
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$HOSTINGER_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           printf '%s\n' "$HOSTINGER_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
 
-      - name: Create application directory
+      - name: Verify isolated application directory and port
         shell: bash
         run: |
           set -euo pipefail
@@ -66,7 +80,55 @@ jobs:
           esac
           ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
             "$HOSTINGER_USER@$HOSTINGER_HOST" \
-            "mkdir -p '$HOSTINGER_APP_PATH'"
+            "set -eu
+            app_path='$HOSTINGER_APP_PATH'
+            marker=\"\$app_path/.caderno-mini-backend-deploy\"
+            project='caderno-mini-production-backend'
+            api_port='$HOSTINGER_API_PORT'
+            network='$HOSTINGER_DEPLOY_NETWORK'
+            mkdir -p \"\$(dirname \"\$app_path\")\"
+            if [ -e \"\$app_path\" ]; then
+              if [ -L \"\$app_path\" ]; then
+                echo 'Refusing to deploy through a symlinked application directory.' >&2
+                exit 1
+              fi
+              if [ ! -f \"\$marker\" ]; then
+                if [ -n \"\$(find \"\$app_path\" -mindepth 1 -maxdepth 1 ! -name .env ! -name .caderno-mini-backend-deploy -print -quit 2>/dev/null)\" ]; then
+                  echo 'Refusing to deploy: the target directory already contains files and has no Cadernô ownership marker.' >&2
+                  exit 1
+                fi
+              fi
+            else
+              mkdir -p \"\$app_path\"
+            fi
+            touch \"\$marker\"
+            if [ ! -f \"\$app_path/.env\" ]; then
+              echo 'Refusing to deploy: configure the production .env in the dedicated application directory first.' >&2
+              exit 1
+            fi
+            if docker network inspect \"\$network\" >/dev/null 2>&1; then
+              owner=\$(docker network inspect --format '{{ index .Labels \"com.caderno-mini.environment\" }}' \"\$network\")
+              if [ \"\$owner\" != 'production' ]; then
+                echo 'Refusing to use a Docker network not marked for the Cadernô production deployment.' >&2
+                exit 1
+              fi
+            else
+              docker network create --label com.caderno-mini.environment=production \"\$network\" >/dev/null
+            fi
+            for id in \$(docker ps -aq --filter label=com.docker.compose.project=\$project); do
+              working_dir=\$(docker inspect --format '{{ index .Config.Labels \"com.docker.compose.project.working_dir\" }}' \"\$id\")
+              if [ \"\$working_dir\" != \"\$app_path\" ]; then
+                echo 'Refusing to update a Compose project owned by another directory.' >&2
+                exit 1
+              fi
+            done
+            if ss -lntH \"( sport = :\$api_port )\" | grep -q .; then
+              owner=\$(docker ps -q --filter label=com.docker.compose.project=\$project --filter publish=\$api_port)
+              if [ -z \"\$owner\" ]; then
+                echo 'Refusing to deploy: HOSTINGER_API_PORT is already used by another VPS service.' >&2
+                exit 1
+              fi
+            fi"
 
       - name: Copy release to the VPS
         shell: bash
@@ -76,7 +138,7 @@ jobs:
           case "$HOSTINGER_SSH_PORT" in
             *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
           esac
-          rsync -az --delete -e "ssh -o StrictHostKeyChecking=yes -p $HOSTINGER_SSH_PORT" \
+          rsync -az -e "ssh -o StrictHostKeyChecking=yes -p $HOSTINGER_SSH_PORT" \
             --exclude='.git/' \
             --exclude='node_modules/' \
             --exclude='dist/' \
@@ -84,6 +146,7 @@ jobs:
             --exclude='data/' \
             --exclude='backups/' \
             --exclude='.env' \
+            --exclude='.caderno-mini-backend-deploy' \
             ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_APP_PATH/"
 
       - name: Build and restart the service
@@ -96,4 +159,18 @@ jobs:
           esac
           ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
             "$HOSTINGER_USER@$HOSTINGER_HOST" \
-            "cd '$HOSTINGER_APP_PATH' && docker compose up -d --build"
+            "set -eu
+            cd '$HOSTINGER_APP_PATH'
+            API_PORT='$HOSTINGER_API_PORT' docker compose -f compose.yaml -f compose.production.yaml --project-name caderno-mini-production-backend up -d --build
+            for attempt in \$(seq 1 30); do
+              container=\$(docker compose -f compose.yaml -f compose.production.yaml --project-name caderno-mini-production-backend ps -q api)
+              health=\$(docker inspect --format '{{.State.Health.Status}}' \"\$container\" 2>/dev/null || true)
+              if [ \"\$health\" = healthy ]; then break; fi
+              if [ \"\$attempt\" = 30 ]; then
+                docker compose -f compose.yaml -f compose.production.yaml --project-name caderno-mini-production-backend ps
+                echo 'Backend health check failed.' >&2
+                exit 1
+              fi
+              sleep 2
+            done
+            docker compose -f compose.yaml -f compose.production.yaml --project-name caderno-mini-production-backend exec -T api npm run db:seed:catalog:prod"
