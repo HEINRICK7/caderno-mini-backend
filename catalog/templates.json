@@ -1,7 +1,7 @@
 [
   {
     "id": "boas-vindas",
-    "version": 1,
+    "version": 2,
     "name": "Boas-vindas",
     "description": "Recebe novos clientes de forma acolhedora.",
     "isActive": true,
@@ -80,7 +80,7 @@
         "message": "{{message}}",
         "footer": "heart",
         "action": {
-          "label": "Falar com a loja",
+          "label": "Falar com a empresa",
           "hrefFieldId": "actionLink"
         }
       }
@@ -787,7 +787,7 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 1,
+    "version": 2,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
@@ -913,8 +913,13 @@
             "format": "date"
           },
           {
-            "label": "Parcela",
-            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "label": "Número da parcela",
+            "value": "{{installmentNumber}}",
+            "icon": "check"
+          },
+          {
+            "label": "Total de parcelas",
+            "value": "{{installmentTotal}}",
             "icon": "check"
           }
         ],
@@ -1841,7 +1846,7 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 1,
+    "version": 2,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
@@ -1914,6 +1919,7 @@
           "type": "url",
           "label": "Link para aprovar",
           "maxLength": 2048,
+          "required": true,
           "section": "Opções de resposta",
           "width": "half"
         },
@@ -1922,6 +1928,7 @@
           "type": "url",
           "label": "Link para recusar",
           "maxLength": 2048,
+          "required": true,
           "section": "Opções de resposta",
           "width": "half"
         }

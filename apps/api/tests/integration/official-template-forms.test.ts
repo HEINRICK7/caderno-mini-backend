@@ -59,6 +59,12 @@ describe('formulários do catálogo oficial de modelos', () => {
     }
   });
 
+  it('publica novas versões para as correções sem alterar versões já usadas', () => {
+    for (const id of ['boas-vindas', 'pagamento-confirmado', 'lembrete-aprovacao']) {
+      expect(officialCatalog.find((template) => template.id === id)?.version).toBe(2);
+    }
+  });
+
   it('mantém cada título de seção em um único bloco contínuo nos formulários', () => {
     for (const template of officialCatalog) {
       const seen = new Set<string>();
@@ -192,6 +198,11 @@ describe('formulários do catálogo oficial de modelos', () => {
     expect(template.definition.card.action?.label).toBe('Saiba mais');
   });
 
+  it('usa termos que também servem para empresas de serviço no modelo compartilhado', () => {
+    const template = officialCatalog.find((candidate) => candidate.id === 'boas-vindas');
+    expect(template?.definition.card.action?.label).toBe('Falar com a empresa');
+  });
+
   it('mantém campos de produto e imagem nos modelos próprios para produtos', () => {
     const productTemplates = officialCatalog.filter((template) => template.definition.catalog.segment === 'product');
     expect(productTemplates.map((template) => template.id)).toEqual([
@@ -209,9 +220,40 @@ describe('formulários do catálogo oficial de modelos', () => {
 
   it('vincula cada resposta de aprovação ao seu próprio link externo', () => {
     const template = officialCatalog.find((candidate) => candidate.id === 'lembrete-aprovacao');
+    expect(template).toBeDefined();
+    if (!template) return;
+
     expect(template?.definition.card.actions).toEqual([
       { label: 'Sim, quero', hrefFieldId: 'approveLink' },
       { label: 'Agora não', hrefFieldId: 'rejectLink' },
+    ]);
+
+    for (const fieldId of ['approveLink', 'rejectLink']) {
+      expect(template.definition.fields.find((field) => field.id === fieldId)?.required).toBe(true);
+    }
+
+    const validInput = {
+      recipientName: 'Maria',
+      businessName: 'Oficina Exemplo',
+      message: 'Precisamos da sua aprovação antes de seguir.',
+      serviceName: 'Manutenção de equipamento',
+      approvalDetails: 'Aprovar a troca da peça.',
+      approveLink: 'https://example.com/aprovar',
+      rejectLink: 'https://example.com/recusar',
+    };
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, validInput)).not.toThrow();
+
+    const missingLinks: Record<string, string> = { ...validInput };
+    delete missingLinks.approveLink;
+    delete missingLinks.rejectLink;
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, missingLinks)).toThrow();
+  });
+
+  it('mantém os dados opcionais de parcela separados na confirmação de pagamento', () => {
+    const template = officialCatalog.find((candidate) => candidate.id === 'pagamento-confirmado');
+    expect(template?.definition.card.details?.slice(2)).toEqual([
+      { label: 'Número da parcela', value: '{{installmentNumber}}', icon: 'check' },
+      { label: 'Total de parcelas', value: '{{installmentTotal}}', icon: 'check' },
     ]);
   });
 
