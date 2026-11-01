@@ -60,9 +60,9 @@ describe('formulários do catálogo oficial de modelos', () => {
   });
 
   it('publica novas versões para as correções sem alterar versões já usadas', () => {
-    for (const id of ['boas-vindas', 'pagamento-confirmado', 'lembrete-aprovacao']) {
-      expect(officialCatalog.find((template) => template.id === id)?.version).toBe(2);
-    }
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(2);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(2);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(3);
   });
 
   it('mantém cada título de seção em um único bloco contínuo nos formulários', () => {
@@ -247,6 +247,8 @@ describe('formulários do catálogo oficial de modelos', () => {
     delete missingLinks.approveLink;
     delete missingLinks.rejectLink;
     expect(() => validateTemplateInput(template.definition as unknown as JsonObject, missingLinks)).toThrow();
+    expect(template.definition.fields.find((field) => field.id === 'message')?.placeholder)
+      .toBe('Antes de seguir com o serviço, precisamos da sua aprovação.');
   });
 
   it('mantém os dados opcionais de parcela separados na confirmação de pagamento', () => {

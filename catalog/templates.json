@@ -1846,7 +1846,7 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 2,
+    "version": 3,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
@@ -1888,7 +1888,7 @@
           "id": "message",
           "type": "textarea",
           "label": "Mensagem principal",
-          "placeholder": "Temos uma condição especial que gostaríamos de compartilhar.",
+          "placeholder": "Antes de seguir com o serviço, precisamos da sua aprovação.",
           "maxLength": 300,
           "required": true,
           "width": "full",
