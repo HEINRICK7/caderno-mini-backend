@@ -1073,14 +1073,14 @@
         {
           "id": "scheduledAt",
           "type": "date",
-          "label": "Data da realização",
+          "label": "Data prevista para realização",
           "section": "Detalhes do serviço",
           "width": "half"
         },
         {
           "id": "servicePrice",
           "type": "number",
-          "label": "Valor",
+          "label": "Valor do serviço",
           "format": "currency",
           "placeholder": "0,00",
           "section": "Detalhes do serviço",
@@ -1751,7 +1751,7 @@
     "id": "reativacao-cliente",
     "version": 1,
     "name": "Reativação de cliente",
-    "description": "Retoma o contato com quem não compra há um tempo.",
+    "description": "Retoma o contato com clientes que não interagem há um tempo.",
     "isActive": true,
     "definition": {
       "catalog": {
@@ -1791,7 +1791,7 @@
           "id": "message",
           "type": "textarea",
           "label": "Mensagem principal",
-          "placeholder": "Temos novidades que podem te interessar. Que tal dar uma olhada?",
+          "placeholder": "Temos opções que podem te interessar. Que tal saber mais?",
           "maxLength": 300,
           "required": true,
           "width": "full",
@@ -1828,7 +1828,7 @@
         "message": "{{message}}",
         "footer": "heart",
         "action": {
-          "label": "Ver novidades",
+          "label": "Saiba mais",
           "hrefFieldId": "actionLink"
         }
       }

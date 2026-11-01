@@ -14,10 +14,15 @@ import type { Database } from 'better-sqlite3';
 const officialCatalogPath = resolve(process.cwd(), 'catalog/templates.json');
 const officialCatalog = JSON.parse(readFileSync(officialCatalogPath, 'utf8')) as Array<{
   id: string;
+  description: string;
   definition: {
     catalog: { segment: 'product' | 'service' | 'both' };
-    fields: Array<{ id: string; type: string }>;
-    card: { actions?: Array<{ hrefFieldId?: string }>; details?: Array<{ format?: string }> };
+    fields: Array<{ id: string; type: string; label?: string; placeholder?: string; required?: boolean }>;
+    card: {
+      action?: { label: string };
+      actions?: Array<{ hrefFieldId?: string }>;
+      details?: Array<{ format?: string }>;
+    };
   };
 }>;
 
@@ -126,8 +131,11 @@ describe('formulários do catálogo oficial de modelos', () => {
     if (!serviceTemplate || !offerTemplate) return;
 
     const serviceDate = serviceTemplate.definition.fields.find((field) => field.id === 'scheduledAt');
+    const servicePrice = serviceTemplate.definition.fields.find((field) => field.id === 'servicePrice');
     const offerPrice = offerTemplate.definition.fields.find((field) => field.id === 'newPrice');
     expect(serviceDate?.required).not.toBe(true);
+    expect(serviceDate?.label).toBe('Data prevista para realização');
+    expect(servicePrice?.label).toBe('Valor do serviço');
     expect(offerPrice?.required).not.toBe(true);
 
     expect(() => validateTemplateInput(serviceTemplate.definition as unknown as JsonObject, {
@@ -143,6 +151,17 @@ describe('formulários do catálogo oficial de modelos', () => {
       message: 'Aproveite esta condição especial.',
       offerName: 'Condição especial',
     })).not.toThrow();
+  });
+
+  it('usa linguagem neutra para o modelo de reativação compartilhado', () => {
+    const template = officialCatalog.find((candidate) => candidate.id === 'reativacao-cliente');
+    expect(template).toBeDefined();
+    if (!template) return;
+
+    const message = template.definition.fields.find((field) => field.id === 'message');
+    expect(template.description).not.toMatch(/compra/i);
+    expect(message?.placeholder).not.toMatch(/compra|novidades/i);
+    expect(template.definition.card.action?.label).toBe('Saiba mais');
   });
 
   it('mantém campos de produto e imagem nos modelos próprios para produtos', () => {
