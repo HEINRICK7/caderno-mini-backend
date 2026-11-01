@@ -17,7 +17,14 @@ const officialCatalog = JSON.parse(readFileSync(officialCatalogPath, 'utf8')) as
   description: string;
   definition: {
     catalog: { segment: 'product' | 'service' | 'both' };
-    fields: Array<{ id: string; type: string; label?: string; placeholder?: string; required?: boolean }>;
+    fields: Array<{
+      id: string;
+      type: string;
+      label?: string;
+      placeholder?: string;
+      required?: boolean;
+      section?: string;
+    }>;
     card: {
       action?: { label: string };
       actions?: Array<{ hrefFieldId?: string }>;
@@ -49,6 +56,27 @@ describe('formulários do catálogo oficial de modelos', () => {
       expect(fields).toContain('businessLogo');
       expect(fields).toContain('message');
       if (template.id !== 'produto-destaque') expect(fields).toContain('recipientName');
+    }
+  });
+
+  it('mantém cada título de seção em um único bloco contínuo nos formulários', () => {
+    for (const template of officialCatalog) {
+      const seen = new Set<string>();
+      let previousSection: string | undefined;
+      const repeatedSections: string[] = [];
+
+      for (const field of template.definition.fields) {
+        const section = field.section;
+        if (!section) {
+          previousSection = undefined;
+          continue;
+        }
+        if (section !== previousSection && seen.has(section)) repeatedSections.push(section);
+        seen.add(section);
+        previousSection = section;
+      }
+
+      expect(repeatedSections, template.id).toEqual([]);
     }
   });
 

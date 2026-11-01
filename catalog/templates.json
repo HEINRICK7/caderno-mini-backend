@@ -161,6 +161,7 @@
           "label": "Imagem do produto",
           "helpText": "PNG, JPEG ou WebP · até 128 KB",
           "maxBytes": 131072,
+          "section": "Detalhes do pedido",
           "width": "full"
         },
         {
@@ -724,6 +725,7 @@
           "label": "Imagem do QR Code Pix",
           "helpText": "PNG, JPEG ou WebP · até 128 KB",
           "maxBytes": 131072,
+          "section": "Dados do Pix",
           "width": "full"
         },
         {
@@ -1411,6 +1413,7 @@
           "label": "Imagem do produto",
           "helpText": "PNG, JPEG ou WebP · até 128 KB",
           "maxBytes": 131072,
+          "section": "Detalhes do produto",
           "width": "full"
         },
         {
@@ -1530,6 +1533,7 @@
           "label": "Imagem da oferta",
           "helpText": "PNG, JPEG ou WebP · até 128 KB",
           "maxBytes": 131072,
+          "section": "Detalhes da oferta",
           "width": "full"
         },
         {
@@ -1695,6 +1699,7 @@
           "label": "Imagem do produto em destaque",
           "helpText": "PNG, JPEG ou WebP · até 128 KB",
           "maxBytes": 131072,
+          "section": "Detalhes da coleção",
           "width": "full"
         },
         {
