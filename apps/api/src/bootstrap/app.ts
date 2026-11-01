@@ -31,6 +31,7 @@ import {
   WebhookNotConfiguredError,
 } from '../application/errors.js';
 import {
+  TemplateFinancialStateError,
   TemplateInputValidationError,
 } from '../domain/templates/errors.js';
 import { MAX_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_UPLOAD_BODY_BYTES } from '../domain/images/image-limits.js';
@@ -313,6 +314,11 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (error instanceof PublicationAccessDeniedError) {
       return response.code(403).send({
         error: { code: 'ACTIVE_LICENSE_REQUIRED', message: 'Uma licença ativa é necessária para esta ação.' },
+      });
+    }
+    if (error instanceof TemplateFinancialStateError) {
+      return response.code(422).send({
+        error: { code: 'TEMPLATE_FINANCIAL_STATE_UNAVAILABLE', message: 'A confirmação financeira deste modelo precisa vir da aplicação.' },
       });
     }
     if (error instanceof ExportContentTooLargeError) {

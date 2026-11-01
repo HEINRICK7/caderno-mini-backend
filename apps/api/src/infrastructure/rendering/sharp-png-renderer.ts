@@ -170,8 +170,8 @@ function renderTemplateCardSvg(
   options: { watermark?: boolean },
 ): string {
   const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
-  const heading = interpolateCardText(card.heading, fields, data);
-  const message = card.message ? interpolateCardText(card.message, fields, data) : '';
+  const heading = interpolateCardText(card.heading, fields, data, undefined, true, card.variables);
+  const message = card.message ? interpolateCardText(card.message, fields, data, undefined, true, card.variables) : '';
   const visibleDetails = resolveVisibleDetails(template, data, card);
   const actions = card.actions ?? (card.action ? [card.action] : []);
   const headingLines = wrapText(heading, 22);
@@ -190,14 +190,20 @@ function renderTemplateCardSvg(
     .join('');
   let detailsY = messageStart + Math.max(1, messageLines.length) * 44 + 38;
   const detailsMarkup = visibleDetails.map((detail) => {
-    const value = interpolateCardText(detail.value, fields, data, detail.format, false);
+    const value = interpolateCardText(detail.value, fields, data, detail.format, false, card.variables);
+    const label = detail.labelFieldId
+      ? interpolateCardText(`{{${detail.labelFieldId}}}`, fields, data, undefined, false, card.variables)
+      : detail.label ?? '';
     const rowY = detailsY;
     detailsY += 104;
-    return `<rect x="126" y="${rowY}" width="828" height="86" rx="22" fill="#eff7ff"/><rect x="148" y="${rowY + 15}" width="56" height="56" rx="16" fill="#dbeeff"/>${detailIconSvg(detail.icon, rowY + 15)}<text x="228" y="${rowY + 38}" class="detail-label">${escapeXml(detail.label)}</text><text x="228" y="${rowY + 67}" class="detail-value">${escapeXml(value)}</text>`;
+    return `<rect x="126" y="${rowY}" width="828" height="86" rx="22" fill="#eff7ff"/><rect x="148" y="${rowY + 15}" width="56" height="56" rx="16" fill="#dbeeff"/>${detailIconSvg(detail.icon, rowY + 15)}<text x="228" y="${rowY + 38}" class="detail-label">${escapeXml(label)}</text><text x="228" y="${rowY + 67}" class="detail-value">${escapeXml(value)}</text>`;
   }).join('');
   const actionMarkup = actions.map((action, index) => {
     const top = detailsY + 2 + index * 78;
-    return `<rect x="126" y="${top}" width="828" height="68" rx="20" fill="${visuals.accent}"/><text x="540" y="${top + 44}" text-anchor="middle" class="action-label">${escapeXml(action.label)}</text>`;
+    const label = action.labelFieldId
+      ? interpolateCardText(`{{${action.labelFieldId}}}`, fields, data, undefined, false, card.variables)
+      : action.label ?? '';
+    return `<rect x="126" y="${top}" width="828" height="68" rx="20" fill="${visuals.accent}"/><text x="540" y="${top + 44}" text-anchor="middle" class="action-label">${escapeXml(label)}</text>`;
   }).join('');
   const heartY = messageLines.length > 0 ? messageStart + messageLines.length * 44 + 58 : messageStart + 42;
   const footerMarkup = card.footer === 'heart' && !hasDetails
@@ -211,7 +217,7 @@ function renderTemplateCardSvg(
   const font = fontFamily(visuals.headingFont);
   const bodyFont = fontFamily(visuals.bodyFont);
   const brandName = card.brand
-    ? interpolateCardText(`{{${card.brand.businessNameFieldId}}}`, fields, data)
+    ? interpolateCardText(`{{${card.brand.businessNameFieldId}}}`, fields, data, undefined, true, card.variables)
     : '';
   const clippedBrandName = Array.from(brandName).slice(0, 20).join('');
   const brandMarkup = card.brand
@@ -262,8 +268,8 @@ function getDetailsStartY(
   card: NonNullable<ReturnType<typeof resolveTemplateCard>>,
 ): number {
   const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
-  const headingLines = wrapText(interpolateCardText(card.heading, fields, data), 22);
-  const message = card.message ? interpolateCardText(card.message, fields, data) : '';
+  const headingLines = wrapText(interpolateCardText(card.heading, fields, data, undefined, true, card.variables), 22);
+  const message = card.message ? interpolateCardText(card.message, fields, data, undefined, true, card.variables) : '';
   const messageLines = message ? wrapText(message, 34) : [];
   const hasDetails = Boolean(resolveVisibleDetails(template, data, card).length || card.actions?.length || card.action);
   const headingY = hasDetails ? 704 : 940;
@@ -278,7 +284,7 @@ function resolveVisibleDetails(
 ) {
   const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
   return (card.details ?? []).filter((detail) =>
-    interpolateCardText(detail.value, fields, data, detail.format, false).trim().length > 0,
+    interpolateCardText(detail.value, fields, data, detail.format, false, card.variables).trim().length > 0,
   );
 }
 
@@ -288,8 +294,9 @@ function interpolateCardText(
   data: JsonObject,
   format?: string,
   usePlaceholders = true,
+  variables?: Record<string, string>,
 ): string {
-  const value = template.replace(/\{\{([A-Za-z][A-Za-z0-9_]{0,63})\}\}/g, (_match, fieldId: string) => {
+  const resolveField = (fieldId: string) => {
     const value = data[fieldId];
     if (typeof value === 'string' || typeof value === 'number') return String(value);
     const field = fields.find((candidate) =>
@@ -300,6 +307,11 @@ function interpolateCardText(
       return field.placeholder;
     }
     return '';
+  };
+  const boundValue = template.replace(/\{\{([A-Za-z][A-Za-z0-9_]{0,63})\}\}/g, (_match, fieldId: string) => resolveField(fieldId));
+  const value = boundValue.replace(/(?<!\{)\{([A-Za-z_][A-Za-z0-9_]*)\}(?!\})/g, (_match, variable: string) => {
+    const fieldId = variables?.[variable];
+    return fieldId ? resolveField(fieldId) : '';
   });
   if (format === 'currency' && value.trim().length > 0) {
     const amount = Number(value.replace(',', '.'));
@@ -310,7 +322,8 @@ function interpolateCardText(
   if (format === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const date = new Date(`${value}T12:00:00.000Z`);
     if (Number.isFinite(date.getTime())) {
-      return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'UTC' }).format(date);
+      const month = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' }).format(date).replaceAll('.', '');
+      return `${String(date.getUTCDate()).padStart(2, '0')} de ${month} de ${date.getUTCFullYear()}`;
     }
   }
   return value;

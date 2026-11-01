@@ -17,3 +17,10 @@ export class TemplateInputValidationError extends Error {
     this.name = 'TemplateInputValidationError';
   }
 }
+
+export class TemplateFinancialStateError extends Error {
+  constructor() {
+    super('O estado financeiro confiável não permite publicar esta mensagem.');
+    this.name = 'TemplateFinancialStateError';
+  }
+}

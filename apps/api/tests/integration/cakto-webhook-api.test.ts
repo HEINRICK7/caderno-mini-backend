@@ -52,6 +52,7 @@ describe('Cakto webhook API', () => {
     const messageData = {
       recipientName: 'Maria',
       businessName: 'Cadernô Express',
+      title: 'Obrigado pela sua compra',
       message: 'Sua compra foi registrada com sucesso. Esperamos que aproveite seu produto.',
       productName: 'Conjunto de mesa',
       purchaseAmount: 350,

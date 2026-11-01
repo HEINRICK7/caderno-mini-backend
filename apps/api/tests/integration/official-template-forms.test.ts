@@ -3,35 +3,76 @@ import { resolve } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { assertTemplateFinancialState } from '../../src/domain/templates/financial-state.js';
+import { TemplateFinancialStateError } from '../../src/domain/templates/errors.js';
+import { validateTemplateDefinition, validateTemplateInput } from '../../src/domain/templates/validate-template-input.js';
+import type { JsonObject } from '../../src/domain/shared/json-value.js';
 import { createDatabase } from '../../src/infrastructure/database/connection.js';
 import { migrateDatabase } from '../../src/infrastructure/database/migrate.js';
 import { seedTemplateCatalog } from '../../src/infrastructure/database/template-catalog-seeder.js';
-import { validateTemplateInput } from '../../src/domain/templates/validate-template-input.js';
-import type { JsonObject } from '../../src/domain/shared/json-value.js';
 import type { AppDatabase } from '../../src/infrastructure/database/connection.js';
 import type { Database } from 'better-sqlite3';
 
-const officialCatalogPath = resolve(process.cwd(), 'catalog/templates.json');
-const officialCatalog = JSON.parse(readFileSync(officialCatalogPath, 'utf8')) as Array<{
+type CatalogTemplate = {
   id: string;
+  version: number;
   description: string;
   definition: {
     catalog: { segment: 'product' | 'service' | 'both' };
+    exampleData?: Record<string, unknown>;
     fields: Array<{
       id: string;
       type: string;
       label?: string;
       placeholder?: string;
       required?: boolean;
+      editable?: boolean;
       section?: string;
+      options?: string[];
     }>;
     card: {
-      action?: { label: string };
-      actions?: Array<{ hrefFieldId?: string }>;
-      details?: Array<{ format?: string }>;
+      heading: string;
+      highlightedText?: string;
+      subtitle?: string;
+      pixNoteFieldId?: string;
+      message?: string;
+      variables?: Record<string, string>;
+      details?: Array<{ value: string; labelFieldId?: string; imageFieldId?: string }>;
+      product?: {
+        nameFieldId?: string;
+        descriptionFieldId?: string;
+        imageFieldId?: string;
+        galleryFieldIds?: string[];
+        priceFieldId?: string;
+        originalPriceFieldId?: string;
+      };
+      financial?: { stateFieldId: string; expectedState: 'confirmed' | 'settled'; balanceFieldId?: string };
+      action?: { label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string };
+      actions?: Array<{ label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string }>;
     };
   };
-}>;
+};
+
+const officialCatalogPath = resolve(process.cwd(), 'catalog/templates.json');
+const officialCatalog = JSON.parse(readFileSync(officialCatalogPath, 'utf8')) as CatalogTemplate[];
+const approvedTemplateIds = [
+  'boas-vindas',
+  'agradecimento-compra',
+  'parcela-proxima',
+  'parcela-hoje',
+  'parcela-atrasada',
+  'cobranca-pix',
+  'pagamento-confirmado',
+  'caderneta-quitada',
+  'servico-contratado',
+  'servico-concluido',
+  'aniversario',
+  'produto-destaque',
+  'oferta-especial',
+  'novidades-colecao',
+  'reativacao-cliente',
+  'lembrete-aprovacao',
+];
 
 describe('formulários do catálogo oficial de modelos', () => {
   let database: AppDatabase;
@@ -46,239 +87,243 @@ describe('formulários do catálogo oficial de modelos', () => {
 
   afterEach(() => sqlite.close());
 
-  it('mantém os 16 formulários válidos no contrato do backend', () => {
-    expect(officialCatalog).toHaveLength(16);
+  it('mantém os 16 layouts válidos e os exemplos do PNG separados dos slots visuais', () => {
+    expect(officialCatalog.map((template) => template.id)).toEqual(approvedTemplateIds);
     expect(() => seedTemplateCatalog(database, officialCatalog)).not.toThrow();
 
     for (const template of officialCatalog) {
-      const fields = new Set(template.definition.fields.map((field) => field.id));
-      expect(fields).toContain('businessName');
-      expect(fields).toContain('businessLogo');
-      expect(fields).toContain('message');
-      if (template.id !== 'produto-destaque') expect(fields).toContain('recipientName');
+      expect(() => validateTemplateDefinition(template.definition as unknown as JsonObject), template.id).not.toThrow();
+      expect(template.definition.fields.some((field) => field.id === 'title' && field.required)).toBe(true);
+      expect(template.definition.fields.some((field) => field.id === 'businessLogo')).toBe(false);
+      expect(template.definition.fields.every((field) => field.editable !== false || field.required !== true)).toBe(true);
+      expect(template.definition.exampleData, template.id).toBeDefined();
+      expect(JSON.stringify(template.definition.card), template.id).not.toMatch(/Maria|Conjunto de mesa|Pagar agora/i);
+      expect(Object.keys(template.definition.exampleData ?? {}).every((fieldId) =>
+        template.definition.fields.some((field) => field.id === fieldId)), template.id).toBe(true);
     }
   });
 
-  it('publica novas versões para as correções sem alterar versões já usadas', () => {
-    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(3);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(3);
-    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(4);
+  it('publica versões novas para as mudanças no contrato de edição', () => {
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(5);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(5);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(6);
   });
 
-  it('mantém cada título de seção em um único bloco contínuo nos formulários', () => {
+  it('mantém cada seção de edição em um único bloco e conecta todos os campos ao cartão', () => {
     for (const template of officialCatalog) {
       const seen = new Set<string>();
       let previousSection: string | undefined;
       const repeatedSections: string[] = [];
-
       for (const field of template.definition.fields) {
-        const section = field.section;
-        if (!section) {
+        if (!field.section) {
           previousSection = undefined;
           continue;
         }
-        if (section !== previousSection && seen.has(section)) repeatedSections.push(section);
-        seen.add(section);
-        previousSection = section;
+        if (field.section !== previousSection && seen.has(field.section)) repeatedSections.push(field.section);
+        seen.add(field.section);
+        previousSection = field.section;
       }
-
       expect(repeatedSections, template.id).toEqual([]);
-    }
-  });
 
-  it('conecta todos os campos de formulário ao conteúdo do cartão ou a uma ação', () => {
-    for (const template of officialCatalog) {
-      const card = template.definition.card as unknown as {
-        heading: string;
-        message?: string;
-        details?: Array<{ value: string; imageFieldId?: string }>;
-        action?: { hrefFieldId?: string };
-        actions?: Array<{ hrefFieldId?: string }>;
-        brand?: { businessNameFieldId: string; logoFieldId?: string };
-      };
-      const text = [card.heading, card.message ?? '', ...(card.details ?? []).map((detail) => detail.value)].join(' ');
+      const { card } = template.definition;
+      const text = [card.heading, card.highlightedText ?? '', card.subtitle ?? '', card.message ?? '', ...(card.details ?? []).map((detail) => detail.value)].join(' ');
       const references = new Set([...text.matchAll(/\{\{([A-Za-z][A-Za-z0-9_]*)\}\}/g)].map((match) => match[1]));
       for (const detail of card.details ?? []) {
+        if (detail.labelFieldId) references.add(detail.labelFieldId);
         if (detail.imageFieldId) references.add(detail.imageFieldId);
       }
-      if (card.action?.hrefFieldId) references.add(card.action.hrefFieldId);
-      for (const action of card.actions ?? []) {
+      for (const fieldId of Object.values(card.variables ?? {})) references.add(fieldId);
+      if (card.pixNoteFieldId) references.add(card.pixNoteFieldId);
+      if (card.product) {
+        for (const [key, fieldId] of Object.entries(card.product)) {
+          if (key === 'icon') continue;
+          if (Array.isArray(fieldId)) fieldId.forEach((entry) => references.add(entry));
+          else if (typeof fieldId === 'string') references.add(fieldId);
+        }
+      }
+      if (card.financial) {
+        references.add(card.financial.stateFieldId);
+        if (card.financial.balanceFieldId) references.add(card.financial.balanceFieldId);
+      }
+      const actions = [...(card.action ? [card.action] : []), ...(card.actions ?? [])];
+      for (const action of actions) {
+        if (action.labelFieldId) references.add(action.labelFieldId);
         if (action.hrefFieldId) references.add(action.hrefFieldId);
+        if (action.copyFieldId) references.add(action.copyFieldId);
       }
-      if (card.brand) {
-        references.add(card.brand.businessNameFieldId);
-        if (card.brand.logoFieldId) references.add(card.brand.logoFieldId);
-      }
-
-      const fieldIds = template.definition.fields.map((field) => field.id);
-      expect([...references].sort(), template.id).toEqual([...fieldIds].sort());
+      expect([...references].sort(), template.id).toEqual(template.definition.fields.map((field) => field.id).sort());
     }
   });
 
-  it('oferece campos de serviço nos modelos exclusivos para serviços', () => {
+  it('valida conteúdo personalizado diferente dos exemplos em cada formulário', () => {
+    for (const template of officialCatalog) {
+      const data: JsonObject = {};
+      for (const field of template.definition.fields) {
+        if (field.editable === false) continue;
+        if (field.id === 'oldPrice') data[field.id] = 130;
+        else if (field.id === 'newPrice') data[field.id] = 87.5;
+        else if (field.type === 'text' || field.type === 'textarea') data[field.id] = `Conteúdo personalizado para ${field.id}`;
+        else if (field.type === 'number') data[field.id] = 42;
+        else if (field.type === 'date') data[field.id] = '2027-02-19';
+        else if (field.type === 'url') data[field.id] = `https://cliente.example/${field.id}`;
+        else if (field.type === 'image') data[field.id] = '7b7d828b-f189-496a-b59b-9fae6a9b8531';
+        else if (field.type === 'select') data[field.id] = field.options?.[0] ?? '';
+        else if (field.type === 'boolean') data[field.id] = true;
+      }
+      expect(() => validateTemplateInput(template.definition as unknown as JsonObject, data), template.id).not.toThrow();
+      expect(data.title).toBe(`Conteúdo personalizado para title`);
+    }
+  });
+
+  it('oferece campos de produto e serviço adequados ao segmento', () => {
     const serviceTemplates = officialCatalog.filter((template) => template.definition.catalog.segment === 'service');
     expect(serviceTemplates.map((template) => template.id)).toEqual([
       'servico-contratado',
       'servico-concluido',
       'lembrete-aprovacao',
     ]);
-
     for (const template of serviceTemplates) {
       const fields = new Set(template.definition.fields.map((field) => field.id));
-      expect(fields).toContain('recipientName');
-      expect(fields).toContain('businessName');
-      expect(fields).toContain('businessLogo');
       expect(fields).toContain('serviceName');
       expect(fields).not.toContain('productName');
     }
-  });
 
-  it('aceita um rascunho de serviço com nome, data e valor e rejeita campos de produto nele', () => {
-    const serviceTemplate = officialCatalog.find((template) => template.id === 'servico-contratado');
-    expect(serviceTemplate).toBeDefined();
-    if (!serviceTemplate) return;
-
-    expect(() => validateTemplateInput(serviceTemplate.definition as unknown as JsonObject, {
-      recipientName: 'Maria',
-      businessName: 'Oficina Exemplo',
-      message: 'Confirmamos a contratação do seu serviço.',
-      serviceName: 'Manutenção de equipamento',
-      scheduledAt: '2026-11-10',
-      servicePrice: 1200,
-    })).not.toThrow();
-
-    expect(() => validateTemplateInput(serviceTemplate.definition as unknown as JsonObject, {
-      recipientName: 'Maria',
-      businessName: 'Oficina Exemplo',
-      message: 'Confirmamos a contratação do seu serviço.',
-      serviceName: 'Manutenção de equipamento',
-      scheduledAt: '2026-11-10',
-      productName: 'Produto indevido neste serviço',
-    })).toThrow();
-  });
-
-  it('mantém opcionais a data do serviço e o preço novo da oferta', () => {
-    const serviceTemplate = officialCatalog.find((template) => template.id === 'servico-contratado');
-    const offerTemplate = officialCatalog.find((template) => template.id === 'oferta-especial');
-    expect(serviceTemplate).toBeDefined();
-    expect(offerTemplate).toBeDefined();
-    if (!serviceTemplate || !offerTemplate) return;
-
-    const serviceDate = serviceTemplate.definition.fields.find((field) => field.id === 'scheduledAt');
-    const servicePrice = serviceTemplate.definition.fields.find((field) => field.id === 'servicePrice');
-    const offerPrice = offerTemplate.definition.fields.find((field) => field.id === 'newPrice');
-    expect(serviceDate?.required).not.toBe(true);
-    expect(serviceDate?.label).toBe('Data prevista para realização');
-    expect(servicePrice?.label).toBe('Valor do serviço');
-    expect(offerPrice?.required).not.toBe(true);
-
-    expect(() => validateTemplateInput(serviceTemplate.definition as unknown as JsonObject, {
-      recipientName: 'Maria',
-      businessName: 'Oficina Exemplo',
-      message: 'Confirmamos a contratação do seu serviço.',
-      serviceName: 'Manutenção de equipamento',
-    })).not.toThrow();
-
-    expect(() => validateTemplateInput(offerTemplate.definition as unknown as JsonObject, {
-      recipientName: 'Maria',
-      businessName: 'Loja Exemplo',
-      message: 'Aproveite esta condição especial.',
-      offerName: 'Condição especial',
-    })).not.toThrow();
-  });
-
-  it('usa linguagem neutra para o modelo de reativação compartilhado', () => {
-    const template = officialCatalog.find((candidate) => candidate.id === 'reativacao-cliente');
-    expect(template).toBeDefined();
-    if (!template) return;
-
-    const message = template.definition.fields.find((field) => field.id === 'message');
-    expect(template.description).not.toMatch(/compra/i);
-    expect(message?.placeholder).not.toMatch(/compra|novidades/i);
-    expect(template.definition.card.action?.label).toBe('Saiba mais');
-  });
-
-  it('usa termos que também servem para empresas de serviço no modelo compartilhado', () => {
-    const template = officialCatalog.find((candidate) => candidate.id === 'boas-vindas');
-    expect(template?.definition.card.action?.label).toBe('Falar com a empresa');
-  });
-
-  it('mantém campos de produto e imagem nos modelos próprios para produtos', () => {
     const productTemplates = officialCatalog.filter((template) => template.definition.catalog.segment === 'product');
     expect(productTemplates.map((template) => template.id)).toEqual([
       'agradecimento-compra',
       'produto-destaque',
       'novidades-colecao',
     ]);
-
     for (const template of productTemplates) {
-      const fields = new Set(template.definition.fields.map((field) => field.id));
-      expect(fields).toContain('businessLogo');
-      expect(fields).toContain('productImage');
+      expect(template.definition.fields.some((field) => field.id === 'productName' || field.id === 'offerName' || field.id.startsWith('collectionImage'))).toBe(true);
+      expect(template.definition.fields.some((field) => field.type === 'image')).toBe(true);
     }
   });
 
-  it('vincula cada resposta de aprovação ao seu próprio link externo', () => {
-    const template = officialCatalog.find((candidate) => candidate.id === 'lembrete-aprovacao');
-    expect(template).toBeDefined();
-    if (!template) return;
+  it('preserva a ordem visual dos subtítulos e os estilos de cada bloco', () => {
+    const dueSoon = requireTemplate('parcela-proxima').definition.card;
+    expect(dueSoon?.subtitlePlacement).toBe('before-highlight');
+    expect(dueSoon?.subtitleStyle).toBe('subheading');
+    expect(requireTemplate('cobranca-pix').definition.card.subtitlePlacement).toBe('after-highlight');
 
-    expect(template?.definition.card.actions).toEqual([
-      { label: 'Sim, quero', hrefFieldId: 'approveLink' },
-      { label: 'Agora não', hrefFieldId: 'rejectLink' },
+    expect(requireTemplate('produto-destaque').definition.card.product?.icon).toBe('cake');
+    expect(requireTemplate('oferta-especial').definition.card.product?.icon).toBe('calendar');
+    expect(requireTemplate('parcela-hoje').definition.card.details?.[0].statusBadge).toBe('HOJE');
+    expect(requireTemplate('servico-contratado').definition.card.details?.map((detail) => detail.value)).toEqual([
+      '{{serviceName}}',
+      '{{servicePrice}}',
+      '{{scheduledAt}}',
     ]);
+    expect(requireTemplate('lembrete-aprovacao').definition.card.details?.every((detail) => detail.valueStyle === 'supporting')).toBe(true);
+  });
 
-    for (const fieldId of ['approveLink', 'rejectLink']) {
-      expect(template.definition.fields.find((field) => field.id === fieldId)?.required).toBe(true);
+  it('exige as duas opções editáveis e destinos independentes no modelo de aprovação', () => {
+    const template = requireTemplate('lembrete-aprovacao');
+    expect(template.definition.card.actions?.map((action) => [action.labelFieldId, action.hrefFieldId])).toEqual([
+      ['primaryActionLabel', 'approveLink'],
+      ['secondaryActionLabel', 'rejectLink'],
+    ]);
+    for (const id of ['approveLink', 'rejectLink', 'primaryActionLabel', 'secondaryActionLabel']) {
+      expect(template.definition.fields.find((field) => field.id === id)?.required).toBe(true);
     }
 
-    const validInput = {
-      recipientName: 'Maria',
-      businessName: 'Oficina Exemplo',
-      message: 'Precisamos da sua aprovação antes de seguir.',
-      serviceName: 'Manutenção de equipamento',
-      approvalDetails: 'Aprovar a troca da peça.',
-      approveLink: 'https://example.com/aprovar',
-      rejectLink: 'https://example.com/recusar',
-    };
+    const validInput = personalizedInput(template);
     expect(() => validateTemplateInput(template.definition as unknown as JsonObject, validInput)).not.toThrow();
-
-    const missingLinks: Record<string, string> = { ...validInput };
-    delete missingLinks.approveLink;
-    delete missingLinks.rejectLink;
-    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, missingLinks)).toThrow();
-    expect(template.definition.fields.find((field) => field.id === 'message')?.placeholder)
-      .toBe('Antes de seguir com o serviço, precisamos da sua aprovação.');
-  });
-
-  it('mantém os dados opcionais de parcela separados na confirmação de pagamento', () => {
-    const template = officialCatalog.find((candidate) => candidate.id === 'pagamento-confirmado');
-    expect(template?.definition.card.details?.slice(2)).toEqual([
-      { label: 'Número da parcela', value: '{{installmentNumber}}', icon: 'check' },
-      { label: 'Total de parcelas', value: '{{installmentTotal}}', icon: 'check' },
-    ]);
-  });
-
-  it('mantém os dados específicos de parcelas, Pix e ofertas ligados aos cartões', () => {
-    const fieldsFor = (id: string) => {
-      const template = officialCatalog.find((candidate) => candidate.id === id);
-      return new Set(template?.definition.fields.map((field) => field.id));
-    };
-
-    for (const id of ['parcela-proxima', 'parcela-hoje', 'parcela-atrasada']) {
-      const fields = fieldsFor(id);
-      expect(fields).toContain('installmentAmount');
-      expect(fields).toContain('dueDate');
-      expect(fields).toContain('installmentNumber');
-      expect(fields).toContain('installmentTotal');
-      expect(fields).toContain('paymentLink');
+    for (const id of ['approveLink', 'rejectLink', 'primaryActionLabel', 'secondaryActionLabel']) {
+      const missing = { ...validInput };
+      delete missing[id];
+      expect(() => validateTemplateInput(template.definition as unknown as JsonObject, missing)).toThrow();
     }
+  });
 
-    expect(fieldsFor('cobranca-pix').has('pixCopyPaste')).toBe(true);
-    expect(fieldsFor('cobranca-pix').has('pixQrImage')).toBe(true);
-    expect(fieldsFor('oferta-especial').has('offerName')).toBe(true);
-    expect(fieldsFor('oferta-especial').has('oldPrice')).toBe(true);
-    expect(fieldsFor('oferta-especial').has('newPrice')).toBe(true);
-    expect(fieldsFor('oferta-especial').has('validUntil')).toBe(true);
+  it('não aceita código Pix fictício vindo do formulário', () => {
+    const template = requireTemplate('cobranca-pix');
+    for (const id of ['pixCopyPaste', 'pixQrImage']) {
+      expect(template.definition.fields.find((field) => field.id === id)?.editable).toBe(false);
+      expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', [id]: 'valor não confiável' })).toThrow();
+    }
+    expect(template.definition.card?.pixNoteFieldId).toBe('pixSecurityNote');
+    expect(template.definition.fields.find((field) => field.id === 'pixSecurityNote')?.editable).not.toBe(false);
+    expect(template.definition.card.action?.copyFieldId).toBe('pixCopyPaste');
+  });
+
+  it('protege estado pago e saldo quitado no domínio financeiro', () => {
+    const payment = requireTemplate('pagamento-confirmado');
+    const paymentData = { paymentStatus: 'confirmed' } as JsonObject;
+    expect(() => assertTemplateFinancialState(payment.definition as unknown as JsonObject, paymentData)).not.toThrow();
+    expect(() => assertTemplateFinancialState(payment.definition as unknown as JsonObject, {})).toThrow(TemplateFinancialStateError);
+    expect(() => assertTemplateFinancialState(payment.definition as unknown as JsonObject, { paymentStatus: 'pending' })).toThrow(TemplateFinancialStateError);
+    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, { title: 'Pagamento recebido', paymentStatus: 'confirmed' })).toThrow();
+
+    const settled = requireTemplate('caderneta-quitada');
+    const settledData = { settlementStatus: 'settled', outstandingBalance: 0 } as JsonObject;
+    expect(() => assertTemplateFinancialState(settled.definition as unknown as JsonObject, settledData)).not.toThrow();
+    expect(() => assertTemplateFinancialState(settled.definition as unknown as JsonObject, { settlementStatus: 'open', outstandingBalance: 0 })).toThrow(TemplateFinancialStateError);
+    expect(() => assertTemplateFinancialState(settled.definition as unknown as JsonObject, { settlementStatus: 'settled', outstandingBalance: 0.01 })).toThrow(TemplateFinancialStateError);
+    expect(() => validateTemplateInput(settled.definition as unknown as JsonObject, { title: 'Quitado', settlementStatus: 'settled', outstandingBalance: 0 })).toThrow();
+  });
+
+  it('bloqueia versões antigas de templates financeiros sem estado verificável', () => {
+    const payment = requireTemplate('pagamento-confirmado');
+    const legacyPaymentDefinition = structuredClone(payment.definition) as unknown as JsonObject;
+    delete (legacyPaymentDefinition.card as Record<string, unknown>).financial;
+    expect(() => assertTemplateFinancialState(legacyPaymentDefinition, {}, payment.id))
+      .toThrow(TemplateFinancialStateError);
+
+    const settled = requireTemplate('caderneta-quitada');
+    const legacySettledDefinition = structuredClone(settled.definition) as unknown as JsonObject;
+    delete (legacySettledDefinition.card as Record<string, unknown>).financial;
+    expect(() => assertTemplateFinancialState(legacySettledDefinition, {}, settled.id))
+      .toThrow(TemplateFinancialStateError);
+
+    const unrelatedDefinition = structuredClone(payment.definition) as unknown as JsonObject;
+    delete (unrelatedDefinition.card as Record<string, unknown>).financial;
+    expect(() => assertTemplateFinancialState(unrelatedDefinition, {}, 'agradecimento-compra')).not.toThrow();
+  });
+
+  it('confere o vencimento com o tipo de lembrete antes de publicar/exportar', () => {
+    const dueToday = requireTemplate('parcela-hoje');
+    const tomorrow = requireTemplate('parcela-proxima');
+    const overdue = requireTemplate('parcela-atrasada');
+    const now = new Date('2026-12-04T15:00:00.000Z');
+
+    expect(() => assertTemplateFinancialState(dueToday.definition as unknown as JsonObject, { dueDate: '2026-12-04' }, dueToday.id, now)).not.toThrow();
+    expect(() => assertTemplateFinancialState(dueToday.definition as unknown as JsonObject, { dueDate: '2026-12-05' }, dueToday.id, now)).toThrow(TemplateFinancialStateError);
+    expect(() => assertTemplateFinancialState(tomorrow.definition as unknown as JsonObject, { dueDate: '2026-12-05' }, tomorrow.id, now)).not.toThrow();
+    expect(() => assertTemplateFinancialState(tomorrow.definition as unknown as JsonObject, { dueDate: '2026-12-04' }, tomorrow.id, now)).toThrow(TemplateFinancialStateError);
+    expect(() => assertTemplateFinancialState(overdue.definition as unknown as JsonObject, { dueDate: '2026-12-03' }, overdue.id, now)).not.toThrow();
+    expect(() => assertTemplateFinancialState(overdue.definition as unknown as JsonObject, { dueDate: '2026-12-04' }, overdue.id, now)).toThrow(TemplateFinancialStateError);
+  });
+
+  it('valida preço promocional como um par coerente', () => {
+    const template = requireTemplate('oferta-especial');
+    const base = { title: 'Oferta personalizada' };
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { ...base, oldPrice: 130, newPrice: 87.5 })).not.toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { ...base, oldPrice: 130 })).toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { ...base, oldPrice: 130, newPrice: 130 })).toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { ...base, oldPrice: 130, newPrice: 140 })).toThrow();
   });
 });
+
+function requireTemplate(id: string): CatalogTemplate {
+  const template = officialCatalog.find((candidate) => candidate.id === id);
+  if (!template) throw new Error(`O modelo ${id} precisa existir no catálogo.`);
+  return template;
+}
+
+function personalizedInput(template: CatalogTemplate): JsonObject {
+  const data: JsonObject = {};
+  for (const field of template.definition.fields) {
+    if (field.editable === false) continue;
+    if (field.id === 'oldPrice') data[field.id] = 130;
+    else if (field.id === 'newPrice') data[field.id] = 87.5;
+    else if (field.type === 'text' || field.type === 'textarea') data[field.id] = `Conteúdo personalizado para ${field.id}`;
+    else if (field.type === 'number') data[field.id] = 42;
+    else if (field.type === 'date') data[field.id] = '2027-02-19';
+    else if (field.type === 'url') data[field.id] = `https://cliente.example/${field.id}`;
+    else if (field.type === 'image') data[field.id] = '7b7d828b-f189-496a-b59b-9fae6a9b8531';
+    else if (field.type === 'select') data[field.id] = field.options?.[0] ?? '';
+    else if (field.type === 'boolean') data[field.id] = true;
+  }
+  return data;
+}

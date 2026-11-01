@@ -9,6 +9,8 @@ import type { TemplateRepository } from '../ports/template-repository.js';
 import type { Draft } from '../../domain/drafts/draft.js';
 import type { Publication } from '../../domain/publication/publication.js';
 import type { Template } from '../../domain/templates/template.js';
+import { TemplateFinancialStateError } from '../../domain/templates/errors.js';
+import { assertTemplateFinancialState } from '../../domain/templates/financial-state.js';
 
 export type PublicationDependencies = {
   drafts: DraftRepository;
@@ -29,8 +31,10 @@ export function publishMessage(
   if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id)) {
     throw new PublicationAccessDeniedError();
   }
-
+  const template = dependencies.templates.findByIdAndVersion(draft.templateId, draft.templateVersion);
+  if (!template) throw new DraftNotFoundError();
   const now = dependencies.clock?.() ?? new Date();
+  assertTemplateFinancialState(template.definition, draft.data, template.id, now);
   const publication = dependencies.publications.publish({
     id: (dependencies.generateId ?? randomUUID)(),
     draftId: draft.id,
@@ -77,6 +81,12 @@ export function getPublicMessage(
   if (!template) {
     return undefined;
   }
+  try {
+    assertTemplateFinancialState(template.definition, draft.data, template.id, dependencies.clock?.() ?? new Date());
+  } catch (error) {
+    if (error instanceof TemplateFinancialStateError) return undefined;
+    throw error;
+  }
   return {
     templateId: draft.templateId,
     templateVersion: draft.templateVersion,
@@ -104,6 +114,12 @@ export async function renderPublicMessagePng(
   if (!template) {
     return undefined;
   }
+  try {
+    assertTemplateFinancialState(template.definition, draft.data, template.id, dependencies.clock?.() ?? new Date());
+  } catch (error) {
+    if (error instanceof TemplateFinancialStateError) return undefined;
+    throw error;
+  }
   return dependencies.renderer.render(template, draft.data);
 }
 
@@ -119,6 +135,7 @@ export async function exportMessage(
   if (!template) {
     throw new DraftNotFoundError();
   }
+  assertTemplateFinancialState(template.definition, draft.data, template.id, dependencies.clock?.() ?? new Date());
   return dependencies.renderer.render(template as Template, draft.data);
 }
 
