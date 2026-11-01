@@ -1,11 +1,28 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { afterEach, describe, expect, it } from 'vitest';
 
+import type { JsonObject } from '../../src/domain/shared/json-value.js';
 import type { createDatabase } from '../../src/infrastructure/database/connection.js';
 import type { createTestApp } from '../helpers/test-app.js';
 import { insertTemplate } from '../helpers/template-fixture.js';
 import { createTestApp as buildTestApp } from '../helpers/test-app.js';
 
-describe('anonymous draft HTTP workflow', () => {
+type OfficialTemplate = {
+  id: string;
+  version: number;
+  name: string;
+  description: string | null;
+  definition: JsonObject;
+  isActive: boolean;
+};
+
+const officialCatalog = JSON.parse(
+  readFileSync(resolve(process.cwd(), 'catalog/templates.json'), 'utf8'),
+) as OfficialTemplate[];
+
+describe('anonymous official-template HTTP workflow', () => {
   let app: Awaited<ReturnType<typeof createTestApp>>['app'] | undefined;
   let database: ReturnType<typeof createDatabase> | undefined;
 
@@ -16,51 +33,20 @@ describe('anonymous draft HTTP workflow', () => {
     database = undefined;
   });
 
-  it('creates, updates, and retrieves a draft over HTTP', async () => {
+  it('lists, validates, creates, updates, and previews the official purchase template over HTTP', async () => {
     ({ app, database } = await buildTestApp());
-    insertTemplate(database.db, {
-      id: 'obrigado-compra',
-      name: 'Agradecimento pela compra',
-      description: 'Valoriza o cliente após a venda.',
-      definition: {
-        fields: [
-          { id: 'recipientName', type: 'text', required: true, maxLength: 60 },
-          { id: 'businessName', type: 'text', required: true, maxLength: 80 },
-          { id: 'message', type: 'textarea', required: true, maxLength: 300 },
-          { id: 'productName', type: 'text', required: true, maxLength: 120 },
-          { id: 'purchaseAmount', type: 'number', format: 'currency', required: true },
-        ],
-        catalog: { segment: 'product', category: 'Agradecimento' },
-        visual: {
-          layout: 'centered',
-          background: '#e5f0ff',
-          surface: '#ffffff',
-          accent: '#2563eb',
-          heading: '#10264f',
-          text: '#385176',
-          muted: '#687895',
-          headingFont: 'rounded',
-          bodyFont: 'sans',
-          frame: 'none',
-        },
-        card: {
-          illustration: 'shopping-bag-heart',
-          heading: 'Obrigado, {{recipientName}}! 💙',
-          message: '{{message}}',
-          details: [
-            { label: 'Produto', value: '{{productName}}', icon: 'package' },
-            { label: 'Valor', value: '{{purchaseAmount}}', icon: 'credit-card', format: 'currency' },
-          ],
-          action: { label: 'Ver detalhes da compra' },
-          footer: 'none',
-        },
-      },
-    });
+    const template = officialCatalog.find((candidate) => candidate.id === 'agradecimento-compra');
+    expect(template).toBeDefined();
+    if (!template) throw new Error('O modelo oficial agradecimento-compra precisa existir no catálogo.');
+
+    insertTemplate(database.db, template);
 
     const address = await app.listen({ host: '127.0.0.1', port: 0 });
     const templates = await fetch(`${address}/api/v1/templates`);
     expect(templates.status).toBe(200);
-    expect((await templates.json()).data).toHaveLength(1);
+    const catalogResponse = await templates.json();
+    expect(catalogResponse.data).toHaveLength(1);
+    expect(catalogResponse.data[0]).toMatchObject({ id: template.id, definition: template.definition });
 
     const messageData = {
       recipientName: 'Maria',
@@ -68,21 +54,26 @@ describe('anonymous draft HTTP workflow', () => {
       message: 'Sua compra foi registrada com sucesso. Esperamos que aproveite seu produto.',
       productName: 'Conjunto de mesa',
       purchaseAmount: 350,
+      purchaseLink: 'https://loja.example/pedido/123',
     };
-    const validationResponse = await fetch(`${address}/api/v1/templates/obrigado-compra/validate`, {
+    const validationResponse = await fetch(`${address}/api/v1/templates/${template.id}/validate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ data: messageData }),
     });
     expect(validationResponse.status).toBe(200);
 
+    const invalidValidation = await fetch(`${address}/api/v1/templates/${template.id}/validate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ data: { ...messageData, unapprovedField: 'não permitido' } }),
+    });
+    expect(invalidValidation.status).toBe(422);
+
     const createResponse = await fetch(`${address}/api/v1/drafts`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        templateId: 'obrigado-compra',
-        data: messageData,
-      }),
+      body: JSON.stringify({ templateId: template.id, data: messageData }),
     });
     expect(createResponse.status).toBe(201);
     const created = (await createResponse.json()).data;
@@ -99,8 +90,8 @@ describe('anonymous draft HTTP workflow', () => {
     expect(readResponse.status).toBe(200);
     expect((await readResponse.json()).data).toMatchObject({
       id: created.id,
-      templateId: 'obrigado-compra',
-      templateVersion: 1,
+      templateId: template.id,
+      templateVersion: template.version,
       data: { ...messageData, message: 'Depois' },
     });
 
