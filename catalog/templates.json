@@ -1,7 +1,7 @@
 [
   {
     "id": "boas-vindas",
-    "version": 2,
+    "version": 3,
     "name": "Boas-vindas",
     "description": "Recebe novos clientes de forma acolhedora.",
     "isActive": true,
@@ -35,8 +35,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -88,7 +88,7 @@
   },
   {
     "id": "agradecimento-compra",
-    "version": 1,
+    "version": 2,
     "name": "Agradecimento pela compra",
     "description": "Valoriza o cliente após a venda.",
     "isActive": true,
@@ -122,8 +122,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -159,8 +159,8 @@
           "id": "productImage",
           "type": "image",
           "label": "Imagem do produto",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "section": "Detalhes do pedido",
           "width": "full"
         },
@@ -217,7 +217,7 @@
   },
   {
     "id": "parcela-proxima",
-    "version": 1,
+    "version": 2,
     "name": "Parcela próxima do vencimento",
     "description": "Lembra a data com antecedência.",
     "isActive": true,
@@ -251,8 +251,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -359,7 +359,7 @@
   },
   {
     "id": "parcela-hoje",
-    "version": 1,
+    "version": 2,
     "name": "Parcela vence hoje",
     "description": "Avisa que o pagamento é para hoje.",
     "isActive": true,
@@ -393,8 +393,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -501,7 +501,7 @@
   },
   {
     "id": "parcela-atrasada",
-    "version": 1,
+    "version": 2,
     "name": "Parcela em atraso",
     "description": "Informa que já está em atraso.",
     "isActive": true,
@@ -535,8 +535,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -643,7 +643,7 @@
   },
   {
     "id": "cobranca-pix",
-    "version": 1,
+    "version": 2,
     "name": "Cobrança Pix",
     "description": "Envia os dados Pix informados pela empresa.",
     "isActive": true,
@@ -677,8 +677,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -723,8 +723,8 @@
           "id": "pixQrImage",
           "type": "image",
           "label": "Imagem do QR Code Pix",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "section": "Dados do Pix",
           "width": "full"
         },
@@ -787,7 +787,7 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 2,
+    "version": 3,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
@@ -821,8 +821,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -932,7 +932,7 @@
   },
   {
     "id": "caderneta-quitada",
-    "version": 1,
+    "version": 2,
     "name": "Caderneta quitada",
     "description": "Celebra quando todas as parcelas foram pagas.",
     "isActive": true,
@@ -966,8 +966,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1019,7 +1019,7 @@
   },
   {
     "id": "servico-contratado",
-    "version": 1,
+    "version": 2,
     "name": "Serviço contratado",
     "description": "Confirma a contratação e informa os dados do serviço.",
     "isActive": true,
@@ -1053,8 +1053,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1151,7 +1151,7 @@
   },
   {
     "id": "servico-concluido",
-    "version": 1,
+    "version": 2,
     "name": "Serviço concluído",
     "description": "Informa que o serviço foi finalizado e convida à avaliação.",
     "isActive": true,
@@ -1185,8 +1185,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1268,7 +1268,7 @@
   },
   {
     "id": "aniversario",
-    "version": 1,
+    "version": 2,
     "name": "Aniversário",
     "description": "Parabeniza o cliente em uma data especial.",
     "isActive": true,
@@ -1302,8 +1302,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1355,7 +1355,7 @@
   },
   {
     "id": "produto-destaque",
-    "version": 1,
+    "version": 2,
     "name": "Produto em destaque",
     "description": "Apresenta um produto com destaque.",
     "isActive": true,
@@ -1379,8 +1379,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1416,8 +1416,8 @@
           "id": "productImage",
           "type": "image",
           "label": "Imagem do produto",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "section": "Detalhes do produto",
           "width": "full"
         },
@@ -1474,7 +1474,7 @@
   },
   {
     "id": "oferta-especial",
-    "version": 1,
+    "version": 2,
     "name": "Oferta especial",
     "description": "Divulga uma promoção ou oportunidade.",
     "isActive": true,
@@ -1508,8 +1508,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1536,8 +1536,8 @@
           "id": "offerImage",
           "type": "image",
           "label": "Imagem da oferta",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "section": "Detalhes da oferta",
           "width": "full"
         },
@@ -1631,7 +1631,7 @@
   },
   {
     "id": "novidades-colecao",
-    "version": 1,
+    "version": 2,
     "name": "Novidades e coleção",
     "description": "Apresenta novidades da loja e da coleção.",
     "isActive": true,
@@ -1665,8 +1665,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1702,8 +1702,8 @@
           "id": "productImage",
           "type": "image",
           "label": "Imagem do produto em destaque",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "section": "Detalhes da coleção",
           "width": "full"
         },
@@ -1759,7 +1759,7 @@
   },
   {
     "id": "reativacao-cliente",
-    "version": 1,
+    "version": 2,
     "name": "Reativação de cliente",
     "description": "Retoma o contato com clientes que não interagem há um tempo.",
     "isActive": true,
@@ -1793,8 +1793,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {
@@ -1846,7 +1846,7 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 3,
+    "version": 4,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
@@ -1880,8 +1880,8 @@
           "id": "businessLogo",
           "type": "image",
           "label": "Logo da empresa",
-          "helpText": "PNG, JPEG ou WebP · até 128 KB",
-          "maxBytes": 131072,
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
           "width": "full"
         },
         {

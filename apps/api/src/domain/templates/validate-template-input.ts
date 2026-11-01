@@ -4,6 +4,7 @@ import type { TemplateValidationIssue } from './errors.js';
 import { validateTemplateCard } from './template-card.js';
 import { resolveTemplateVisuals } from './template-visuals.js';
 import { resolveTemplateCatalog } from './template-catalog.js';
+import { MAX_IMAGE_BYTES } from '../images/image-limits.js';
 
 type SupportedFieldType = 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'url' | 'color' | 'date' | 'image';
 
@@ -102,7 +103,7 @@ function parseFields(definition: JsonObject): TemplateField[] {
       (format !== undefined && (format !== 'currency' || type !== 'number')) ||
       (required !== undefined && typeof required !== 'boolean') ||
       (maxLength !== undefined && (!Number.isInteger(maxLength) || (maxLength as number) < 1 || (maxLength as number) > 20_000)) ||
-      (maxBytes !== undefined && (!Number.isInteger(maxBytes) || (maxBytes as number) < 1 || (maxBytes as number) > 131_072 || type !== 'image')) ||
+      (maxBytes !== undefined && (!Number.isInteger(maxBytes) || (maxBytes as number) < 1 || (maxBytes as number) > MAX_IMAGE_BYTES || type !== 'image')) ||
       (options !== undefined && (!Array.isArray(options) || options.some((option) => typeof option !== 'string' || option.length === 0 || option.length > 120)))
     ) {
       throw new InvalidTemplateDefinitionError();

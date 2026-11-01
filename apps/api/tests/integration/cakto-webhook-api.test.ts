@@ -77,7 +77,7 @@ describe('Cakto webhook API', () => {
       .run();
     database.db.insert(templates).values({
       id: templateId,
-      version: 2,
+      version: officialTemplate.version + 1,
       name: 'Modelo atualizado',
       description: 'Outra versão do modelo.',
       definition: { fields: [{ id: 'newMessage', type: 'text' }] },

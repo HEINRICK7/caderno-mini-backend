@@ -63,7 +63,7 @@ describe('MinioImageStorage', () => {
 
     await expect(storage.get('absent')).resolves.toBeUndefined();
 
-    send.mockReset().mockResolvedValueOnce({ ContentLength: 128 * 1024 + 1, ContentType: 'image/png' });
+    send.mockReset().mockResolvedValueOnce({ ContentLength: 5 * 1024 * 1024 + 1, ContentType: 'image/png' });
     await expect(storage.get('oversized')).resolves.toBeUndefined();
     expect(send).toHaveBeenCalledTimes(1);
   });

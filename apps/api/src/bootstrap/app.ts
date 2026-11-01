@@ -33,6 +33,7 @@ import {
 import {
   TemplateInputValidationError,
 } from '../domain/templates/errors.js';
+import { MAX_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_UPLOAD_BODY_BYTES } from '../domain/images/image-limits.js';
 import type { Draft } from '../domain/drafts/draft.js';
 import { normalizeEmail } from '../domain/identity/identity.js';
 import type {
@@ -81,7 +82,7 @@ const createDraftBodySchema = z
   .object({ templateId: z.string().min(1).max(120), data: jsonObjectSchema })
   .strict();
 const validateTemplateBodySchema = z.object({ data: jsonObjectSchema }).strict();
-const uploadImageBodySchema = z.object({ dataUrl: z.string().max(180_000) }).strict();
+const uploadImageBodySchema = z.object({ dataUrl: z.string().max(MAX_IMAGE_DATA_URL_LENGTH) }).strict();
 const updateDraftBodySchema = z.object({ data: jsonObjectSchema }).strict();
 const magicLinkBodySchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) }).strict();
 const verifyMagicLinkBodySchema = z.object({ token: z.string().min(32).max(256) }).strict();
@@ -321,7 +322,7 @@ export function buildApp(options: BuildAppOptions = {}) {
     }
     if (error instanceof InvalidImageUploadError) {
       return response.code(422).send({
-        error: { code: 'IMAGE_UPLOAD_INVALID', message: 'Envie uma imagem PNG, JPEG ou WebP de até 128 KB.' },
+        error: { code: 'IMAGE_UPLOAD_INVALID', message: 'Envie uma imagem PNG, JPEG ou WebP de até 5 MB.' },
       });
     }
     if (error instanceof ImageStorageUnavailableError) {
@@ -430,7 +431,7 @@ export function buildApp(options: BuildAppOptions = {}) {
       app.post(
         '/api/v1/assets',
         {
-          bodyLimit: 192 * 1024,
+          bodyLimit: MAX_IMAGE_UPLOAD_BODY_BYTES,
           schema: {
             tags: ['assets'],
             summary: 'Armazena uma imagem de template no MinIO',

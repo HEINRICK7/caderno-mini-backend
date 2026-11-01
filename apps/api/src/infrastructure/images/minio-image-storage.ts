@@ -5,8 +5,8 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import type { ImageStorage, StoredImage, StoredImageContentType } from '../../application/ports/image-storage.js';
+import { MAX_IMAGE_BYTES } from '../../domain/images/image-limits.js';
 
-const MAX_IMAGE_BYTES = 128 * 1024;
 const allowedContentTypes = new Set<StoredImageContentType>(['image/png', 'image/jpeg', 'image/webp']);
 
 export type MinioImageStorageConfig = {

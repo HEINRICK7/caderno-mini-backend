@@ -29,10 +29,10 @@ describe('image use cases', () => {
     });
   });
 
-  it('rejects unsupported, malformed or mismatched images and images over 128 KiB', async () => {
+  it('rejects unsupported, malformed or mismatched images and images over 5 MiB', async () => {
     const tooLarge = Buffer.concat([
       Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-      Buffer.alloc(128 * 1024),
+      Buffer.alloc(5 * 1024 * 1024),
     ]);
     for (const dataUrl of [
       'https://example.com/image.png',

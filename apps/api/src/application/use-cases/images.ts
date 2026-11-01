@@ -1,7 +1,7 @@
 import type { ImageStorage, StoredImageContentType } from '../ports/image-storage.js';
 import { ImageStorageUnavailableError, InvalidImageUploadError } from '../errors.js';
+import { MAX_IMAGE_BYTES } from '../../domain/images/image-limits.js';
 
-const MAX_IMAGE_BYTES = 128 * 1024;
 const dataUriPattern = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/;
 
 export async function uploadImage(

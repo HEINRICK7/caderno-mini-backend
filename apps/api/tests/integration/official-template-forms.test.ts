@@ -60,9 +60,9 @@ describe('formulários do catálogo oficial de modelos', () => {
   });
 
   it('publica novas versões para as correções sem alterar versões já usadas', () => {
-    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(2);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(2);
-    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(3);
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(3);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(3);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(4);
   });
 
   it('mantém cada título de seção em um único bloco contínuo nos formulários', () => {

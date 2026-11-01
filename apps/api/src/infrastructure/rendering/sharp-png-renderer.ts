@@ -9,6 +9,7 @@ import { resolveTemplateCard } from '../../domain/templates/template-card.js';
 import { resolveTemplateVisuals, type TemplateVisuals } from '../../domain/templates/template-visuals.js';
 import { ExportContentTooLargeError } from '../../application/errors.js';
 import type { ImageStorage } from '../../application/ports/image-storage.js';
+import { MAX_IMAGE_BYTES } from '../../domain/images/image-limits.js';
 
 const WIDTH = 1_080;
 const MAX_FIELDS = 40;
@@ -229,7 +230,7 @@ async function createImageOverlay(
   if (typeof value !== 'string' || !isImageAssetId(value)) return undefined;
   try {
     const image = await images.get(value);
-    if (!image || image.bytes.length > 131_072 || !hasValidSignature(image.bytes, image.contentType)) return undefined;
+    if (!image || image.bytes.length > MAX_IMAGE_BYTES || !hasValidSignature(image.bytes, image.contentType)) return undefined;
     const input = await sharp(image.bytes, { limitInputPixels: 16_000_000 })
       .rotate()
       .resize({ width: options.width, height: options.height, fit: options.fit, withoutEnlargement: options.fit === 'inside' })
