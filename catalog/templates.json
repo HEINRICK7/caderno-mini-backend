@@ -1,0 +1,1958 @@
+[
+  {
+    "id": "boas-vindas",
+    "version": 1,
+    "name": "Boas-vindas",
+    "description": "Recebe novos clientes de forma acolhedora.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Boas-vindas"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Que bom ter você por aqui! A partir de agora, pode contar com a gente.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "actionLink",
+          "type": "url",
+          "label": "Link para falar com a empresa",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#168a80",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "wave",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "heart",
+        "action": {
+          "label": "Falar com a loja",
+          "hrefFieldId": "actionLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "agradecimento-compra",
+    "version": 1,
+    "name": "Agradecimento pela compra",
+    "description": "Valoriza o cliente após a venda.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "product",
+        "category": "Agradecimento"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Sua compra foi registrada com sucesso. Esperamos que aproveite seu produto.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "productName",
+          "type": "text",
+          "label": "Produto",
+          "placeholder": "Conjunto de mesa",
+          "maxLength": 120,
+          "required": true,
+          "section": "Detalhes do pedido",
+          "width": "half"
+        },
+        {
+          "id": "purchaseAmount",
+          "type": "number",
+          "label": "Valor",
+          "format": "currency",
+          "placeholder": "0,00",
+          "section": "Detalhes do pedido",
+          "width": "half"
+        },
+        {
+          "id": "productImage",
+          "type": "image",
+          "label": "Imagem do produto",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "purchaseLink",
+          "type": "url",
+          "label": "Link dos detalhes da compra",
+          "maxLength": 2048,
+          "section": "Detalhes do pedido",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e5f0ff",
+        "surface": "#ffffff",
+        "accent": "#2563eb",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "shopping-bag-heart",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Obrigado, {{recipientName}}! 💙",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Produto",
+            "value": "{{productName}}",
+            "imageFieldId": "productImage",
+            "icon": "package"
+          },
+          {
+            "label": "Valor",
+            "value": "{{purchaseAmount}}",
+            "icon": "credit-card",
+            "format": "currency"
+          }
+        ],
+        "action": {
+          "label": "Ver detalhes da compra",
+          "hrefFieldId": "purchaseLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "parcela-proxima",
+    "version": 1,
+    "name": "Parcela próxima do vencimento",
+    "description": "Lembra a data com antecedência.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Passando para lembrar que sua parcela está próxima do vencimento.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "installmentAmount",
+          "type": "number",
+          "label": "Valor da parcela",
+          "format": "currency",
+          "placeholder": "0,00",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "placeholder": "1",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "placeholder": "4",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link para pagamento",
+          "maxLength": 2048,
+          "section": "Pagamento",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#168a80",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "installment-calendar",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Valor da parcela",
+            "value": "{{installmentAmount}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Vencimento",
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date"
+          },
+          {
+            "label": "Parcela",
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "check"
+          }
+        ],
+        "action": {
+          "label": "Ver cobrança",
+          "hrefFieldId": "paymentLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "parcela-hoje",
+    "version": 1,
+    "name": "Parcela vence hoje",
+    "description": "Avisa que o pagamento é para hoje.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Sua parcela vence hoje.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "installmentAmount",
+          "type": "number",
+          "label": "Valor da parcela",
+          "format": "currency",
+          "placeholder": "0,00",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "placeholder": "1",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "placeholder": "4",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link para pagamento",
+          "maxLength": 2048,
+          "section": "Pagamento",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#f97316",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "due-calendar",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Valor da parcela",
+            "value": "{{installmentAmount}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Vencimento",
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date"
+          },
+          {
+            "label": "Parcela",
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "check"
+          }
+        ],
+        "action": {
+          "label": "Pagar agora",
+          "hrefFieldId": "paymentLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "parcela-atrasada",
+    "version": 1,
+    "name": "Parcela em atraso",
+    "description": "Informa que já está em atraso.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Consta uma parcela em aberto. Se precisar, fale com a gente.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "installmentAmount",
+          "type": "number",
+          "label": "Valor da parcela",
+          "format": "currency",
+          "placeholder": "0,00",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "placeholder": "1",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "placeholder": "4",
+          "required": true,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link para pagamento",
+          "maxLength": 2048,
+          "section": "Pagamento",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#ffe5e8",
+        "surface": "#ffffff",
+        "accent": "#e53950",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "overdue-warning",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Valor da parcela",
+            "value": "{{installmentAmount}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Vencimento",
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date"
+          },
+          {
+            "label": "Parcela",
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "check"
+          }
+        ],
+        "action": {
+          "label": "Ver cobrança",
+          "hrefFieldId": "paymentLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "cobranca-pix",
+    "version": 1,
+    "name": "Cobrança Pix",
+    "description": "Envia os dados Pix informados pela empresa.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Sua cobrança está disponível. Confira os dados de pagamento.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "amount",
+          "type": "number",
+          "label": "Valor",
+          "format": "currency",
+          "placeholder": "0,00",
+          "required": true,
+          "section": "Dados do Pix",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "section": "Dados do Pix",
+          "width": "half"
+        },
+        {
+          "id": "pixCopyPaste",
+          "type": "textarea",
+          "label": "Código Pix copia e cola",
+          "placeholder": "Cole aqui o código Pix gerado pelo seu banco.",
+          "maxLength": 2048,
+          "required": true,
+          "width": "full",
+          "section": "Dados do Pix",
+          "helpText": "Cole o código completo gerado pelo seu banco ou provedor de pagamento."
+        },
+        {
+          "id": "pixQrImage",
+          "type": "image",
+          "label": "Imagem do QR Code Pix",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link opcional para pagamento",
+          "maxLength": 2048,
+          "section": "Dados do Pix",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#168a80",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "pix-qr",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Valor",
+            "value": "{{amount}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Vencimento",
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date"
+          },
+          {
+            "label": "Pix copia e cola",
+            "value": "{{pixCopyPaste}}",
+            "imageFieldId": "pixQrImage",
+            "icon": "qrcode"
+          }
+        ],
+        "action": {
+          "label": "Pagar com Pix",
+          "hrefFieldId": "paymentLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "pagamento-confirmado",
+    "version": 1,
+    "name": "Pagamento confirmado",
+    "description": "Confirma que o pagamento foi identificado.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Recebemos o pagamento. Obrigado pela confiança.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "amount",
+          "type": "number",
+          "label": "Valor pago",
+          "format": "currency",
+          "placeholder": "0,00",
+          "required": true,
+          "section": "Detalhes do pagamento",
+          "width": "half"
+        },
+        {
+          "id": "paidAt",
+          "type": "date",
+          "label": "Data do pagamento",
+          "required": true,
+          "section": "Detalhes do pagamento",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "placeholder": "1",
+          "section": "Detalhes do pagamento",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "placeholder": "4",
+          "section": "Detalhes do pagamento",
+          "width": "half"
+        },
+        {
+          "id": "detailsLink",
+          "type": "url",
+          "label": "Link dos detalhes do pagamento",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#168a80",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "payment-check",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Pagamento confirmado, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Valor pago",
+            "value": "{{amount}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Data do pagamento",
+            "value": "{{paidAt}}",
+            "icon": "calendar",
+            "format": "date"
+          },
+          {
+            "label": "Parcela",
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "check"
+          }
+        ],
+        "action": {
+          "label": "Ver detalhes",
+          "hrefFieldId": "detailsLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "caderneta-quitada",
+    "version": 1,
+    "name": "Caderneta quitada",
+    "description": "Celebra quando todas as parcelas foram pagas.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Sua caderneta foi totalmente quitada! Agradecemos pela confiança.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "historyLink",
+          "type": "url",
+          "label": "Link do histórico",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#f97316",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "trophy",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Parabéns, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "heart",
+        "action": {
+          "label": "Ver histórico",
+          "hrefFieldId": "historyLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "servico-contratado",
+    "version": 1,
+    "name": "Serviço contratado",
+    "description": "Confirma a contratação e informa os dados do serviço.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "service",
+        "category": "Agradecimento"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Confirmamos a contratação do seu serviço.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "serviceName",
+          "type": "text",
+          "label": "Serviço",
+          "placeholder": "Manutenção de equipamento",
+          "maxLength": 120,
+          "required": true,
+          "section": "Detalhes do serviço",
+          "width": "full"
+        },
+        {
+          "id": "scheduledAt",
+          "type": "date",
+          "label": "Data da realização",
+          "section": "Detalhes do serviço",
+          "width": "half"
+        },
+        {
+          "id": "servicePrice",
+          "type": "number",
+          "label": "Valor",
+          "format": "currency",
+          "placeholder": "0,00",
+          "section": "Detalhes do serviço",
+          "width": "half"
+        },
+        {
+          "id": "serviceDetailsLink",
+          "type": "url",
+          "label": "Link com os detalhes do serviço",
+          "maxLength": 2048,
+          "section": "Detalhes do serviço",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e5f0ff",
+        "surface": "#ffffff",
+        "accent": "#2563eb",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "service-clipboard",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Serviço",
+            "value": "{{serviceName}}",
+            "icon": "check"
+          },
+          {
+            "label": "Data da realização",
+            "value": "{{scheduledAt}}",
+            "icon": "calendar",
+            "format": "date"
+          },
+          {
+            "label": "Valor",
+            "value": "{{servicePrice}}",
+            "icon": "credit-card",
+            "format": "currency"
+          }
+        ],
+        "action": {
+          "label": "Ver detalhes do serviço",
+          "hrefFieldId": "serviceDetailsLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "servico-concluido",
+    "version": 1,
+    "name": "Serviço concluído",
+    "description": "Informa que o serviço foi finalizado e convida à avaliação.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "service",
+        "category": "Entrega"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Foi um prazer atender você. Agradecemos pela confiança.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "serviceName",
+          "type": "text",
+          "label": "Serviço realizado",
+          "placeholder": "Manutenção de equipamento",
+          "maxLength": 120,
+          "required": true,
+          "section": "Detalhes do serviço",
+          "width": "full"
+        },
+        {
+          "id": "completionDate",
+          "type": "date",
+          "label": "Data de conclusão",
+          "section": "Detalhes do serviço",
+          "width": "half"
+        },
+        {
+          "id": "evaluationLink",
+          "type": "url",
+          "label": "Link para avaliar o atendimento",
+          "maxLength": 2048,
+          "section": "Detalhes do serviço",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#168a80",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "service-seal",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Serviço",
+            "value": "{{serviceName}}",
+            "icon": "check"
+          },
+          {
+            "label": "Concluído em",
+            "value": "{{completionDate}}",
+            "icon": "calendar",
+            "format": "date"
+          }
+        ],
+        "action": {
+          "label": "Avaliar atendimento",
+          "hrefFieldId": "evaluationLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "aniversario",
+    "version": 1,
+    "name": "Aniversário",
+    "description": "Parabeniza o cliente em uma data especial.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Datas especiais"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Que seu novo ciclo seja especial. Somos gratos por ter você como cliente.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "actionLink",
+          "type": "url",
+          "label": "Link para novidades",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#f3e8ff",
+        "surface": "#ffffff",
+        "accent": "#7950e8",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "gift",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Feliz aniversário, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "heart",
+        "action": {
+          "label": "Ver novidades",
+          "hrefFieldId": "actionLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "produto-destaque",
+    "version": 1,
+    "name": "Produto em destaque",
+    "description": "Apresenta um produto com destaque.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "product",
+        "category": "Promoções"
+      },
+      "fields": [
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Confira este produto que separamos para você.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "productName",
+          "type": "text",
+          "label": "Produto",
+          "placeholder": "Bolo de chocolate",
+          "maxLength": 120,
+          "required": true,
+          "section": "Detalhes do produto",
+          "width": "half"
+        },
+        {
+          "id": "productPrice",
+          "type": "number",
+          "label": "Valor do produto",
+          "format": "currency",
+          "placeholder": "0,00",
+          "section": "Detalhes do produto",
+          "width": "half"
+        },
+        {
+          "id": "productImage",
+          "type": "image",
+          "label": "Imagem do produto",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "offerLink",
+          "type": "url",
+          "label": "Link do produto",
+          "maxLength": 2048,
+          "section": "Detalhes do produto",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#f3e8ff",
+        "surface": "#ffffff",
+        "accent": "#7950e8",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "product-tag",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Produto em destaque!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Produto",
+            "value": "{{productName}}",
+            "imageFieldId": "productImage",
+            "icon": "package"
+          },
+          {
+            "label": "Valor",
+            "value": "{{productPrice}}",
+            "icon": "credit-card",
+            "format": "currency"
+          }
+        ],
+        "action": {
+          "label": "Quero ver mais",
+          "hrefFieldId": "offerLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "oferta-especial",
+    "version": 1,
+    "name": "Oferta especial",
+    "description": "Divulga uma promoção ou oportunidade.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Promoções"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Preparamos uma condição especial por tempo limitado.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "offerName",
+          "type": "text",
+          "label": "Produto ou serviço",
+          "placeholder": "Kit de doces ou serviço contratado",
+          "maxLength": 120,
+          "required": true,
+          "section": "Detalhes da oferta",
+          "width": "full"
+        },
+        {
+          "id": "offerImage",
+          "type": "image",
+          "label": "Imagem da oferta",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "oldPrice",
+          "type": "number",
+          "label": "Preço anterior",
+          "format": "currency",
+          "placeholder": "0,00",
+          "section": "Detalhes da oferta",
+          "width": "half"
+        },
+        {
+          "id": "newPrice",
+          "type": "number",
+          "label": "Preço da oferta",
+          "format": "currency",
+          "placeholder": "0,00",
+          "section": "Detalhes da oferta",
+          "width": "half"
+        },
+        {
+          "id": "validUntil",
+          "type": "date",
+          "label": "Válida até",
+          "section": "Detalhes da oferta",
+          "width": "half"
+        },
+        {
+          "id": "offerLink",
+          "type": "url",
+          "label": "Link da oferta",
+          "maxLength": 2048,
+          "section": "Detalhes da oferta",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#f97316",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "offer-tag",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Oferta especial, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Oferta",
+            "value": "{{offerName}}",
+            "imageFieldId": "offerImage",
+            "icon": "package"
+          },
+          {
+            "label": "De",
+            "value": "{{oldPrice}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Por",
+            "value": "{{newPrice}}",
+            "icon": "credit-card",
+            "format": "currency"
+          },
+          {
+            "label": "Válida até",
+            "value": "{{validUntil}}",
+            "icon": "calendar",
+            "format": "date"
+          }
+        ],
+        "action": {
+          "label": "Aproveitar oferta",
+          "hrefFieldId": "offerLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "novidades-colecao",
+    "version": 1,
+    "name": "Novidades e coleção",
+    "description": "Apresenta novidades da loja e da coleção.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "product",
+        "category": "Promoções"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Nossa nova coleção já está disponível. Confira os lançamentos.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "collectionName",
+          "type": "text",
+          "label": "Nome da coleção",
+          "placeholder": "Coleção primavera",
+          "maxLength": 120,
+          "required": true,
+          "section": "Detalhes da coleção",
+          "width": "half"
+        },
+        {
+          "id": "productName",
+          "type": "text",
+          "label": "Produto em destaque",
+          "placeholder": "Novo lançamento",
+          "maxLength": 120,
+          "section": "Detalhes da coleção",
+          "width": "half"
+        },
+        {
+          "id": "productImage",
+          "type": "image",
+          "label": "Imagem do produto em destaque",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "collectionLink",
+          "type": "url",
+          "label": "Link da coleção",
+          "maxLength": 2048,
+          "section": "Detalhes da coleção",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#168a80",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "collection-bag",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Chegaram novidades, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "label": "Coleção",
+            "value": "{{collectionName}}",
+            "icon": "package"
+          },
+          {
+            "label": "Em destaque",
+            "value": "{{productName}}",
+            "imageFieldId": "productImage",
+            "icon": "package"
+          }
+        ],
+        "action": {
+          "label": "Ver coleção",
+          "hrefFieldId": "collectionLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "reativacao-cliente",
+    "version": 1,
+    "name": "Reativação de cliente",
+    "description": "Retoma o contato com quem não compra há um tempo.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Boas-vindas"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Temos novidades que podem te interessar. Que tal dar uma olhada?",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "actionLink",
+          "type": "url",
+          "label": "Link para saber mais",
+          "maxLength": 2048,
+          "section": "Convite",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#ffe5e8",
+        "surface": "#ffffff",
+        "accent": "#e85d75",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "reactivation-heart",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Sentimos sua falta, {{recipientName}}!",
+        "message": "{{message}}",
+        "footer": "heart",
+        "action": {
+          "label": "Ver novidades",
+          "hrefFieldId": "actionLink"
+        }
+      }
+    }
+  },
+  {
+    "id": "lembrete-aprovacao",
+    "version": 1,
+    "name": "Lembrete com aprovação",
+    "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "service",
+        "category": "Entrega"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente",
+          "placeholder": "Maria",
+          "maxLength": 60,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome da empresa",
+          "placeholder": "Cadernô Express",
+          "maxLength": 80,
+          "required": true,
+          "width": "half",
+          "section": "Dados da mensagem"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo da empresa",
+          "helpText": "PNG, JPEG ou WebP · até 128 KB",
+          "maxBytes": 131072,
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Mensagem principal",
+          "placeholder": "Temos uma condição especial que gostaríamos de compartilhar.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Mensagem principal"
+        },
+        {
+          "id": "serviceName",
+          "type": "text",
+          "label": "Serviço",
+          "placeholder": "Manutenção de equipamento",
+          "maxLength": 120,
+          "required": true,
+          "section": "Aprovação do serviço",
+          "width": "full"
+        },
+        {
+          "id": "approvalDetails",
+          "type": "textarea",
+          "label": "O que precisa de aprovação?",
+          "placeholder": "Descreva a decisão que o cliente precisa tomar.",
+          "maxLength": 300,
+          "required": true,
+          "width": "full",
+          "section": "Aprovação do serviço"
+        },
+        {
+          "id": "approveLink",
+          "type": "url",
+          "label": "Link para aprovar",
+          "maxLength": 2048,
+          "section": "Opções de resposta",
+          "width": "half"
+        },
+        {
+          "id": "rejectLink",
+          "type": "url",
+          "label": "Link para recusar",
+          "maxLength": 2048,
+          "section": "Opções de resposta",
+          "width": "half"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#f97316",
+        "heading": "#10264f",
+        "text": "#385176",
+        "muted": "#687895",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "approval-hourglass",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        },
+        "heading": "Olá, {{recipientName}}!",
+        "message": "{{message}} Serviço: {{serviceName}}. {{approvalDetails}}",
+        "footer": "none",
+        "actions": [
+          {
+            "label": "Sim, quero",
+            "hrefFieldId": "approveLink"
+          },
+          {
+            "label": "Agora não",
+            "hrefFieldId": "rejectLink"
+          }
+        ]
+      }
+    }
+  }
+]

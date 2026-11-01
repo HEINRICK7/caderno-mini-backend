@@ -16,6 +16,13 @@ describe('loadConfig', () => {
       PUBLIC_APP_URL: 'https://app.example.com',
       SMTP_URL: 'smtps://mailer:secret@mail.example.com:465',
       EMAIL_FROM: 'Cadernô <login@example.com>',
+      MINIO_ENDPOINT: 'storage.example.com',
+      MINIO_PORT: '9443',
+      MINIO_USE_SSL: 'true',
+      MINIO_REGION: 'eu-west-1',
+      MINIO_ACCESS_KEY: 'caderno-api',
+      MINIO_SECRET_KEY: 'caderno-api-secret-key-value',
+      MINIO_BUCKET: 'caderno-public-assets',
     });
 
     expect(config).toEqual({
@@ -24,6 +31,15 @@ describe('loadConfig', () => {
       port: 4500,
       logLevel: 'debug',
       databaseFile: './data/test.sqlite',
+      imageStorage: {
+        endpoint: 'storage.example.com',
+        port: 9443,
+        useSSL: true,
+        region: 'eu-west-1',
+        accessKey: 'caderno-api',
+        secretKey: 'caderno-api-secret-key-value',
+        bucket: 'caderno-public-assets',
+      },
       trustedProxyAddresses: ['127.0.0.1', '172.16.0.0/12'],
       authPublicAppUrl: 'https://app.example.com',
       publicApiUrl: 'https://api.example.com',
@@ -40,6 +56,15 @@ describe('loadConfig', () => {
       port: 3000,
       logLevel: 'info',
       databaseFile: './data/caderno-mini.sqlite',
+      imageStorage: {
+        endpoint: '127.0.0.1',
+        port: 9000,
+        useSSL: false,
+        region: 'us-east-1',
+        accessKey: 'caderno-local',
+        secretKey: 'local-development-minio-secret',
+        bucket: 'caderno-assets',
+      },
       trustedProxyAddresses: [],
       authPublicAppUrl: 'http://localhost:3000',
       publicApiUrl: 'http://localhost:3000',
@@ -73,5 +98,26 @@ describe('loadConfig', () => {
       PUBLIC_API_URL: 'https://api.example.com',
       PUBLIC_APP_URL: 'http://app.example.com',
     })).toThrow('PUBLIC_APP_URL must use HTTPS in production.');
+  });
+
+  it('requires non-development MinIO credentials in production', () => {
+    expect(() => loadConfig({
+      NODE_ENV: 'production',
+      AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+      PUBLIC_API_URL: 'https://api.example.com',
+      PUBLIC_APP_URL: 'https://app.example.com',
+      MINIO_USE_SSL: 'true',
+    })).toThrow('MinIO credentials must be changed from development defaults in production.');
+  });
+
+  it('requires TLS for MinIO in production', () => {
+    expect(() => loadConfig({
+      NODE_ENV: 'production',
+      AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+      PUBLIC_API_URL: 'https://api.example.com',
+      PUBLIC_APP_URL: 'https://app.example.com',
+      MINIO_ACCESS_KEY: 'caderno-api',
+      MINIO_SECRET_KEY: 'caderno-api-secret-key-value',
+    })).toThrow('MINIO_USE_SSL must be true in production.');
   });
 });

@@ -23,11 +23,11 @@ O código está sendo finalizado em `feature/sprint-1-backend-foundation`. O flu
 - Analytics de produto e conversão com deduplicação, retenção apenas do host de referência e endpoint de leitura protegido por token.
 - SQLite com migrations, backup consistente e restauração coberta por teste de integração.
 
-As definições reais dos 16 modelos ainda precisam ser fornecidas; os testes usam um fixture de exemplo e não publicam modelos fictícios.
+O catálogo oficial com os 16 modelos de referência está versionado em `catalog/templates.json`. Produtos e serviços recebem campos próprios definidos pelo backend; o frontend apenas renderiza e valida esses contratos.
 
 ### Catálogo de modelos
 
-Quando as definições reais estiverem disponíveis, salve os 16 itens em um array JSON em `catalog/templates.json`. Cada item informa `id`, `version`, `name`, `description`, `definition` e `isActive`; `definition.fields` aceita `text`, `textarea`, `number`, `boolean`, `select`, `url`, `color` e `date`, além de rótulo, placeholder e texto de ajuda. `definition.card` declara, por uma lista fechada de opções, a ilustração, o título, a mensagem e os campos dinâmicos. `definition.visual` define a paleta e aceita somente valores validados. O frontend converte essa estrutura semântica em HTML/SVG com CSS próprio; o backend renderiza SVG/PNG para exportação e metadados de compartilhamento, sem aceitar HTML ou CSS arbitrário. O carregador insere o lote em uma transação, impede alterações no conteúdo de uma versão já publicada e desativa a versão anterior quando uma nova versão é ativada. Não há rota pública para editar o catálogo.
+Cada item informa `id`, `version`, `name`, `description`, `definition` e `isActive`; `definition.fields` aceita campos de texto, data, valor, link e imagem, com rótulo, limite, ajuda e seção. `definition.card` declara a ilustração da prancha, o título, a mensagem, os detalhes e as ações ligadas a campos do próprio formulário. `definition.visual` define a paleta e aceita somente valores validados. O frontend converte essa estrutura semântica em HTML/SVG com CSS próprio; o backend renderiza SVG/PNG para exportação e metadados de compartilhamento, sem aceitar HTML ou CSS arbitrário. O carregador insere o lote em uma transação, impede alterações no conteúdo de uma versão já publicada e desativa a versão anterior quando uma nova versão é ativada. Não há rota pública para editar o catálogo.
 
 Execute `npm run db:seed:catalog` localmente. No container de produção, após atualizar a imagem com o arquivo de catálogo, execute `docker compose exec api npm run db:seed:catalog:prod`. A operação aplica migrations pendentes antes da importação e pode ser repetida com segurança.
 
@@ -49,6 +49,8 @@ Também é possível subir pelo Docker Compose:
 cp .env.example .env
 docker compose up --build
 ```
+
+Configure `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` e `MINIO_BUCKET` para apontar ao endpoint S3 do MinIO. O endpoint é o host sem `https://` (use a porta da API S3, não a do console), e o bucket precisa existir antes de iniciar uploads. Em produção, MinIO usa TLS e credenciais próprias do backend com acesso limitado aos objetos desse bucket. Não coloque credenciais reais no `.env.example`, em commits ou em mensagens.
 
 O SQLite usa um volume Docker persistente. Não apague o volume ao atualizar a aplicação.
 

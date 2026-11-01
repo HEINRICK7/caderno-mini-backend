@@ -7,6 +7,7 @@ import {
   createAnalyticsServices,
   createCommerceServices,
   createIdentityServices,
+  createImageServices,
   createPreviewServices,
   createPublishingServices,
 } from './bootstrap/services.js';
@@ -14,6 +15,7 @@ import { createDatabase } from './infrastructure/database/connection.js';
 import { NodemailerEmailSender } from './infrastructure/email/nodemailer-email-sender.js';
 import { SharpPngRenderer } from './infrastructure/rendering/sharp-png-renderer.js';
 import { migrateDatabase } from './infrastructure/database/migrate.js';
+import { MinioImageStorage } from './infrastructure/images/minio-image-storage.js';
 
 const config = loadConfig();
 const database = createDatabase(config.databaseFile);
@@ -26,11 +28,14 @@ const commerceServices = createCommerceServices(database.db, {
   ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
   ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
 });
-const renderer = new SharpPngRenderer();
+const imageStorage = new MinioImageStorage(config.imageStorage);
+const imageServices = createImageServices(imageStorage);
+const renderer = new SharpPngRenderer(imageStorage);
 const app = buildApp({
   logger: { level: config.logLevel },
   services: createApplicationServices(database.db),
   commerceServices,
+  imageServices,
   previewServices: createPreviewServices(database.db, renderer),
   publishingServices: createPublishingServices(database.db, renderer),
   analyticsServices: createAnalyticsServices(database.db),

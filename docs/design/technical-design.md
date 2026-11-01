@@ -76,6 +76,7 @@ Prefixo versionado: `/api/v1`. Respostas de sucesso usam um envelope `data`; err
 | --- | --- |
 | `GET /health` | Estado da aplicação e do banco para health check |
 | `GET /api/v1/templates` | Lista modelos ativos e suas versões |
+| `POST /api/v1/assets`, `GET /api/v1/assets/:id/content` | Valida e armazena imagens no MinIO e as serve por UUID opaco |
 | `POST /api/v1/drafts` | Cria um rascunho anônimo associado a um modelo/versão |
 | `GET /api/v1/drafts/:id` | Recupera um rascunho pelo identificador opaco |
 | `PUT /api/v1/drafts/:id` | Substitui os dados personalizados do rascunho |
@@ -93,6 +94,8 @@ Prefixo versionado: `/api/v1`. Respostas de sucesso usam um envelope `data`; err
 | `GET /openapi.json` | Especificação OpenAPI gerada a partir das rotas |
 
 O rascunho guarda `id`, `templateId`, `templateVersion`, `data`, `createdAt` e `updatedAt`. A versão do modelo fica fixa no rascunho para que mudanças futuras no catálogo não alterem criações existentes.
+
+Campos de imagem fazem upload pela API: o backend valida PNG, JPEG ou WebP de até 128 KiB, cria um UUID e grava os bytes no bucket MinIO configurado. O rascunho e os campos de logo/produto guardam somente o UUID; a API serve o conteúdo com MIME validado e cabeçalhos de conteúdo seguro. As imagens públicas usam UUID como caminho não enumerável porque a prévia HTML e os links compartilhados precisam carregá-las. Portanto, arquivos enviados para esses campos devem ser adequados para aparecer numa mensagem compartilhada. O bucket é criado previamente e a credencial da aplicação só precisa ler e gravar objetos nele; produção exige TLS.
 
 O conteúdo de `data` é um objeto JSON validado no limite HTTP. As regras campo a campo dependem das definições dos 16 modelos, que ainda não foram fornecidas; até lá o catálogo de produção não terá modelos inventados. Testes e desenvolvimento usarão um fixture explicitamente marcado como exemplo.
 

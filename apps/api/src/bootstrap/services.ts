@@ -37,6 +37,8 @@ import {
   type PublicationDependencies,
 } from '../application/use-cases/publication.js';
 import type { PngRenderer } from '../application/ports/png-renderer.js';
+import type { ImageStorage } from '../application/ports/image-storage.js';
+import { uploadImage, getImage } from '../application/use-cases/images.js';
 import { SqliteAnalyticsRepository } from '../infrastructure/database/repositories/sqlite-analytics-repository.js';
 import {
   getAnalyticsSummary,
@@ -69,6 +71,19 @@ export function createApplicationServices(
 }
 
 export type PreviewServices = ReturnType<typeof createPreviewServices>;
+
+export type ImageServices = ReturnType<typeof createImageServices>;
+
+export function createImageServices(
+  images: ImageStorage,
+  options: { idGenerator?: () => string } = {},
+) {
+  const generateId = options.idGenerator ?? randomUUID;
+  return {
+    upload: (input: { dataUrl: string }) => uploadImage(input, { images, generateId }),
+    get: (input: { id: string }) => getImage(input, { images }),
+  };
+}
 
 export function createPreviewServices(db: AppDatabase, renderer: PngRenderer) {
   const dependencies: PreviewDraftDependencies = {

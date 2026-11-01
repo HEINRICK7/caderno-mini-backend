@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import type { OverlayOptions } from 'sharp';
 import { resolve } from 'node:path';
 
 import type { PngRenderer } from '../../application/ports/png-renderer.js';
@@ -7,6 +8,7 @@ import type { Template } from '../../domain/templates/template.js';
 import { resolveTemplateCard } from '../../domain/templates/template-card.js';
 import { resolveTemplateVisuals, type TemplateVisuals } from '../../domain/templates/template-visuals.js';
 import { ExportContentTooLargeError } from '../../application/errors.js';
+import type { ImageStorage } from '../../application/ports/image-storage.js';
 
 const WIDTH = 1_080;
 const MAX_FIELDS = 40;
@@ -32,14 +34,16 @@ const STATUS_ICON_POSITION = {
 } as const;
 
 export class SharpPngRenderer implements PngRenderer {
+  constructor(private readonly images?: ImageStorage) {}
+
   async render(template: Template, data: JsonObject): Promise<Buffer> {
     const svg = renderSvg(template, data);
-    return renderTemplatePng(svg, template);
+    return renderTemplatePng(svg, template, data, this.images);
   }
 
   async renderPreview(template: Template, data: JsonObject): Promise<Buffer> {
     const svg = renderSvg(template, data, { watermark: true });
-    const rendered = await renderTemplatePng(svg, template);
+    const rendered = await renderTemplatePng(svg, template, data, this.images);
     return sharp(rendered)
       .resize({ width: 540, height: 10_000, fit: 'inside', withoutEnlargement: true })
       .png()
@@ -47,7 +51,12 @@ export class SharpPngRenderer implements PngRenderer {
   }
 }
 
-async function renderTemplatePng(svg: string, template: Template): Promise<Buffer> {
+async function renderTemplatePng(
+  svg: string,
+  template: Template,
+  data: JsonObject,
+  images?: ImageStorage,
+): Promise<Buffer> {
   const card = resolveTemplateCard(template.definition);
   const renderer = sharp(Buffer.from(svg));
   if (!card) return renderer.png().toBuffer();
@@ -58,8 +67,30 @@ async function renderTemplatePng(svg: string, template: Template): Promise<Buffe
     .png()
     .toBuffer();
 
+  const composites: OverlayOptions[] = [{ input: icon, left: 348, top: 132 }];
+  const logoOverlay = card.brand?.logoFieldId && images
+    ? await createImageOverlay(images, data[card.brand.logoFieldId], { left: 72, top: 52, width: 76, height: 76, fit: 'inside' })
+    : undefined;
+  if (logoOverlay) composites.push(logoOverlay);
+
+  const visibleDetails = resolveVisibleDetails(template, data, card);
+  if (images) {
+    const detailStartY = getDetailsStartY(template, data, card);
+    for (const [index, detail] of visibleDetails.entries()) {
+      if (!detail.imageFieldId) continue;
+      const overlay = await createImageOverlay(images, data[detail.imageFieldId], {
+        left: 148,
+        top: detailStartY + index * 104 + 15,
+        width: 56,
+        height: 56,
+        fit: 'cover',
+      });
+      if (overlay) composites.push(overlay);
+    }
+  }
+
   return renderer
-    .composite([{ input: icon, left: 348, top: 132 }])
+    .composite(composites)
     .png()
     .toBuffer();
 }
@@ -140,43 +171,167 @@ function renderTemplateCardSvg(
   const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
   const heading = interpolateCardText(card.heading, fields, data);
   const message = card.message ? interpolateCardText(card.message, fields, data) : '';
+  const visibleDetails = resolveVisibleDetails(template, data, card);
+  const actions = card.actions ?? (card.action ? [card.action] : []);
   const headingLines = wrapText(heading, 22);
   const messageLines = message ? wrapText(message, 34) : [];
   const textX = visuals.layout === 'editorial' ? 150 : 540;
   const textAnchor = visuals.layout === 'editorial' ? 'start' : 'middle';
+  const hasDetails = Boolean(visibleDetails.length || actions.length);
+  const artBottom = hasDetails ? 610 : 806;
+  const headingY = hasDetails ? 704 : 940;
   const headingMarkup = headingLines
-    .map((line, index) => `<text x="${textX}" y="${940 + index * 74}" text-anchor="${textAnchor}" class="card-title">${escapeXml(line)}</text>`)
+    .map((line, index) => `<text x="${textX}" y="${headingY + index * 68}" text-anchor="${textAnchor}" class="card-title">${escapeXml(line)}</text>`)
     .join('');
-  const messageStart = 954 + headingLines.length * 74;
+  const messageStart = headingY + headingLines.length * 68 + 14;
   const messageMarkup = messageLines
-    .map((line, index) => `<text x="${textX}" y="${messageStart + 48 + index * 48}" text-anchor="${textAnchor}" class="card-message">${escapeXml(line)}</text>`)
+    .map((line, index) => `<text x="${textX}" y="${messageStart + 38 + index * 44}" text-anchor="${textAnchor}" class="card-message">${escapeXml(line)}</text>`)
     .join('');
-  const heartY = messageLines.length > 0 ? messageStart + messageLines.length * 48 + 78 : messageStart + 42;
-  const watermarkY = 675;
+  let detailsY = messageStart + Math.max(1, messageLines.length) * 44 + 38;
+  const detailsMarkup = visibleDetails.map((detail) => {
+    const value = interpolateCardText(detail.value, fields, data, detail.format, false);
+    const rowY = detailsY;
+    detailsY += 104;
+    return `<rect x="126" y="${rowY}" width="828" height="86" rx="22" fill="#eff7ff"/><rect x="148" y="${rowY + 15}" width="56" height="56" rx="16" fill="#dbeeff"/>${detailIconSvg(detail.icon, rowY + 15)}<text x="228" y="${rowY + 38}" class="detail-label">${escapeXml(detail.label)}</text><text x="228" y="${rowY + 67}" class="detail-value">${escapeXml(value)}</text>`;
+  }).join('');
+  const actionMarkup = actions.map((action, index) => {
+    const top = detailsY + 2 + index * 78;
+    return `<rect x="126" y="${top}" width="828" height="68" rx="20" fill="${visuals.accent}"/><text x="540" y="${top + 44}" text-anchor="middle" class="action-label">${escapeXml(action.label)}</text>`;
+  }).join('');
+  const heartY = messageLines.length > 0 ? messageStart + messageLines.length * 44 + 58 : messageStart + 42;
+  const footerMarkup = card.footer === 'heart' && !hasDetails
+    ? `<text x="${visuals.layout === 'editorial' ? 520 : 540}" y="${heartY}" text-anchor="middle" class="card-heart">♡</text>`
+    : '';
+  const watermarkY = hasDetails ? 620 : 675;
   const watermark = options.watermark
     ? `<text x="540" y="${watermarkY}" transform="rotate(-18 540 ${watermarkY})" text-anchor="middle" class="watermark">PRÉVIA · CADERNÔ</text>`
     : '';
   const frame = renderFrame(visuals, 1_350);
   const font = fontFamily(visuals.headingFont);
   const bodyFont = fontFamily(visuals.bodyFont);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350"><defs><clipPath id="card-clip"><rect x="36" y="36" width="1008" height="1278" rx="72"/></clipPath></defs><rect width="100%" height="100%" fill="${visuals.background}"/><g clip-path="url(#card-clip)"><rect x="36" y="36" width="1008" height="770" fill="${visuals.background}"/><rect x="36" y="806" width="1008" height="508" fill="${visuals.surface}"/></g>${headingMarkup}${messageMarkup}<text x="${visuals.layout === 'editorial' ? 520 : 540}" y="${heartY}" text-anchor="middle" class="card-heart">♡</text>${watermark}${frame}<style>.card-title{font:800 62px ${font};fill:${visuals.heading}}.card-message{font:400 38px ${bodyFont};fill:${visuals.text}}.card-heart{font:700 68px Arial,sans-serif;fill:${visuals.accent}}.watermark{font:700 82px ${font};fill:${visuals.accent};fill-opacity:.5;stroke:${visuals.background};stroke-opacity:.4;stroke-width:2}</style></svg>`;
+  const brandName = card.brand
+    ? interpolateCardText(`{{${card.brand.businessNameFieldId}}}`, fields, data)
+    : '';
+  const clippedBrandName = Array.from(brandName).slice(0, 20).join('');
+  const brandMarkup = card.brand
+    ? `<text x="158" y="103" class="brand-name" textLength="176" lengthAdjust="spacingAndGlyphs">${escapeXml(clippedBrandName)}</text>`
+    : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350"><defs><clipPath id="card-clip"><rect x="36" y="36" width="1008" height="1278" rx="72"/></clipPath></defs><rect width="100%" height="100%" fill="${visuals.background}"/><g clip-path="url(#card-clip)"><rect x="36" y="36" width="1008" height="${artBottom - 36}" fill="${visuals.background}"/><rect x="36" y="${artBottom}" width="1008" height="${1314 - artBottom}" fill="${visuals.surface}"/></g>${brandMarkup}${headingMarkup}${messageMarkup}${detailsMarkup}${actionMarkup}${footerMarkup}${watermark}${frame}<style>.brand-name{font:700 26px ${font};fill:${visuals.heading}}.card-title{font:800 62px ${font};fill:${visuals.heading}}.card-message{font:400 38px ${bodyFont};fill:${visuals.text}}.detail-label{font:400 22px ${bodyFont};fill:${visuals.muted}}.detail-value{font:700 27px ${font};fill:${visuals.heading}}.action-label{font:700 26px ${font};fill:#fff}.card-heart{font:700 68px Arial,sans-serif;fill:${visuals.accent}}.watermark{font:700 82px ${font};fill:${visuals.accent};fill-opacity:.5;stroke:${visuals.background};stroke-opacity:.4;stroke-width:2}</style></svg>`;
   if (svg.length > MAX_SVG_LENGTH) throw new ExportContentTooLargeError();
   return svg;
 }
 
-function interpolateCardText(template: string, fields: unknown[], data: JsonObject): string {
-  return template.replace(/\{\{([A-Za-z][A-Za-z0-9_]{0,63})\}\}/g, (_match, fieldId: string) => {
+async function createImageOverlay(
+  images: ImageStorage,
+  value: unknown,
+  options: { left: number; top: number; width: number; height: number; fit: 'cover' | 'inside' },
+): Promise<OverlayOptions | undefined> {
+  if (typeof value !== 'string' || !isImageAssetId(value)) return undefined;
+  try {
+    const image = await images.get(value);
+    if (!image || image.bytes.length > 131_072 || !hasValidSignature(image.bytes, image.contentType)) return undefined;
+    const input = await sharp(image.bytes, { limitInputPixels: 16_000_000 })
+      .rotate()
+      .resize({ width: options.width, height: options.height, fit: options.fit, withoutEnlargement: options.fit === 'inside' })
+      .png()
+      .toBuffer();
+    return { input, left: options.left, top: options.top };
+  } catch {
+    return undefined;
+  }
+}
+
+function isImageAssetId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function hasValidSignature(bytes: Buffer, contentType: string): boolean {
+  const isPng = contentType === 'image/png' &&
+    bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  const isJpeg = contentType === 'image/jpeg' &&
+    bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isWebp = contentType === 'image/webp' &&
+    bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+  return isPng || isJpeg || isWebp;
+}
+
+function getDetailsStartY(
+  template: Template,
+  data: JsonObject,
+  card: NonNullable<ReturnType<typeof resolveTemplateCard>>,
+): number {
+  const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
+  const headingLines = wrapText(interpolateCardText(card.heading, fields, data), 22);
+  const message = card.message ? interpolateCardText(card.message, fields, data) : '';
+  const messageLines = message ? wrapText(message, 34) : [];
+  const hasDetails = Boolean(resolveVisibleDetails(template, data, card).length || card.actions?.length || card.action);
+  const headingY = hasDetails ? 704 : 940;
+  const messageStart = headingY + headingLines.length * 68 + 14;
+  return messageStart + Math.max(1, messageLines.length) * 44 + 38;
+}
+
+function resolveVisibleDetails(
+  template: Template,
+  data: JsonObject,
+  card: NonNullable<ReturnType<typeof resolveTemplateCard>>,
+) {
+  const fields = Array.isArray(template.definition.fields) ? template.definition.fields : [];
+  return (card.details ?? []).filter((detail) =>
+    interpolateCardText(detail.value, fields, data, detail.format, false).trim().length > 0,
+  );
+}
+
+function interpolateCardText(
+  template: string,
+  fields: unknown[],
+  data: JsonObject,
+  format?: string,
+  usePlaceholders = true,
+): string {
+  const value = template.replace(/\{\{([A-Za-z][A-Za-z0-9_]{0,63})\}\}/g, (_match, fieldId: string) => {
     const value = data[fieldId];
     if (typeof value === 'string' || typeof value === 'number') return String(value);
     const field = fields.find((candidate) =>
       typeof candidate === 'object' && candidate !== null && !Array.isArray(candidate) &&
       'id' in candidate && candidate.id === fieldId,
     );
-    if (typeof field === 'object' && field !== null && !Array.isArray(field) && 'placeholder' in field && typeof field.placeholder === 'string') {
+    if (usePlaceholders && typeof field === 'object' && field !== null && !Array.isArray(field) && 'placeholder' in field && typeof field.placeholder === 'string') {
       return field.placeholder;
     }
     return '';
   });
+  if (format === 'currency' && value.trim().length > 0) {
+    const amount = Number(value.replace(',', '.'));
+    if (Number.isFinite(amount)) {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
+    }
+  }
+  if (format === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const date = new Date(`${value}T12:00:00.000Z`);
+    if (Number.isFinite(date.getTime())) {
+      return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long', timeZone: 'UTC' }).format(date);
+    }
+  }
+  return value;
+}
+
+function detailIconSvg(icon: string | undefined, top: number): string {
+  if (icon === 'credit-card') {
+    return `<rect x="160" y="${top + 18}" width="32" height="24" rx="5" fill="none" stroke="#1677eb" stroke-width="4"/><path d="M162 ${top + 27}h28M167 ${top + 35}h8" stroke="#1677eb" stroke-width="3" stroke-linecap="round"/>`;
+  }
+  if (icon === 'calendar') {
+    return `<rect x="160" y="${top + 20}" width="32" height="28" rx="5" fill="none" stroke="#1677eb" stroke-width="4"/><path d="M160 ${top + 28}h32M168 ${top + 16}v8m16-8v8" stroke="#1677eb" stroke-width="4" stroke-linecap="round"/>`;
+  }
+  if (icon === 'check') {
+    return `<circle cx="176" cy="${top + 43}" r="15" fill="none" stroke="#1677eb" stroke-width="4"/><path d="m168 ${top + 43} 6 6 12-13" fill="none" stroke="#1677eb" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if (icon === 'link') {
+    return `<path d="m171 ${top + 42} 10-10m-15 17 5-5m10-10 5-5a8 8 0 0 1 11 11l-5 5" fill="none" stroke="#1677eb" stroke-width="4" stroke-linecap="round"/>`;
+  }
+  if (icon === 'qrcode') {
+    return `<path d="M160 ${top + 20}h12v12h-12zM180 ${top + 20}h12v12h-12zM160 ${top + 40}h12v12h-12zM180 ${top + 40}v5m8-5v12" fill="none" stroke="#1677eb" stroke-width="4"/>`;
+  }
+  return `<path d="M160 ${top + 28}h32l-3 22h-26zM160 ${top + 28}l8-9h16l8 9m-24 0v8h16v-8" fill="none" stroke="#1677eb" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>`;
 }
 
 function renderFrame(visuals: TemplateVisuals, height: number): string {

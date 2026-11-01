@@ -31,32 +31,64 @@ describe('Cakto webhook API', () => {
       database.close();
     };
     insertTemplate(database.db, {
+      id: 'obrigado-compra',
+      name: 'Agradecimento pela compra',
+      description: 'Valoriza o cliente após a venda.',
       definition: {
         fields: [
-          { id: 'message', type: 'text' },
-          { id: 'recipient', type: 'text' },
+          { id: 'recipientName', type: 'text', required: true, maxLength: 60 },
+          { id: 'businessName', type: 'text', required: true, maxLength: 80 },
+          { id: 'message', type: 'textarea', required: true, maxLength: 300 },
+          { id: 'productName', type: 'text', required: true, maxLength: 120 },
+          { id: 'purchaseAmount', type: 'number', format: 'currency', required: true },
         ],
+        catalog: { segment: 'product', category: 'Agradecimento' },
+        visual: {
+          layout: 'centered',
+          background: '#e5f0ff',
+          surface: '#ffffff',
+          accent: '#2563eb',
+          heading: '#10264f',
+          text: '#385176',
+          muted: '#687895',
+          headingFont: 'rounded',
+          bodyFont: 'sans',
+          frame: 'none',
+        },
         card: {
-          illustration: 'wave',
-          heading: 'Olá, Maria!',
-          message: 'Que bom ter você por aqui!',
-          footer: 'heart',
+          illustration: 'shopping-bag-heart',
+          heading: 'Obrigado, {{recipientName}}! 💙',
+          message: '{{message}}',
+          details: [
+            { label: 'Produto', value: '{{productName}}', icon: 'package' },
+            { label: 'Valor', value: '{{purchaseAmount}}', icon: 'credit-card', format: 'currency' },
+          ],
+          action: { label: 'Ver detalhes da compra' },
+          footer: 'none',
         },
       },
     });
 
+    const messageData = {
+      recipientName: 'Maria',
+      businessName: 'Cadernô Express',
+      message: 'Sua compra foi registrada com sucesso. Esperamos que aproveite seu produto.',
+      productName: 'Conjunto de mesa',
+      purchaseAmount: 350,
+    };
+
     const draftResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/drafts',
-      payload: { templateId: 'mensagem-exemplo', data: { message: 'Olá' } },
+      payload: { templateId: 'obrigado-compra', data: messageData },
     });
     const draftId = draftResponse.json().data.id as string;
     database.db.update(templates)
       .set({ isActive: false })
-      .where(eq(templates.id, 'mensagem-exemplo'))
+      .where(eq(templates.id, 'obrigado-compra'))
       .run();
     database.db.insert(templates).values({
-      id: 'mensagem-exemplo',
+      id: 'obrigado-compra',
       version: 2,
       name: 'Modelo atualizado',
       description: 'Outra versão do modelo.',
@@ -83,7 +115,7 @@ describe('Cakto webhook API', () => {
       eventId: '00000000-0000-4000-8000-000000000123',
       name: 'preview_viewed',
       draftId,
-      templateId: 'mensagem-exemplo',
+      templateId: 'obrigado-compra',
       source: 'newsletter',
       referrerUrl: 'https://example.com/preview?email=private@example.com',
     };
@@ -98,7 +130,7 @@ describe('Cakto webhook API', () => {
       eventId: '00000000-0000-4000-8000-000000000125',
       name: 'whatsapp_share_clicked',
       draftId,
-      templateId: 'mensagem-exemplo',
+      templateId: 'obrigado-compra',
     };
     const trackedShare = await app.inject({
       method: 'POST',
@@ -204,7 +236,7 @@ describe('Cakto webhook API', () => {
     const publicPage = await app.inject({ method: 'GET', url: publicPath });
     expect(publicPage.statusCode).toBe(200);
     expect(publicPage.headers['content-type']).toContain('text/html');
-    expect(publicPage.body).toContain('<meta property="og:title" content="Modelo de exemplo · Cadernô">');
+    expect(publicPage.body).toContain('<meta property="og:title" content="Agradecimento pela compra · Cadernô">');
     expect(publicPage.body).toContain(`<meta property="og:url" content="${publicUrl}">`);
     expect(publicPage.body).toContain(
       `<meta property="og:image" content="https://api.example.test/api/v1/publications/${slug}.png">`,
@@ -222,23 +254,28 @@ describe('Cakto webhook API', () => {
     });
     expect(publicMessage.statusCode).toBe(200);
     expect(publicMessage.json().data).toMatchObject({
-      templateId: 'mensagem-exemplo',
+      templateId: 'obrigado-compra',
       templateVersion: 1,
-      templateName: 'Modelo de exemplo',
+      templateName: 'Agradecimento pela compra',
       publicUrl,
       templateDefinition: {
-        fields: [
-          { id: 'message', type: 'text' },
-          { id: 'recipient', type: 'text' },
-        ],
+        fields: expect.arrayContaining([
+          { id: 'recipientName', type: 'text', required: true, maxLength: 60 },
+          { id: 'purchaseAmount', type: 'number', format: 'currency', required: true },
+        ]),
         card: {
-          illustration: 'wave',
-          heading: 'Olá, Maria!',
-          message: 'Que bom ter você por aqui!',
-          footer: 'heart',
+          illustration: 'shopping-bag-heart',
+          heading: 'Obrigado, {{recipientName}}! 💙',
+          message: '{{message}}',
+          details: [
+            { label: 'Produto', value: '{{productName}}', icon: 'package' },
+            { label: 'Valor', value: '{{purchaseAmount}}', icon: 'credit-card', format: 'currency' },
+          ],
+          action: { label: 'Ver detalhes da compra' },
+          footer: 'none',
         },
       },
-      data: { message: 'Olá' },
+      data: messageData,
     });
     const publicPng = await app.inject({
       method: 'GET',

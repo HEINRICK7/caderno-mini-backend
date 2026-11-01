@@ -22,6 +22,8 @@ import {
   AnalyticsRangeError,
   InvalidMagicLinkError,
   InvalidCaktoWebhookError,
+  InvalidImageUploadError,
+  ImageStorageUnavailableError,
   MagicLinkDeliveryError,
   PurchaseNotFoundError,
   PublicationAccessDeniedError,
@@ -40,6 +42,7 @@ import type {
   IdentityServices,
   PublishingServices,
   PreviewServices,
+  ImageServices,
 } from './services.js';
 
 // Request bodies have already passed through Fastify's JSON parser; arbitrary JSON values are valid here.
@@ -78,6 +81,7 @@ const createDraftBodySchema = z
   .object({ templateId: z.string().min(1).max(120), data: jsonObjectSchema })
   .strict();
 const validateTemplateBodySchema = z.object({ data: jsonObjectSchema }).strict();
+const uploadImageBodySchema = z.object({ dataUrl: z.string().max(180_000) }).strict();
 const updateDraftBodySchema = z.object({ data: jsonObjectSchema }).strict();
 const magicLinkBodySchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) }).strict();
 const verifyMagicLinkBodySchema = z.object({ token: z.string().min(32).max(256) }).strict();
@@ -177,6 +181,7 @@ export type BuildAppOptions = {
   identityServices?: IdentityServices;
   publishingServices?: PublishingServices;
   previewServices?: PreviewServices;
+  imageServices?: ImageServices;
   analyticsServices?: AnalyticsServices;
   analyticsReadToken?: string;
   authCookieSecure?: boolean;
@@ -314,6 +319,16 @@ export function buildApp(options: BuildAppOptions = {}) {
         error: { code: 'EXPORT_CONTENT_TOO_LARGE', message: 'O conteúdo ultrapassa o limite para exportação.' },
       });
     }
+    if (error instanceof InvalidImageUploadError) {
+      return response.code(422).send({
+        error: { code: 'IMAGE_UPLOAD_INVALID', message: 'Envie uma imagem PNG, JPEG ou WebP de até 128 KB.' },
+      });
+    }
+    if (error instanceof ImageStorageUnavailableError) {
+      return response.code(503).send({
+        error: { code: 'IMAGE_STORAGE_UNAVAILABLE', message: 'O armazenamento de imagens está indisponível agora.' },
+      });
+    }
     if (error instanceof AnalyticsRangeError) {
       return response.code(400).send({
         error: { code: 'INVALID_ANALYTICS_RANGE', message: 'O período deve ter até 90 dias.' },
@@ -351,6 +366,16 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (error instanceof CheckoutNotConfiguredError) {
       return response.code(503).send({
         error: { code: 'CHECKOUT_UNAVAILABLE', message: 'O checkout está indisponível no momento.' },
+      });
+    }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'statusCode' in error &&
+      error.statusCode === 413
+    ) {
+      return response.code(413).send({
+        error: { code: 'REQUEST_TOO_LARGE', message: 'A imagem ultrapassa o limite permitido.' },
       });
     }
     if (
@@ -400,6 +425,70 @@ export function buildApp(options: BuildAppOptions = {}) {
       }
     },
     );
+
+    if (options.imageServices) {
+      app.post(
+        '/api/v1/assets',
+        {
+          bodyLimit: 192 * 1024,
+          schema: {
+            tags: ['assets'],
+            summary: 'Armazena uma imagem de template no MinIO',
+            body: uploadImageBodySchema,
+            response: {
+              201: z.object({ data: z.object({ id: z.uuid(), contentUrl: z.string() }) }),
+              400: errorResponseSchema,
+              413: errorResponseSchema,
+              422: errorResponseSchema,
+              429: errorResponseSchema,
+              503: errorResponseSchema,
+            },
+          },
+          preHandler: app.rateLimit({
+            max: 20,
+            timeWindow: '1 minute',
+            errorResponseBuilder: () => ({
+              statusCode: 429,
+              error: { code: 'RATE_LIMITED', message: 'Muitas imagens enviadas. Tente novamente em instantes.' },
+            }),
+          }),
+        },
+        async (request, response) => {
+          const image = await options.imageServices!.upload(request.body);
+          return response.code(201).send({
+            data: { id: image.id, contentUrl: `/api/v1/assets/${image.id}/content` },
+          });
+        },
+      );
+
+      app.get(
+        '/api/v1/assets/:id/content',
+        {
+          schema: {
+            tags: ['assets'],
+            summary: 'Exibe uma imagem armazenada no MinIO',
+            params: idParamsSchema,
+            response: {
+              200: z.any().meta({ type: 'string', format: 'binary' }),
+              404: errorResponseSchema,
+              503: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          const image = await options.imageServices!.get({ id: request.params.id });
+          if (!image) {
+            return response.code(404).send({ error: { code: 'ASSET_NOT_FOUND', message: 'Imagem não encontrada.' } });
+          }
+          return response
+            .header('cache-control', 'public, max-age=31536000, immutable')
+            .header('content-disposition', 'inline')
+            .header('x-content-type-options', 'nosniff')
+            .type(image.contentType)
+            .send(image.bytes);
+        },
+      );
+    }
 
     if (options.services) {
     const services = options.services;

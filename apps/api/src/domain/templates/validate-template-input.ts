@@ -5,7 +5,7 @@ import { validateTemplateCard } from './template-card.js';
 import { resolveTemplateVisuals } from './template-visuals.js';
 import { resolveTemplateCatalog } from './template-catalog.js';
 
-type SupportedFieldType = 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'url' | 'color' | 'date';
+type SupportedFieldType = 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'url' | 'color' | 'date' | 'image';
 
 type TemplateField = {
   id: string;
@@ -13,8 +13,12 @@ type TemplateField = {
   label?: string;
   placeholder?: string;
   helpText?: string;
+  section?: string;
+  width?: 'half' | 'full';
+  format?: 'currency';
   required?: boolean;
   maxLength?: number;
+  maxBytes?: number;
   options?: string[];
 };
 
@@ -27,6 +31,7 @@ const supportedFieldTypes = new Set<SupportedFieldType>([
   'url',
   'color',
   'date',
+  'image',
 ]);
 
 export function validateTemplateInput(definition: JsonObject, data: JsonObject): void {
@@ -82,9 +87,9 @@ function parseFields(definition: JsonObject): TemplateField[] {
     if (!isRecord(rawField)) {
       throw new InvalidTemplateDefinitionError();
     }
-    const { id, type, label, placeholder, helpText, required, maxLength, options } = rawField;
+    const { id, type, label, placeholder, helpText, section, width, format, required, maxLength, maxBytes, options } = rawField;
     if (
-      Object.keys(rawField).some((key) => !['id', 'type', 'label', 'placeholder', 'helpText', 'required', 'maxLength', 'options'].includes(key)) ||
+      Object.keys(rawField).some((key) => !['id', 'type', 'label', 'placeholder', 'helpText', 'section', 'width', 'format', 'required', 'maxLength', 'maxBytes', 'options'].includes(key)) ||
       typeof id !== 'string' ||
       !/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(id) ||
       typeof type !== 'string' ||
@@ -92,8 +97,12 @@ function parseFields(definition: JsonObject): TemplateField[] {
       (label !== undefined && (typeof label !== 'string' || label.trim().length === 0 || label.length > 120)) ||
       (placeholder !== undefined && (typeof placeholder !== 'string' || placeholder.length > 200)) ||
       (helpText !== undefined && (typeof helpText !== 'string' || helpText.length > 500)) ||
+      (section !== undefined && (typeof section !== 'string' || section.trim().length === 0 || section.length > 80)) ||
+      (width !== undefined && width !== 'half' && width !== 'full') ||
+      (format !== undefined && (format !== 'currency' || type !== 'number')) ||
       (required !== undefined && typeof required !== 'boolean') ||
       (maxLength !== undefined && (!Number.isInteger(maxLength) || (maxLength as number) < 1 || (maxLength as number) > 20_000)) ||
+      (maxBytes !== undefined && (!Number.isInteger(maxBytes) || (maxBytes as number) < 1 || (maxBytes as number) > 131_072 || type !== 'image')) ||
       (options !== undefined && (!Array.isArray(options) || options.some((option) => typeof option !== 'string' || option.length === 0 || option.length > 120)))
     ) {
       throw new InvalidTemplateDefinitionError();
@@ -111,8 +120,12 @@ function parseFields(definition: JsonObject): TemplateField[] {
       ...(typeof label === 'string' ? { label } : {}),
       ...(typeof placeholder === 'string' ? { placeholder } : {}),
       ...(typeof helpText === 'string' ? { helpText } : {}),
+      ...(typeof section === 'string' ? { section } : {}),
+      ...(width === 'half' || width === 'full' ? { width } : {}),
+      ...(format === 'currency' ? { format } : {}),
       ...(typeof required === 'boolean' ? { required } : {}),
       ...(typeof maxLength === 'number' ? { maxLength } : {}),
+      ...(typeof maxBytes === 'number' ? { maxBytes } : {}),
       ...(Array.isArray(options) ? { options: options as string[] } : {}),
     });
   }
@@ -149,13 +162,21 @@ function validateValue(field: TemplateField, value: JsonValue): string | undefin
   if (field.type === 'date' && typeof value === 'string' && Number.isFinite(Date.parse(value))) {
     return undefined;
   }
+  if (field.type === 'image') {
+    return typeof value === 'string' && isStoredImageId(value) ? undefined : 'invalid_image';
+  }
   return 'invalid_type';
+}
+
+function isStoredImageId(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function issueMessage(code: string): string {
   if (code === 'too_long') return 'O valor ultrapassa o limite de caracteres.';
   if (code === 'invalid_url') return 'Informe uma URL HTTP ou HTTPS válida.';
   if (code === 'required') return 'Este campo é obrigatório.';
+  if (code === 'invalid_image') return 'Envie uma logo armazenada pelo serviço de imagens.';
   return 'O valor não corresponde ao tipo deste campo.';
 }
 

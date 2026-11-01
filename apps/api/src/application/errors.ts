@@ -33,6 +33,20 @@ export class ExportContentTooLargeError extends Error {
   }
 }
 
+export class InvalidImageUploadError extends Error {
+  constructor() {
+    super('The uploaded image is invalid or exceeds the allowed size.');
+    this.name = 'InvalidImageUploadError';
+  }
+}
+
+export class ImageStorageUnavailableError extends Error {
+  constructor() {
+    super('Image storage is temporarily unavailable.');
+    this.name = 'ImageStorageUnavailableError';
+  }
+}
+
 export class AnalyticsRangeError extends Error {
   constructor() {
     super('The analytics time range is invalid or too large.');

@@ -10,6 +10,7 @@ import {
   createIdentityServices,
   createPreviewServices,
   createPublishingServices,
+  createImageServices,
 } from '../../src/bootstrap/services.js';
 import { buildApp } from '../../src/bootstrap/app.js';
 import { createDatabase } from '../../src/infrastructure/database/connection.js';
@@ -17,6 +18,7 @@ import type { CommerceServices } from '../../src/bootstrap/services.js';
 import { migrateDatabase } from '../../src/infrastructure/database/migrate.js';
 import type { MagicLinkEmail } from '../../src/application/ports/email-sender.js';
 import { SharpPngRenderer } from '../../src/infrastructure/rendering/sharp-png-renderer.js';
+import type { ImageStorage, StoredImage } from '../../src/application/ports/image-storage.js';
 
 export async function createTestApp(
   databaseFile = ':memory:',
@@ -34,6 +36,13 @@ export async function createTestApp(
   );
 
   const sentMagicLinks: MagicLinkEmail[] = [];
+  const storedImages = new Map<string, StoredImage>();
+  const imageStorage: ImageStorage = {
+    put: async ({ id, bytes, contentType }) => {
+      storedImages.set(id, { bytes, contentType });
+    },
+    get: async (id) => storedImages.get(id),
+  };
   const commerceServices = createCommerceServices(database.db, {
     checkoutUrl: 'https://pay.cakto.com.br/test-offer',
     expectedProductId: 'test-product-id',
@@ -42,7 +51,7 @@ export async function createTestApp(
     callbackGenerator: randomUUID,
     clock: () => new Date(),
   });
-  const renderer = new SharpPngRenderer();
+  const renderer = new SharpPngRenderer(imageStorage);
   const app = buildApp({
     logger: false,
     services: createApplicationServices(database.db, {
@@ -50,6 +59,7 @@ export async function createTestApp(
       clock: () => new Date(),
     }),
     commerceServices,
+    imageServices: createImageServices(imageStorage),
     previewServices: createPreviewServices(database.db, renderer),
     publishingServices: createPublishingServices(database.db, renderer, {
       clock: () => new Date(),

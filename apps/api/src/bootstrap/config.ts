@@ -8,6 +8,13 @@ const configSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .default('info'),
   DATABASE_FILE: z.string().min(1).default('./data/caderno-mini.sqlite'),
+  MINIO_ENDPOINT: z.string().min(1).refine((value) => !value.includes('://'), 'MINIO_ENDPOINT must be a host without a scheme.').default('127.0.0.1'),
+  MINIO_PORT: z.coerce.number().int().min(1).max(65_535).default(9000),
+  MINIO_USE_SSL: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  MINIO_REGION: z.string().min(1).default('us-east-1'),
+  MINIO_ACCESS_KEY: z.string().min(3).default('caderno-local'),
+  MINIO_SECRET_KEY: z.string().min(16).default('local-development-minio-secret'),
+  MINIO_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/).default('caderno-assets'),
   TRUST_PROXY: z.string().default('').transform((value) =>
     value.split(',').map((address) => address.trim()).filter(Boolean),
   ),
@@ -78,6 +85,15 @@ export type AppConfig = {
   port: number;
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
   databaseFile: string;
+  imageStorage: {
+    endpoint: string;
+    port: number;
+    useSSL: boolean;
+    region: string;
+    accessKey: string;
+    secretKey: string;
+    bucket: string;
+  };
   trustedProxyAddresses: string[];
   authPublicAppUrl: string;
   publicApiUrl: string;
@@ -102,6 +118,15 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
   if (parsed.NODE_ENV === 'production' && new URL(parsed.PUBLIC_APP_URL).protocol !== 'https:') {
     throw new Error('PUBLIC_APP_URL must use HTTPS in production.');
   }
+  if (parsed.NODE_ENV === 'production' && !parsed.MINIO_USE_SSL) {
+    throw new Error('MINIO_USE_SSL must be true in production.');
+  }
+  if (
+    parsed.NODE_ENV === 'production' &&
+    (parsed.MINIO_ACCESS_KEY === 'caderno-local' || parsed.MINIO_SECRET_KEY === 'local-development-minio-secret')
+  ) {
+    throw new Error('MinIO credentials must be changed from development defaults in production.');
+  }
 
   return {
     nodeEnv: parsed.NODE_ENV,
@@ -109,6 +134,15 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     port: parsed.PORT,
     logLevel: parsed.LOG_LEVEL,
     databaseFile: parsed.DATABASE_FILE,
+    imageStorage: {
+      endpoint: parsed.MINIO_ENDPOINT,
+      port: parsed.MINIO_PORT,
+      useSSL: parsed.MINIO_USE_SSL,
+      region: parsed.MINIO_REGION,
+      accessKey: parsed.MINIO_ACCESS_KEY,
+      secretKey: parsed.MINIO_SECRET_KEY,
+      bucket: parsed.MINIO_BUCKET,
+    },
     trustedProxyAddresses: parsed.TRUST_PROXY,
     authPublicAppUrl: parsed.AUTH_PUBLIC_APP_URL,
     publicApiUrl: parsed.PUBLIC_API_URL,
