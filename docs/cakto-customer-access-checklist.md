@@ -27,7 +27,7 @@ Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir 
 
 - [x] Confirmar produto, oferta, webhook registrado e link de acesso do produto em modo somente leitura.
 - [x] Confirmar endpoint público do backend e contrato de assinatura do webhook.
-- [ ] Criar webhook da Cakto para `https://api.caderno-express.otimizanegocio.com/api/v1/webhooks/cakto`, associado ao produto Cadernô Express.
+- [ ] Criar o webhook da Cakto inicialmente desativado para `https://api.caderno-express.otimizanegocio.com/api/v1/webhooks/cakto`, associado ao produto Cadernô Express.
 - [ ] Habilitar `purchase_approved`, `purchase_refused`, `pix_gerado`, `refund`, `refund_requested` e `chargeback`.
 - [ ] Guardar o segredo do webhook somente na configuração segura do backend como `CAKTO_WEBHOOK_SECRET`.
 - [ ] Confirmar no backend de produção `CAKTO_PRODUCT_ID` igual ao UUID acima e `CAKTO_CHECKOUT_URL` igual ao link hospedado da oferta atual.
@@ -77,11 +77,8 @@ Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir 
 - [x] Backend: lint e build TypeScript passaram.
 - [ ] Verificações na VPS e no domínio após merge/deploy ainda pendentes.
 
-## Pré-visualizações externas aguardando autorização
+## Próximo passo externo aguardando autorização
 
-Os previews foram montados em 2 de novembro de 2026, em produção, sem executar as escritas:
+O preview atual cria o webhook **Cadernô Express - Produção** inicialmente com status `disabled`, associado somente ao produto UUID acima, no endpoint do backend e com os seis eventos listados. Ele fica sem enviar eventos até ativarmos depois que o segredo estiver no GitHub e a versão do backend estiver publicada. A operação é em produção e não tem idempotência confirmada; se a resposta for ambígua, consultar a lista antes de tentar novamente.
 
-1. Criar o webhook **Cadernô Express - Produção**, ativo, somente para o produto UUID acima, no endpoint de webhook do backend, com os seis eventos de compra, Pix, reembolso e chargeback listados no checklist.
-2. Definir o campo `emailAccessLink` do produto para `https://caderno-express.otimizanegocio.com/entrar`.
-
-A Cakto exige aprovação humana de cada preview antes da chamada com `confirm=true`. O preview completo está disponível na conversa; nenhuma escrita foi executada.
+O preview anterior para `emailAccessLink=https://caderno-express.otimizanegocio.com/entrar` também não foi executado. Atualizar esse link fica para depois que a área Minha conta estiver publicada e conferida, para não encaminhar compradores antes do backend estar pronto. A Cakto exige aprovação humana do preview exato antes de cada escrita com `confirm=true`.
