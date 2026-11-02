@@ -96,6 +96,13 @@ export class CheckoutNotConfiguredError extends Error {
   }
 }
 
+export class CheckoutPlanRequiredError extends Error {
+  constructor() {
+    super('A checkout plan is required.');
+    this.name = 'CheckoutPlanRequiredError';
+  }
+}
+
 export class WebhookNotConfiguredError extends Error {
   constructor() {
     super('Cakto webhook verification is not configured.');

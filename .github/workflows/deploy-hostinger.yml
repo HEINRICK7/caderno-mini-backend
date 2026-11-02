@@ -162,6 +162,12 @@ jobs:
           CAKTO_CHECKOUT_URL: ${{ vars.CAKTO_CHECKOUT_URL }}
           CAKTO_PRODUCT_ID: ${{ vars.CAKTO_PRODUCT_ID }}
           CAKTO_WEBHOOK_SECRET: ${{ secrets.CAKTO_WEBHOOK_SECRET }}
+          CAKTO_CHECKOUT_ANNUAL_URL: ${{ vars.CAKTO_CHECKOUT_ANNUAL_URL }}
+          CAKTO_PRODUCT_ANNUAL_ID: ${{ vars.CAKTO_PRODUCT_ANNUAL_ID }}
+          CAKTO_WEBHOOK_SECRET_ANNUAL: ${{ secrets.CAKTO_WEBHOOK_SECRET_ANNUAL }}
+          CAKTO_CHECKOUT_LIFETIME_URL: ${{ vars.CAKTO_CHECKOUT_LIFETIME_URL }}
+          CAKTO_PRODUCT_LIFETIME_ID: ${{ vars.CAKTO_PRODUCT_LIFETIME_ID }}
+          CAKTO_WEBHOOK_SECRET_LIFETIME: ${{ secrets.CAKTO_WEBHOOK_SECRET_LIFETIME }}
         run: |
           set -euo pipefail
           HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
@@ -173,9 +179,23 @@ jobs:
           [ -z "$CAKTO_CHECKOUT_URL" ] || configured_count=$((configured_count + 1))
           [ -z "$CAKTO_PRODUCT_ID" ] || configured_count=$((configured_count + 1))
           [ -z "$CAKTO_WEBHOOK_SECRET" ] || configured_count=$((configured_count + 1))
-          if [ "$configured_count" -ne 0 ] && [ "$configured_count" -ne 3 ]; then
+          plan_count=0
+          [ -z "$CAKTO_CHECKOUT_ANNUAL_URL" ] || plan_count=$((plan_count + 1))
+          [ -z "$CAKTO_PRODUCT_ANNUAL_ID" ] || plan_count=$((plan_count + 1))
+          [ -z "$CAKTO_WEBHOOK_SECRET_ANNUAL" ] || plan_count=$((plan_count + 1))
+          [ -z "$CAKTO_CHECKOUT_LIFETIME_URL" ] || plan_count=$((plan_count + 1))
+          [ -z "$CAKTO_PRODUCT_LIFETIME_ID" ] || plan_count=$((plan_count + 1))
+          [ -z "$CAKTO_WEBHOOK_SECRET_LIFETIME" ] || plan_count=$((plan_count + 1))
+          if [ "$plan_count" -ne 0 ] && [ "$plan_count" -ne 6 ]; then
+            echo 'Set the six annual and lifetime Cakto variables together in the production environment.' >&2
+            exit 1
+          fi
+          if [ "$plan_count" -eq 0 ] && [ "$configured_count" -ne 0 ] && [ "$configured_count" -ne 3 ]; then
             echo 'Set CAKTO_CHECKOUT_URL, CAKTO_PRODUCT_ID, and CAKTO_WEBHOOK_SECRET together in the production environment.' >&2
             exit 1
+          fi
+          if [ "$plan_count" -eq 6 ]; then
+            configured_count=6
           fi
 
           remote="umask 077
@@ -185,7 +205,7 @@ jobs:
             echo 'Refusing to write Cakto configuration through a symlink.' >&2
             exit 1
           fi
-          if [ '$configured_count' -eq 3 ]; then
+          if [ '$configured_count' -eq 3 ] || [ '$configured_count' -eq 6 ]; then
             temp_file=\$(mktemp \"\$app_path/.env.cakto.XXXXXX\")
             cat > \"\$temp_file\"
             chmod 600 \"\$temp_file\"
@@ -194,7 +214,17 @@ jobs:
             install -m 600 /dev/null \"\$config_file\"
           fi"
 
-          if [ "$configured_count" -eq 3 ]; then
+          if [ "$configured_count" -eq 6 ]; then
+            {
+              printf 'CAKTO_CHECKOUT_ANNUAL_URL=%s\n' "$CAKTO_CHECKOUT_ANNUAL_URL"
+              printf 'CAKTO_PRODUCT_ANNUAL_ID=%s\n' "$CAKTO_PRODUCT_ANNUAL_ID"
+              printf 'CAKTO_WEBHOOK_SECRET_ANNUAL=%s\n' "$CAKTO_WEBHOOK_SECRET_ANNUAL"
+              printf 'CAKTO_CHECKOUT_LIFETIME_URL=%s\n' "$CAKTO_CHECKOUT_LIFETIME_URL"
+              printf 'CAKTO_PRODUCT_LIFETIME_ID=%s\n' "$CAKTO_PRODUCT_LIFETIME_ID"
+              printf 'CAKTO_WEBHOOK_SECRET_LIFETIME=%s\n' "$CAKTO_WEBHOOK_SECRET_LIFETIME"
+            } | ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+              "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
+          elif [ "$configured_count" -eq 3 ]; then
             {
               printf 'CAKTO_CHECKOUT_URL=%s\n' "$CAKTO_CHECKOUT_URL"
               printf 'CAKTO_PRODUCT_ID=%s\n' "$CAKTO_PRODUCT_ID"

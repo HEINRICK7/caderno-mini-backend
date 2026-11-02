@@ -112,6 +112,36 @@ describe('loadConfig', () => {
     })).toThrow('MinIO credentials must be changed from development defaults in production.');
   });
 
+  it('loads both Cakto plans when the six variables are set together', () => {
+    const config = loadConfig({
+      CAKTO_CHECKOUT_ANNUAL_URL: 'https://pay.cakto.com.br/annual',
+      CAKTO_PRODUCT_ANNUAL_ID: '11111111-1111-4111-8111-111111111111',
+      CAKTO_WEBHOOK_SECRET_ANNUAL: 'annual-webhook-secret',
+      CAKTO_CHECKOUT_LIFETIME_URL: 'https://pay.cakto.com.br/lifetime',
+      CAKTO_PRODUCT_LIFETIME_ID: '22222222-2222-4222-8222-222222222222',
+      CAKTO_WEBHOOK_SECRET_LIFETIME: 'lifetime-webhook-secret',
+    });
+
+    expect(config.caktoPlans).toEqual({
+      annual: {
+        checkoutUrl: 'https://pay.cakto.com.br/annual',
+        productId: '11111111-1111-4111-8111-111111111111',
+        webhookSecret: 'annual-webhook-secret',
+      },
+      lifetime: {
+        checkoutUrl: 'https://pay.cakto.com.br/lifetime',
+        productId: '22222222-2222-4222-8222-222222222222',
+        webhookSecret: 'lifetime-webhook-secret',
+      },
+    });
+  });
+
+  it('rejects a partial pair of Cakto plans', () => {
+    expect(() => loadConfig({
+      CAKTO_CHECKOUT_ANNUAL_URL: 'https://pay.cakto.com.br/annual',
+    })).toThrow(/together/);
+  });
+
   it('requires TLS for MinIO in production', () => {
     expect(() => loadConfig({
       NODE_ENV: 'production',

@@ -12,7 +12,7 @@ import { updateDraft } from '../application/use-cases/update-draft.js';
 import { previewDraft, type PreviewDraftDependencies } from '../application/use-cases/preview-draft.js';
 import { createCheckout } from '../application/use-cases/create-checkout.js';
 import { getPurchaseStatus, listUserAccess, userHasActiveGrantForDraft } from '../application/use-cases/get-purchase-status.js';
-import { CheckoutNotConfiguredError, WebhookNotConfiguredError } from '../application/errors.js';
+import { CheckoutNotConfiguredError, CheckoutPlanRequiredError, WebhookNotConfiguredError } from '../application/errors.js';
 import { persistCaktoEvents, processCaktoInboxBatch } from '../application/use-cases/cakto-webhooks.js';
 import {
   getSession,
@@ -25,6 +25,7 @@ import type { EmailSender } from '../application/ports/email-sender.js';
 import { SqliteIdentityRepository } from '../infrastructure/database/repositories/sqlite-identity-repository.js';
 import { SqlitePurchaseRepository } from '../infrastructure/database/repositories/sqlite-purchase-repository.js';
 import { SqliteWebhookInboxRepository } from '../infrastructure/database/repositories/sqlite-webhook-inbox-repository.js';
+import type { CaktoPlanConfig } from './config.js';
 import { CaktoHostedCheckoutLink } from '../infrastructure/payments/cakto/hosted-checkout-link.js';
 import { parseCaktoWebhook, type CaktoWebhookHeaders } from '../infrastructure/payments/cakto/webhook.js';
 import { SqlitePublicationRepository } from '../infrastructure/database/repositories/sqlite-publication-repository.js';
@@ -139,12 +140,15 @@ export function createAdminServices(
 
 export type CommerceServices = ReturnType<typeof createCommerceServices>;
 
+export type CheckoutPlan = 'annual' | 'lifetime';
+
 export function createCommerceServices(
   db: AppDatabase,
   options: {
     checkoutUrl?: string;
     expectedProductId?: string;
     webhookSecret?: string;
+    plans?: { annual: CaktoPlanConfig; lifetime: CaktoPlanConfig };
     idGenerator?: () => string;
     callbackGenerator?: () => string;
     clock?: () => Date;
@@ -157,36 +161,62 @@ export function createCommerceServices(
   const checkoutLinks = options.checkoutUrl
     ? new CaktoHostedCheckoutLink(options.checkoutUrl)
     : undefined;
+  const planLinks = options.plans
+    ? {
+      annual: new CaktoHostedCheckoutLink(options.plans.annual.checkoutUrl),
+      lifetime: new CaktoHostedCheckoutLink(options.plans.lifetime.checkoutUrl),
+    }
+    : undefined;
+  const webhookSecrets = options.plans
+    ? [options.plans.annual.webhookSecret, options.plans.lifetime.webhookSecret]
+    : options.webhookSecret
+      ? [options.webhookSecret]
+      : [];
+  const expectedProductIds = options.plans
+    ? [options.plans.annual.productId, options.plans.lifetime.productId]
+    : options.expectedProductId
+      ? [options.expectedProductId]
+      : [];
+  const productPlans = options.plans
+    ? {
+      [options.plans.annual.productId]: 'annual' as const,
+      [options.plans.lifetime.productId]: 'lifetime' as const,
+    }
+    : undefined;
   const idGenerator = options.idGenerator ?? randomUUID;
   const callbackGenerator = options.callbackGenerator;
   const clock = options.clock ?? (() => new Date());
 
   return {
-    createCheckout: (input: { draftId: string; userId?: string }) => {
-      if (!checkoutLinks || !options.expectedProductId) {
+    createCheckout: (input: { draftId: string; userId?: string; plan?: CheckoutPlan }) => {
+      if (planLinks && !input.plan) {
+        throw new CheckoutPlanRequiredError();
+      }
+      const checkoutLink = planLinks && input.plan ? planLinks[input.plan] : checkoutLinks;
+      if (!checkoutLink || expectedProductIds.length === 0) {
         throw new CheckoutNotConfiguredError();
       }
       return createCheckout(input, {
         drafts,
         purchases,
-        checkoutLinks,
+        checkoutLinks: checkoutLink,
         generateId: idGenerator,
         ...(callbackGenerator ? { generateCallback: callbackGenerator } : {}),
         clock,
       });
     },
     getPurchaseStatus: (input: Parameters<typeof getPurchaseStatus>[0]) =>
-      getPurchaseStatus(input, { purchases }),
-    listUserAccess: (input: Parameters<typeof listUserAccess>[0]) => listUserAccess(input, { purchases }),
+      getPurchaseStatus(input, { purchases, clock }),
+    listUserAccess: (input: Parameters<typeof listUserAccess>[0]) => listUserAccess(input, { purchases, clock }),
     userHasActiveGrantForDraft: (input: Parameters<typeof userHasActiveGrantForDraft>[0]) =>
-      userHasActiveGrantForDraft(input, { purchases }),
+      userHasActiveGrantForDraft(input, { purchases, clock }),
     acceptCaktoWebhook: (input: { rawBody: Buffer; headers: CaktoWebhookHeaders }) => {
-      if (!options.webhookSecret) {
+      if (webhookSecrets.length === 0) {
         throw new WebhookNotConfiguredError();
       }
       const now = clock();
       const events = parseCaktoWebhook(input.rawBody, input.headers, {
-        secret: options.webhookSecret,
+        secrets: webhookSecrets,
         now,
       });
       return persistCaktoEvents(events, {
@@ -201,7 +231,8 @@ export function createCommerceServices(
           inbox,
           purchases,
           analytics,
-          ...(options.expectedProductId ? { expectedProductId: options.expectedProductId } : {}),
+          ...(expectedProductIds.length > 0 ? { expectedProductIds } : {}),
+          ...(productPlans ? { productPlans } : {}),
           generateId: idGenerator,
           clock,
         },

@@ -2,6 +2,13 @@
 
 Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir uma demonstração grátis compartilhável nas quatro categorias e ligar a compra da Cakto ao acesso do Cadernô. Manter as ofertas e os preços atuais; não executar compra real de teste.
 
+## Prazo do acesso
+
+- O pagamento do plano anual grava a licença com fim em 12 meses corridos, contados da data do pagamento. Passou essa data, publicar e abrir a mensagem deixa de valer.
+- O plano vitalício grava a licença sem data de fim. Ela só acaba em reembolso ou chargeback.
+- Os dois produtos usam as seis variáveis `CAKTO_CHECKOUT_ANNUAL_URL`, `CAKTO_PRODUCT_ANNUAL_ID`, `CAKTO_WEBHOOK_SECRET_ANNUAL`, `CAKTO_CHECKOUT_LIFETIME_URL`, `CAKTO_PRODUCT_LIFETIME_ID` e `CAKTO_WEBHOOK_SECRET_LIFETIME`. Quando as seis estão preenchidas, elas substituem o trio de uma oferta só.
+- A compra que cria a licença começa no editor, com o plano escolhido. O botão da página inicial abre a oferta da Cakto sem vincular a conta.
+
 ## Estado conferido em 2 de novembro de 2026
 
 - Cakto produção: produto **Cadernô Express** ativo, tipo pagamento único.

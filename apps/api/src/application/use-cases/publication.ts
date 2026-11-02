@@ -28,12 +28,12 @@ export function publishMessage(
   dependencies: PublicationDependencies,
 ): Publication {
   const draft = requireOwnedDraft(input, dependencies.drafts);
-  if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id)) {
+  const now = dependencies.clock?.() ?? new Date();
+  if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id, now)) {
     throw new PublicationAccessDeniedError();
   }
   const template = dependencies.templates.findByIdAndVersion(draft.templateId, draft.templateVersion);
   if (!template) throw new DraftNotFoundError();
-  const now = dependencies.clock?.() ?? new Date();
   assertTemplateFinancialState(template.definition, draft.data, template.id, now);
   const publication = dependencies.publications.publish({
     id: (dependencies.generateId ?? randomUUID)(),
@@ -68,8 +68,9 @@ export function getPublicMessage(
   data: Draft['data'];
   publishedAt: Date;
 } | undefined {
+  const now = dependencies.clock?.() ?? new Date();
   const publication = dependencies.publications.findPublishedBySlug(input.slug);
-  if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId)) {
+  if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId, now)) {
     return undefined;
   }
 
@@ -82,7 +83,7 @@ export function getPublicMessage(
     return undefined;
   }
   try {
-    assertTemplateFinancialState(template.definition, draft.data, template.id, dependencies.clock?.() ?? new Date());
+    assertTemplateFinancialState(template.definition, draft.data, template.id, now);
   } catch (error) {
     if (error instanceof TemplateFinancialStateError) return undefined;
     throw error;
@@ -102,8 +103,9 @@ export async function renderPublicMessagePng(
   input: { slug: string },
   dependencies: PublicationDependencies,
 ): Promise<Buffer | undefined> {
+  const now = dependencies.clock?.() ?? new Date();
   const publication = dependencies.publications.findPublishedBySlug(input.slug);
-  if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId)) {
+  if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId, now)) {
     return undefined;
   }
   const draft = dependencies.drafts.findById(publication.draftId);
@@ -115,7 +117,7 @@ export async function renderPublicMessagePng(
     return undefined;
   }
   try {
-    assertTemplateFinancialState(template.definition, draft.data, template.id, dependencies.clock?.() ?? new Date());
+    assertTemplateFinancialState(template.definition, draft.data, template.id, now);
   } catch (error) {
     if (error instanceof TemplateFinancialStateError) return undefined;
     throw error;
@@ -128,14 +130,15 @@ export async function exportMessage(
   dependencies: PublicationDependencies,
 ): Promise<Buffer> {
   const draft = requireOwnedDraft(input, dependencies.drafts);
-  if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id)) {
+  const now = dependencies.clock?.() ?? new Date();
+  if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id, now)) {
     throw new PublicationAccessDeniedError();
   }
   const template = dependencies.templates.findByIdAndVersion(draft.templateId, draft.templateVersion);
   if (!template) {
     throw new DraftNotFoundError();
   }
-  assertTemplateFinancialState(template.definition, draft.data, template.id, dependencies.clock?.() ?? new Date());
+  assertTemplateFinancialState(template.definition, draft.data, template.id, now);
   return dependencies.renderer.render(template as Template, draft.data);
 }
 

@@ -44,6 +44,7 @@ export class SqliteAdminRepository implements AdminRepository {
         templateId: drafts.templateId,
         purchaseStatus: purchases.status,
         accessStatus: accessGrants.status,
+        expiresAt: accessGrants.expiresAt,
         createdAt: purchases.createdAt,
         updatedAt: purchases.updatedAt,
       })
@@ -52,7 +53,11 @@ export class SqliteAdminRepository implements AdminRepository {
       .leftJoin(accessGrants, eq(accessGrants.purchaseId, purchases.id))
       .where(or(eq(purchases.ownerUserId, input.userId), eq(accessGrants.userId, input.userId)))
       .orderBy(desc(purchases.createdAt))
-      .all();
+      .all()
+      .map(({ expiresAt, accessStatus, ...purchase }) => ({
+        ...purchase,
+        accessStatus: accessStatus === 'active' && expiresAt !== null && expiresAt <= input.now ? null : accessStatus,
+      }));
 
     const recentActions = this.database
       .select({ action: adminAuditLog.action, actorEmail: users.email, createdAt: adminAuditLog.createdAt })
@@ -134,6 +139,7 @@ function summarySelection(now: Date) {
       WHERE access_grants.user_id = ${users.id}
         AND access_grants.status = 'active'
         AND purchases.status = 'paid'
+        AND (access_grants.expires_at IS NULL OR access_grants.expires_at > ${now.getTime()})
     )`,
     draftCount: sql<number>`(
       SELECT COUNT(*) FROM drafts WHERE drafts.owner_user_id = ${users.id}

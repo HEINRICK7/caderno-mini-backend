@@ -21,9 +21,13 @@ const order = {
   paidAt: '2026-10-31T21:29:30.000Z',
 };
 
-function signedRequest(payload: unknown, timestamp = String(Math.floor(now.getTime() / 1000))) {
+function signedRequest(
+  payload: unknown,
+  timestamp = String(Math.floor(now.getTime() / 1000)),
+  signingSecret = secret,
+) {
   const rawBody = Buffer.from(JSON.stringify(payload));
-  const signature = createHmac('sha256', secret)
+  const signature = createHmac('sha256', signingSecret)
     .update(`${timestamp}.`)
     .update(rawBody)
     .digest('hex');
@@ -104,6 +108,20 @@ describe('parseCaktoWebhook', () => {
 
     const mismatched = signedRequest({ secret: 'another-secret', event: 'purchase_approved', data: order });
     expect(() => parseCaktoWebhook(mismatched.rawBody, mismatched.headers, { secret, now })).toThrow(
+      InvalidCaktoWebhookError,
+    );
+  });
+
+  it('accepts a signature from a second configured plan secret', () => {
+    const lifetimeSecret = 'lifetime-webhook-secret';
+    const request = signedRequest(
+      { secret: lifetimeSecret, event: 'purchase_approved', data: order },
+      String(Math.floor(now.getTime() / 1000)),
+      lifetimeSecret,
+    );
+
+    expect(parseCaktoWebhook(request.rawBody, request.headers, { secrets: [secret, lifetimeSecret], now })).toHaveLength(1);
+    expect(() => parseCaktoWebhook(request.rawBody, request.headers, { secrets: [secret], now })).toThrow(
       InvalidCaktoWebhookError,
     );
   });

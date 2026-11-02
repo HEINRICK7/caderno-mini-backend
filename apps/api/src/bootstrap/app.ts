@@ -17,6 +17,7 @@ import { z } from 'zod/v4';
 
 import {
   CheckoutNotConfiguredError,
+  CheckoutPlanRequiredError,
   DemoPublicationNotFoundError,
   DraftNotFoundError,
   ExportContentTooLargeError,
@@ -104,7 +105,11 @@ const attributionSchema = z.object({
   campaign: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/).optional(),
   referrerUrl: z.url().max(2_048).optional(),
 }).strict();
-const createCheckoutBodySchema = z.object({ draftId: z.uuid(), attribution: attributionSchema.optional() }).strict();
+const createCheckoutBodySchema = z.object({
+  draftId: z.uuid(),
+  plan: z.enum(['annual', 'lifetime']).optional(),
+  attribution: attributionSchema.optional(),
+}).strict();
 const createDemoPublicationBodySchema = z.object({ draftId: z.uuid() }).strict();
 const demoCategorySchema = z.enum(['relacionamento', 'cobrancas', 'ofertas', 'servicos']);
 const demoPublicationResponseSchema = z.object({
@@ -141,6 +146,7 @@ const purchaseStatusResponseSchema = z.object({
     draftId: z.uuid(),
     status: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
     accessStatus: z.enum(['active', 'revoked', 'none']),
+    expiresAt: z.string().datetime().nullable(),
     updatedAt: z.string().datetime(),
   }),
 });
@@ -148,8 +154,9 @@ const userAccessItemSchema = z.object({
   purchaseId: z.uuid(),
   draftId: z.uuid(),
   purchaseStatus: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
-  accessStatus: z.enum(['active', 'revoked']),
+  accessStatus: z.enum(['active', 'revoked', 'none']),
   grantedAt: z.string().datetime(),
+  expiresAt: z.string().datetime().nullable(),
 });
 const adminAccountStatusSchema = z.enum(['active', 'suspended']);
 const adminUserSummarySchema = z.object({
@@ -473,6 +480,11 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (error instanceof CheckoutNotConfiguredError) {
       return response.code(503).send({
         error: { code: 'CHECKOUT_UNAVAILABLE', message: 'O checkout está indisponível no momento.' },
+      });
+    }
+    if (error instanceof CheckoutPlanRequiredError) {
+      return response.code(400).send({
+        error: { code: 'CHECKOUT_PLAN_REQUIRED', message: 'Escolha o plano anual ou o vitalício.' },
       });
     }
     if (
@@ -1144,6 +1156,7 @@ export function buildApp(options: BuildAppOptions = {}) {
             data: commerce.listUserAccess({ userId: user.id }).map((item) => ({
               ...item,
               grantedAt: item.grantedAt.toISOString(),
+              expiresAt: item.expiresAt?.toISOString() ?? null,
             })),
           };
         },
@@ -1168,7 +1181,11 @@ export function buildApp(options: BuildAppOptions = {}) {
           if (!user) return response;
           const status = commerce.getPurchaseStatus({ purchaseId: request.params.id, userId: user.id });
           return {
-            data: { ...status, updatedAt: status.updatedAt.toISOString() },
+            data: {
+              ...status,
+              expiresAt: status.expiresAt?.toISOString() ?? null,
+              updatedAt: status.updatedAt.toISOString(),
+            },
           };
         },
       );
@@ -1203,6 +1220,7 @@ export function buildApp(options: BuildAppOptions = {}) {
           const user = getAuthenticatedUser(request);
           const checkout = commerce.createCheckout({
             draftId: request.body.draftId,
+            ...(request.body.plan ? { plan: request.body.plan } : {}),
             ...(user ? { userId: user.id } : {}),
           });
           const attribution = request.body.attribution;
