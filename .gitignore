@@ -5,6 +5,7 @@ coverage/
 .env.*
 !.env.example
 data/
+backups/
 *.db
 *.db-shm
 *.db-wal
@@ -12,3 +13,6 @@ data/
 *.sqlite-shm
 *.sqlite-wal
 .DS_Store
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

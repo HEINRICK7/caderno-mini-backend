@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793476770367,
+      "tag": "0000_bright_jimmy_woo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793482040468,
+      "tag": "0001_clean_anthem",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793482422809,
+      "tag": "0002_neat_maximus",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793482670207,
+      "tag": "0003_sleepy_nextwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793482854178,
+      "tag": "0004_panoramic_sheva_callister",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793483262781,
+      "tag": "0005_marvelous_ezekiel",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793483453746,
+      "tag": "0006_aspiring_stepford_cuckoos",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793483705926,
+      "tag": "0007_big_shockwave",
+      "breakpoints": true
+    }
+  ]
+}
