@@ -5,6 +5,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint 8.72 accepts TypeScript >=4.8.4 and <6.1.0.
+      # 6.0.3 installs; 6.1 and 7 make `npm ci` fail with ERESOLVE.
+      - dependency-name: typescript
+        versions:
+          - ">=6.1.0"
 
   - package-ecosystem: github-actions
     directory: /
