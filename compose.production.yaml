@@ -1,5 +1,7 @@
 services:
   api:
+    env_file:
+      - .env.cakto
     networks:
       - default
       - production
