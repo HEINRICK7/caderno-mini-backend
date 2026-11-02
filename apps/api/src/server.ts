@@ -10,6 +10,8 @@ import {
   createImageServices,
   createPreviewServices,
   createPublishingServices,
+  createDemoServices,
+  createAdminServices,
 } from './bootstrap/services.js';
 import { createDatabase } from './infrastructure/database/connection.js';
 import { NodemailerEmailSender } from './infrastructure/email/nodemailer-email-sender.js';
@@ -35,9 +37,12 @@ const app = buildApp({
   logger: { level: config.logLevel },
   services: createApplicationServices(database.db),
   commerceServices,
+  adminServices: createAdminServices(database.db),
+  superAdminEmails: config.superAdminEmails,
   imageServices,
   previewServices: createPreviewServices(database.db, renderer),
   publishingServices: createPublishingServices(database.db, renderer),
+  demoServices: createDemoServices(database.db),
   analyticsServices: createAnalyticsServices(database.db),
   ...(config.analyticsReadToken ? { analyticsReadToken: config.analyticsReadToken } : {}),
   publicApiUrl: config.publicApiUrl,

@@ -62,6 +62,12 @@ Para habilitar checkout, configure a URL da oferta hospedada em `CAKTO_CHECKOUT_
 
 O backend não consulta a Cakto para autorizar cada requisição: a assinatura valida o evento recebido, e o ledger local guarda o estado derivado e idempotente. Para validar um ambiente real, faltam as configurações da oferta/produto, eventos habilitados e o segredo de webhook salvo como variável de ambiente; não envie o segredo em commits ou logs.
 
+### Painel do criador e suporte
+
+Configure `SUPERADMIN_EMAILS` com uma lista separada por vírgulas dos e-mails que podem abrir `/admin`. O painel lista e busca clientes, mostra compras, licenças, sessões e rascunhos, e permite suspender/reativar uma conta. Suspender encerra sessões existentes, bloqueia novas sessões e grava a ação no histórico administrativo. O próprio painel não concede nem remove licença paga; esses estados continuam sendo derivados dos eventos assinados da Cakto.
+
+Em desenvolvimento, defina `SUPERADMIN_EMAILS` no `.env`. No ambiente GitHub `production`, cadastre o segredo `SUPERADMIN_EMAILS` com o e-mail que você usa no magic link. O deploy grava o allowlist em `.env.admin` com permissão restrita. Depois de entrar com esse e-mail, abra `/admin`; em **Minha conta** aparece o atalho **Abrir painel do criador**. O painel também abre o editor e a área do cliente para experimentar os links gratuitos. Uma compra paga de ponta a ponta só pode ser validada com um checkout de teste aceito pela Cakto e o webhook configurado.
+
 ### Backup SQLite
 
 Gere um snapshot consistente do banco em execução e escolha um nome novo para cada arquivo. Em desenvolvimento, compile antes de usar o comando de produção ou use `db:backup:dev`:
@@ -98,7 +104,7 @@ Fluxo de promoção: feature abre PR para `dev`; depois da revisão e merge, `de
 
 ## Deploy na Hostinger
 
-O deploy de `production` roda somente após push em `main`, com a CI verde e `PRODUCTION_DEPLOY_ENABLED=true`. No ambiente GitHub `production`, configure `HOSTINGER_HOST`, `HOSTINGER_USER`, `HOSTINGER_SSH_PORT`, `HOSTINGER_APP_PATH`, `HOSTINGER_API_PORT` e `PUBLIC_URL`, além dos segredos `HOSTINGER_SSH_PRIVATE_KEY` e `HOSTINGER_KNOWN_HOSTS`. `HOSTINGER_APP_PATH` deve ser um diretório exclusivo terminado em `/caderno-mini/backend`; `HOSTINGER_API_PORT` deve ser uma porta livre de loopback entre 1024 e 65535. O workflow interrompe o deploy se o diretório já tiver conteúdo sem o marcador Cadernô, se a porta estiver ocupada por outro serviço, ou se a rede Docker não estiver marcada como pertencente à produção Cadernô.
+O deploy de `production` roda somente após push em `main`, com a CI verde e `PRODUCTION_DEPLOY_ENABLED=true`. No ambiente GitHub `production`, configure `HOSTINGER_HOST`, `HOSTINGER_USER`, `HOSTINGER_SSH_PORT`, `HOSTINGER_APP_PATH`, `HOSTINGER_API_PORT` e `PUBLIC_URL`, além dos segredos `HOSTINGER_SSH_PRIVATE_KEY` e `HOSTINGER_KNOWN_HOSTS`. Para o checkout Cakto, configure as variáveis `CAKTO_CHECKOUT_URL` e `CAKTO_PRODUCT_ID`, e o segredo `CAKTO_WEBHOOK_SECRET` no mesmo ambiente; o deploy grava esses valores em `.env.cakto`, dentro do diretório isolado do backend, com permissão restrita. Os três valores devem ser definidos juntos. `HOSTINGER_APP_PATH` deve ser um diretório exclusivo terminado em `/caderno-mini/backend`; `HOSTINGER_API_PORT` deve ser uma porta livre de loopback entre 1024 e 65535. O workflow interrompe o deploy se o diretório já tiver conteúdo sem o marcador Cadernô, se a porta estiver ocupada por outro serviço, ou se a rede Docker não estiver marcada como pertencente à produção Cadernô.
 
 Antes de ativar, crie o `.env` de produção no diretório exclusivo, configure MinIO com TLS e credenciais próprias, e confirme que Docker Compose, `rsync`, `ssh` e `ss` estão instalados no VPS. O deploy não apaga arquivos no destino, preserva `.env` e mantém o volume SQLite do projeto. A rede privada `caderno-mini-production` conecta apenas os containers do frontend e backend; o proxy HTTPS existente deve apontar o domínio para a porta local configurada, sem substituir a configuração de outros sites. O catálogo oficial é atualizado de forma idempotente depois do health check.
 

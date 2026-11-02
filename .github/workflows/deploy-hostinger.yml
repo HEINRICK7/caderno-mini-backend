@@ -130,6 +130,82 @@ jobs:
               fi
             fi"
 
+      - name: Configure creator allowlist
+        shell: bash
+        env:
+          SUPERADMIN_EMAILS: ${{ secrets.SUPERADMIN_EMAILS }}
+        run: |
+          set -euo pipefail
+          : "${SUPERADMIN_EMAILS:?Set SUPERADMIN_EMAILS as a GitHub environment secret before deploying}"
+          if [[ ! "$SUPERADMIN_EMAILS" =~ ^[A-Za-z0-9._+@,-]+$ ]]; then
+            echo 'SUPERADMIN_EMAILS must be a comma-separated list of email addresses without spaces.' >&2
+            exit 1
+          fi
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          remote="umask 077
+          app_path='$HOSTINGER_APP_PATH'
+          config_file=\$app_path/.env.admin
+          if [ -L \"\$config_file\" ]; then
+            echo 'Refusing to write creator configuration through a symlink.' >&2
+            exit 1
+          fi
+          temp_file=\$(mktemp \"\$app_path/.env.admin.XXXXXX\")
+          cat > \"\$temp_file\"
+          chmod 600 \"\$temp_file\"
+          mv \"\$temp_file\" \"\$config_file\""
+          printf 'SUPERADMIN_EMAILS=%s\n' "$SUPERADMIN_EMAILS" | ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+            "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
+
+      - name: Configure Cakto environment file
+        shell: bash
+        env:
+          CAKTO_CHECKOUT_URL: ${{ vars.CAKTO_CHECKOUT_URL }}
+          CAKTO_PRODUCT_ID: ${{ vars.CAKTO_PRODUCT_ID }}
+          CAKTO_WEBHOOK_SECRET: ${{ secrets.CAKTO_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          case "$HOSTINGER_SSH_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
+          esac
+
+          configured_count=0
+          [ -z "$CAKTO_CHECKOUT_URL" ] || configured_count=$((configured_count + 1))
+          [ -z "$CAKTO_PRODUCT_ID" ] || configured_count=$((configured_count + 1))
+          [ -z "$CAKTO_WEBHOOK_SECRET" ] || configured_count=$((configured_count + 1))
+          if [ "$configured_count" -ne 0 ] && [ "$configured_count" -ne 3 ]; then
+            echo 'Set CAKTO_CHECKOUT_URL, CAKTO_PRODUCT_ID, and CAKTO_WEBHOOK_SECRET together in the production environment.' >&2
+            exit 1
+          fi
+
+          remote="umask 077
+          app_path='$HOSTINGER_APP_PATH'
+          config_file=\$app_path/.env.cakto
+          if [ -L \"\$config_file\" ]; then
+            echo 'Refusing to write Cakto configuration through a symlink.' >&2
+            exit 1
+          fi
+          if [ '$configured_count' -eq 3 ]; then
+            temp_file=\$(mktemp \"\$app_path/.env.cakto.XXXXXX\")
+            cat > \"\$temp_file\"
+            chmod 600 \"\$temp_file\"
+            mv \"\$temp_file\" \"\$config_file\"
+          elif [ ! -e \"\$config_file\" ]; then
+            install -m 600 /dev/null \"\$config_file\"
+          fi"
+
+          if [ "$configured_count" -eq 3 ]; then
+            {
+              printf 'CAKTO_CHECKOUT_URL=%s\n' "$CAKTO_CHECKOUT_URL"
+              printf 'CAKTO_PRODUCT_ID=%s\n' "$CAKTO_PRODUCT_ID"
+              printf 'CAKTO_WEBHOOK_SECRET=%s\n' "$CAKTO_WEBHOOK_SECRET"
+            } | ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+              "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
+          else
+            ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+              "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
+          fi
+
       - name: Copy release to the VPS
         shell: bash
         run: |
@@ -146,6 +222,8 @@ jobs:
             --exclude='data/' \
             --exclude='backups/' \
             --exclude='.env' \
+            --exclude='.env.admin' \
+            --exclude='.env.cakto' \
             --exclude='.caderno-mini-backend-deploy' \
             ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_APP_PATH/"
 

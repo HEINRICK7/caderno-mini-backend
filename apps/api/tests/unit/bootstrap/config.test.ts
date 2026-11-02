@@ -46,6 +46,7 @@ describe('loadConfig', () => {
       publicAppUrl: 'https://app.example.com',
       smtpUrl: 'smtps://mailer:secret@mail.example.com:465',
       emailFrom: 'Cadernô <login@example.com>',
+      superAdminEmails: [],
     });
   });
 
@@ -69,6 +70,7 @@ describe('loadConfig', () => {
       authPublicAppUrl: 'http://localhost:3000',
       publicApiUrl: 'http://localhost:3000',
       publicAppUrl: 'http://localhost:3001',
+      superAdminEmails: [],
     });
   });
 

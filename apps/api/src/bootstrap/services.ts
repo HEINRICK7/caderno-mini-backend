@@ -45,6 +45,9 @@ import {
   recordServerEvent,
   trackClientEvent,
 } from '../application/use-cases/analytics.js';
+import { createDemoPublication, getDemoPublication } from '../application/use-cases/demo-publications.js';
+import { SqliteDemoPublicationRepository } from '../infrastructure/database/repositories/sqlite-demo-publication-repository.js';
+import { SqliteAdminRepository } from '../infrastructure/database/repositories/sqlite-admin-repository.js';
 
 export type ApplicationServices = ReturnType<typeof createApplicationServices>;
 
@@ -113,6 +116,24 @@ export function createIdentityServices(
     verifyMagicLink: (input: { token: string }) => verifyMagicLink(input, dependencies),
     getSession: (input: { token: string }) => getSession(input, dependencies),
     revokeSession: (input: { token: string }) => revokeSession(input, dependencies),
+  };
+}
+
+export type AdminServices = ReturnType<typeof createAdminServices>;
+
+export function createAdminServices(
+  db: AppDatabase,
+  options: { idGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const admin = new SqliteAdminRepository(db);
+  const idGenerator = options.idGenerator ?? randomUUID;
+  const clock = options.clock ?? (() => new Date());
+  return {
+    listUsers: (input: { query?: string; limit: number; offset: number }) =>
+      admin.listUsers({ ...input, now: clock() }),
+    getUser: (input: { userId: string }) => admin.getUser({ ...input, now: clock() }),
+    setUserStatus: (input: { userId: string; actorUserId: string; status: 'active' | 'suspended' }) =>
+      admin.setUserStatus({ ...input, now: clock(), id: idGenerator() }),
   };
 }
 
@@ -212,6 +233,29 @@ export function createPublishingServices(
     getPublicMessage: (input: { slug: string }) => getPublicMessage(input, dependencies),
     renderPublicMessagePng: (input: { slug: string }) => renderPublicMessagePng(input, dependencies),
     exportMessage: (input: { draftId: string; userId: string }) => exportMessage(input, dependencies),
+  };
+}
+
+export type DemoServices = ReturnType<typeof createDemoServices>;
+
+export function createDemoServices(
+  db: AppDatabase,
+  options: { slugGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const demos = new SqliteDemoPublicationRepository(db);
+  const drafts = new SqliteDraftRepository(db);
+  const templates = new SqliteTemplateRepository(db);
+  return {
+    create: (input: Parameters<typeof createDemoPublication>[0]) =>
+      createDemoPublication(input, {
+        demos,
+        drafts,
+        templates,
+        ...(options.slugGenerator ? { generateSlug: options.slugGenerator } : {}),
+        ...(options.clock ? { clock: options.clock } : {}),
+      }),
+    get: (input: Parameters<typeof getDemoPublication>[0]) =>
+      getDemoPublication(input, { demos, ...(options.clock ? { clock: options.clock } : {}) }),
   };
 }
 

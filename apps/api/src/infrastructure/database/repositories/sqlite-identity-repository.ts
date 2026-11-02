@@ -59,11 +59,16 @@ export class SqliteIdentityRepository implements IdentityRepository {
           .values({
             id: input.userId,
             email: consumed.email,
+            accountStatus: 'active',
             emailVerifiedAt: input.now,
             createdAt: input.now,
           })
           .returning()
           .get();
+      }
+
+      if (user.accountStatus !== 'active') {
+        return undefined;
       }
 
       transaction
@@ -121,6 +126,7 @@ export class SqliteIdentityRepository implements IdentityRepository {
           eq(sessions.tokenHash, tokenHash),
           isNull(sessions.revokedAt),
           gt(sessions.expiresAt, now),
+          eq(users.accountStatus, 'active'),
         ),
       )
       .get();

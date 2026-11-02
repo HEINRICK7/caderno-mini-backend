@@ -10,7 +10,9 @@ import {
   createIdentityServices,
   createPreviewServices,
   createPublishingServices,
+  createDemoServices,
   createImageServices,
+  createAdminServices,
 } from '../../src/bootstrap/services.js';
 import { buildApp } from '../../src/bootstrap/app.js';
 import { createDatabase } from '../../src/infrastructure/database/connection.js';
@@ -59,11 +61,14 @@ export async function createTestApp(
       clock: () => new Date(),
     }),
     commerceServices,
+    adminServices: createAdminServices(database.db),
+    superAdminEmails: ['admin@example.com'],
     imageServices: createImageServices(imageStorage),
     previewServices: createPreviewServices(database.db, renderer),
     publishingServices: createPublishingServices(database.db, renderer, {
       clock: () => new Date(),
     }),
+    demoServices: createDemoServices(database.db, { clock: () => new Date() }),
     analyticsServices: createAnalyticsServices(database.db, { clock: () => new Date() }),
     analyticsReadToken: 'test-analytics-read-token-with-at-least-32-chars',
     publicApiUrl: options.publicApiUrl ?? 'https://api.example.test',

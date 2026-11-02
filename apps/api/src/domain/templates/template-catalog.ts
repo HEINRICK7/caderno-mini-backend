@@ -10,12 +10,18 @@ export const templateCategories = [
   'Entrega',
   'Promoções',
 ] as const;
+export const templateHomeCategories = ['relacionamento', 'cobrancas', 'ofertas', 'servicos'] as const;
 
 export type TemplateSegment = typeof templateSegments[number];
 export type TemplateCategory = typeof templateCategories[number];
-export type TemplateCatalog = { segment: TemplateSegment; category: TemplateCategory };
+export type TemplateHomeCategory = typeof templateHomeCategories[number];
+export type TemplateCatalog = {
+  segment: TemplateSegment;
+  category: TemplateCategory;
+  homeCategory?: TemplateHomeCategory;
+};
 
-const allowedKeys = new Set(['segment', 'category']);
+const allowedKeys = new Set(['segment', 'category', 'homeCategory']);
 
 export function resolveTemplateCatalog(definition: JsonObject): TemplateCatalog | undefined {
   const raw = definition.catalog;
@@ -25,14 +31,20 @@ export function resolveTemplateCatalog(definition: JsonObject): TemplateCatalog 
   }
 
   const { segment, category } = raw;
+  const homeCategory = raw.homeCategory;
   if (
     typeof segment !== 'string' || !templateSegments.includes(segment as TemplateSegment) ||
-    typeof category !== 'string' || !templateCategories.includes(category as TemplateCategory)
+    typeof category !== 'string' || !templateCategories.includes(category as TemplateCategory) ||
+    (homeCategory !== undefined && (typeof homeCategory !== 'string' || !templateHomeCategories.includes(homeCategory as TemplateHomeCategory)))
   ) {
     throw new InvalidTemplateDefinitionError();
   }
 
-  return { segment: segment as TemplateSegment, category: category as TemplateCategory };
+  return {
+    segment: segment as TemplateSegment,
+    category: category as TemplateCategory,
+    ...(homeCategory ? { homeCategory: homeCategory as TemplateHomeCategory } : {}),
+  };
 }
 
 function isRecord(value: JsonValue): value is JsonObject {

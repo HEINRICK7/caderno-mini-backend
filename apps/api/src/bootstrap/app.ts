@@ -12,11 +12,12 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from 'fastify-type-provider-zod';
-import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod/v4';
 
 import {
   CheckoutNotConfiguredError,
+  DemoPublicationNotFoundError,
   DraftNotFoundError,
   ExportContentTooLargeError,
   AnalyticsRangeError,
@@ -28,6 +29,7 @@ import {
   PurchaseNotFoundError,
   PublicationAccessDeniedError,
   TemplateNotFoundError,
+  TrialCategoryUnavailableError,
   WebhookNotConfiguredError,
 } from '../application/errors.js';
 import {
@@ -45,6 +47,8 @@ import type {
   PublishingServices,
   PreviewServices,
   ImageServices,
+  DemoServices,
+  AdminServices,
 } from './services.js';
 
 // Request bodies have already passed through Fastify's JSON parser; arbitrary JSON values are valid here.
@@ -101,6 +105,33 @@ const attributionSchema = z.object({
   referrerUrl: z.url().max(2_048).optional(),
 }).strict();
 const createCheckoutBodySchema = z.object({ draftId: z.uuid(), attribution: attributionSchema.optional() }).strict();
+const createDemoPublicationBodySchema = z.object({ draftId: z.uuid() }).strict();
+const demoCategorySchema = z.enum(['relacionamento', 'cobrancas', 'ofertas', 'servicos']);
+const demoPublicationResponseSchema = z.object({
+  data: z.object({
+    slug: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+    publicPath: z.string(),
+    publicUrl: z.url(),
+    category: demoCategorySchema,
+    created: z.boolean(),
+    expiresAt: z.string().datetime(),
+  }),
+});
+const publicDemoPublicationResponseSchema = z.object({
+  data: z.object({
+    slug: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+    category: demoCategorySchema,
+    templateId: z.string(),
+    templateVersion: z.number().int().positive(),
+    templateName: z.string(),
+    templateDescription: z.string().nullable(),
+    templateDefinition: jsonObjectSchema,
+    data: jsonObjectSchema,
+    publicUrl: z.url(),
+    createdAt: z.string().datetime(),
+    expiresAt: z.string().datetime(),
+  }),
+});
 const checkoutResponseSchema = z.object({
   data: z.object({ purchaseId: z.uuid(), checkoutUrl: z.url(), status: z.literal('pending') }),
 });
@@ -119,6 +150,48 @@ const userAccessItemSchema = z.object({
   purchaseStatus: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
   accessStatus: z.enum(['active', 'revoked']),
   grantedAt: z.string().datetime(),
+});
+const adminAccountStatusSchema = z.enum(['active', 'suspended']);
+const adminUserSummarySchema = z.object({
+  id: z.uuid(),
+  email: z.email(),
+  accountStatus: adminAccountStatusSchema,
+  createdAt: z.string().datetime(),
+  activeSessions: z.number().int().nonnegative(),
+  purchaseCount: z.number().int().nonnegative(),
+  activeLicenses: z.number().int().nonnegative(),
+  draftCount: z.number().int().nonnegative(),
+});
+const adminUsersQuerySchema = z.object({
+  q: z.string().trim().min(2).max(254).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(25),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+}).strict();
+const adminUsersResponseSchema = z.object({
+  data: z.object({ total: z.number().int().nonnegative(), users: z.array(adminUserSummarySchema) }),
+});
+const adminUserResponseSchema = z.object({
+  data: z.object({
+    user: adminUserSummarySchema,
+    purchases: z.array(z.object({
+      purchaseId: z.uuid(),
+      draftId: z.uuid(),
+      templateId: z.string(),
+      purchaseStatus: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
+      accessStatus: z.enum(['active', 'revoked']).nullable(),
+      createdAt: z.string().datetime(),
+      updatedAt: z.string().datetime(),
+    })),
+    recentActions: z.array(z.object({
+      action: z.enum(['account_suspended', 'account_reactivated']),
+      actorEmail: z.email(),
+      createdAt: z.string().datetime(),
+    })),
+  }),
+});
+const adminSetUserStatusBodySchema = z.object({ status: adminAccountStatusSchema }).strict();
+const adminSetUserStatusResponseSchema = z.object({
+  data: z.object({ status: adminAccountStatusSchema, changed: z.boolean(), revokedSessions: z.number().int().nonnegative() }),
 });
 const publicationResponseSchema = z.object({
   data: z.object({
@@ -182,9 +255,12 @@ export type BuildAppOptions = {
   commerceServices?: CommerceServices;
   identityServices?: IdentityServices;
   publishingServices?: PublishingServices;
+  demoServices?: DemoServices;
   previewServices?: PreviewServices;
   imageServices?: ImageServices;
   analyticsServices?: AnalyticsServices;
+  adminServices?: AdminServices;
+  superAdminEmails?: string[];
   analyticsReadToken?: string;
   authCookieSecure?: boolean;
   authPublicAppUrl?: string;
@@ -209,6 +285,7 @@ export function buildApp(options: BuildAppOptions = {}) {
   const publicApiOrigin = new URL(options.publicApiUrl ?? 'http://localhost:3000').origin;
   const publicAppOrigin = new URL(options.publicAppUrl ?? 'http://localhost:3001').origin;
   const sessionCookieName = authCookieSecure ? '__Host-caderno_session' : 'caderno_session';
+  const demoVisitorCookieName = authCookieSecure ? '__Host-caderno_demo_visitor' : 'caderno_demo_visitor';
   const getAuthenticatedUser = (request: FastifyRequest) => {
     const token = request.cookies[sessionCookieName];
     return token && options.identityServices
@@ -225,6 +302,15 @@ export function buildApp(options: BuildAppOptions = {}) {
     }
     return user;
   };
+  const requireSuperAdmin = (request: FastifyRequest, response: FastifyReply) => {
+    const user = requireSession(request, response);
+    if (!user) return undefined;
+    if (!options.superAdminEmails?.includes(user.email.trim().toLowerCase())) {
+      response.code(403).send({ error: { code: 'ADMIN_REQUIRED', message: 'Esta área é exclusiva da administração.' } });
+      return undefined;
+    }
+    return user;
+  };
   const healthResponseSchema = z.object({ status: z.enum(['ok', 'unavailable']) });
 
   app.setValidatorCompiler(validatorCompiler);
@@ -234,6 +320,7 @@ export function buildApp(options: BuildAppOptions = {}) {
     const isUnsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
     const routePath = request.routeOptions.url;
     const isIdentityMutation = routePath?.startsWith('/api/v1/auth/') ?? false;
+    const isDemoMutation = routePath === '/api/v1/demo-publications';
     const isSessionMutation = [
       '/api/v1/drafts',
       '/api/v1/drafts/:id',
@@ -241,6 +328,7 @@ export function buildApp(options: BuildAppOptions = {}) {
       '/api/v1/drafts/:id/publication',
       '/api/v1/analytics/events',
     ].includes(routePath ?? '');
+    const isAdminMutation = routePath?.startsWith('/api/v1/admin/users/') ?? false;
     const hasSessionCookie = Boolean(request.cookies[sessionCookieName]);
     const origin = request.headers.origin;
     const isBrowserRequest = origin !== undefined || request.headers['sec-fetch-site'] !== undefined;
@@ -248,7 +336,7 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (
       isUnsafeMethod &&
       isBrowserRequest &&
-      (isIdentityMutation || (isSessionMutation && hasSessionCookie)) &&
+      (isIdentityMutation || isDemoMutation || ((isSessionMutation || isAdminMutation) && hasSessionCookie)) &&
       origin !== authPublicOrigin
     ) {
       return response.code(403).send({
@@ -283,8 +371,10 @@ export function buildApp(options: BuildAppOptions = {}) {
       request.routeOptions.url?.startsWith('/api/v1/account') ||
       request.routeOptions.url?.startsWith('/api/v1/purchases') ||
       request.routeOptions.url?.startsWith('/api/v1/publications') ||
+      request.routeOptions.url?.startsWith('/api/v1/demo-publications') ||
       request.routeOptions.url?.startsWith('/api/v1/analytics') ||
-      request.routeOptions.url?.startsWith('/api/v1/webhooks')
+      request.routeOptions.url?.startsWith('/api/v1/webhooks') ||
+      request.routeOptions.url?.startsWith('/api/v1/admin')
     ) {
       response.header('cache-control', 'no-store');
     }
@@ -314,6 +404,16 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (error instanceof PublicationAccessDeniedError) {
       return response.code(403).send({
         error: { code: 'ACTIVE_LICENSE_REQUIRED', message: 'Uma licença ativa é necessária para esta ação.' },
+      });
+    }
+    if (error instanceof TrialCategoryUnavailableError) {
+      return response.code(422).send({
+        error: { code: 'DEMO_CATEGORY_UNAVAILABLE', message: 'Esta categoria ainda não está disponível para demonstração.' },
+      });
+    }
+    if (error instanceof DemoPublicationNotFoundError) {
+      return response.code(404).send({
+        error: { code: 'DEMO_PUBLICATION_NOT_FOUND', message: 'Esta demonstração expirou ou não está disponível.' },
       });
     }
     if (error instanceof TemplateFinancialStateError) {
@@ -639,6 +739,93 @@ export function buildApp(options: BuildAppOptions = {}) {
     );
     }
 
+    if (options.demoServices) {
+      const demoRateLimit = app.rateLimit({
+        max: 12,
+        timeWindow: '1 hour',
+        errorResponseBuilder: () => ({
+          statusCode: 429,
+          error: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
+        }),
+      });
+      const demoSlugParamsSchema = z.object({ slug: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }).strict();
+
+      app.post(
+        '/api/v1/demo-publications',
+        {
+          schema: {
+            tags: ['publishing'],
+            summary: 'Gera um link temporário de demonstração gratuita por categoria',
+            body: createDemoPublicationBodySchema,
+            response: {
+              200: demoPublicationResponseSchema,
+              201: demoPublicationResponseSchema,
+              403: errorResponseSchema,
+              404: errorResponseSchema,
+              422: errorResponseSchema,
+              429: errorResponseSchema,
+            },
+          },
+          preHandler: demoRateLimit,
+        },
+        async (request, response) => {
+          let visitorToken = request.cookies[demoVisitorCookieName];
+          if (!visitorToken || !/^[A-Za-z0-9_-]{43}$/.test(visitorToken)) {
+            visitorToken = randomBytes(32).toString('base64url');
+            response.setCookie(demoVisitorCookieName, visitorToken, {
+              httpOnly: true,
+              secure: authCookieSecure,
+              sameSite: 'lax',
+              path: '/',
+              maxAge: 90 * 24 * 60 * 60,
+            });
+          }
+          const visitorHash = createHash('sha256').update(visitorToken).digest('hex');
+          const user = getAuthenticatedUser(request);
+          const publication = options.demoServices!.create({
+            draftId: request.body.draftId,
+            visitorHash,
+            ...(user ? { userId: user.id } : {}),
+          });
+          const publicPath = `/d/${publication.slug}`;
+          const publicUrl = new URL(publicPath, `${publicAppOrigin}/`).toString();
+          return response.code(publication.created ? 201 : 200).send({
+            data: {
+              slug: publication.slug,
+              publicPath,
+              publicUrl,
+              category: publication.category,
+              created: publication.created,
+              expiresAt: publication.expiresAt.toISOString(),
+            },
+          });
+        },
+      );
+
+      app.get(
+        '/api/v1/demo-publications/:slug',
+        {
+          schema: {
+            tags: ['publishing'],
+            summary: 'Recupera uma demonstração compartilhável ainda válida',
+            params: demoSlugParamsSchema,
+            response: { 200: publicDemoPublicationResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request) => {
+          const publication = options.demoServices!.get(request.params);
+          return {
+            data: {
+              ...publication,
+              publicUrl: new URL(`/d/${publication.slug}`, `${publicAppOrigin}/`).toString(),
+              createdAt: publication.createdAt.toISOString(),
+              expiresAt: publication.expiresAt.toISOString(),
+            },
+          };
+        },
+      );
+    }
+
     if (options.previewServices) {
       app.get(
         '/api/v1/drafts/:id/preview.png',
@@ -810,6 +997,131 @@ export function buildApp(options: BuildAppOptions = {}) {
           }
           response.clearCookie(sessionCookieName, { path: '/' });
           return response.code(204).send(null);
+        },
+      );
+    }
+
+    if (options.adminServices) {
+      const admin = options.adminServices;
+      app.get(
+        '/api/v1/admin/access',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Indica se a conta atual está autorizada ao painel do criador',
+            response: {
+              200: z.object({ data: z.object({ allowed: z.boolean() }) }),
+              401: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          const user = requireSession(request, response);
+          if (!user) return response;
+          const allowed = options.superAdminEmails?.includes(user.email.trim().toLowerCase()) ?? false;
+          return { data: { allowed } };
+        },
+      );
+
+      app.get(
+        '/api/v1/admin/users',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Busca contas de clientes para suporte',
+            querystring: adminUsersQuerySchema,
+            response: { 200: adminUsersResponseSchema, 401: errorResponseSchema, 403: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          if (!requireSuperAdmin(request, response)) return response;
+          const result = admin.listUsers({
+            ...(request.query.q ? { query: request.query.q } : {}),
+            limit: request.query.limit,
+            offset: request.query.offset,
+          });
+          return {
+            data: {
+              total: result.total,
+              users: result.users.map((user) => ({ ...user, createdAt: user.createdAt.toISOString() })),
+            },
+          };
+        },
+      );
+
+      app.get(
+        '/api/v1/admin/users/:id',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Consulta estado de conta, compras e ações de suporte',
+            params: idParamsSchema,
+            response: { 200: adminUserResponseSchema, 401: errorResponseSchema, 403: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          if (!requireSuperAdmin(request, response)) return response;
+          const result = admin.getUser({ userId: request.params.id });
+          if (!result) {
+            return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
+          }
+          return {
+            data: {
+              user: { ...result.user, createdAt: result.user.createdAt.toISOString() },
+              purchases: result.purchases.map((purchase) => ({
+                ...purchase,
+                createdAt: purchase.createdAt.toISOString(),
+                updatedAt: purchase.updatedAt.toISOString(),
+              })),
+              recentActions: result.recentActions.map((action) => ({ ...action, createdAt: action.createdAt.toISOString() })),
+            },
+          };
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/users/:id/status',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Suspende ou reativa uma conta de cliente',
+            params: idParamsSchema,
+            body: adminSetUserStatusBodySchema,
+            response: {
+              200: adminSetUserStatusResponseSchema,
+              400: errorResponseSchema,
+              401: errorResponseSchema,
+              403: errorResponseSchema,
+              404: errorResponseSchema,
+              409: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          const actor = requireSuperAdmin(request, response);
+          if (!actor) return response;
+          const target = admin.getUser({ userId: request.params.id });
+          if (!target) {
+            return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
+          }
+          const isAllowlistedAdmin = options.superAdminEmails?.includes(target.user.email.trim().toLowerCase()) ?? false;
+          if (
+            (isAllowlistedAdmin && request.body.status === 'suspended') ||
+            (request.params.id === actor.id && request.body.status === 'suspended')
+          ) {
+            return response.code(409).send({
+              error: { code: 'ADMIN_ACCOUNT_PROTECTED', message: 'Esta conta administrativa não pode ser suspensa por este painel.' },
+            });
+          }
+          const result = admin.setUserStatus({
+            userId: request.params.id,
+            actorUserId: actor.id,
+            status: request.body.status,
+          });
+          if (!result) {
+            return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
+          }
+          return { data: { status: request.body.status, ...result } };
         },
       );
     }

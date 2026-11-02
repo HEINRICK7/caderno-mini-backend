@@ -104,9 +104,9 @@ describe('formulários do catálogo oficial de modelos', () => {
   });
 
   it('publica versões novas para as mudanças no contrato de edição', () => {
-    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(5);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(5);
-    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(6);
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(6);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(6);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(7);
   });
 
   it('mantém cada seção de edição em um único bloco e conecta todos os campos ao cartão', () => {
