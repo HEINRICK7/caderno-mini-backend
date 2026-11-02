@@ -64,6 +64,13 @@
       "when": 1793624642166,
       "tag": "0008_worthless_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793630000000,
+      "tag": "0009_admin_user_management",
+      "breakpoints": true
     }
   ]
 }

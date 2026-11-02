@@ -47,6 +47,7 @@ import {
 } from '../application/use-cases/analytics.js';
 import { createDemoPublication, getDemoPublication } from '../application/use-cases/demo-publications.js';
 import { SqliteDemoPublicationRepository } from '../infrastructure/database/repositories/sqlite-demo-publication-repository.js';
+import { SqliteAdminRepository } from '../infrastructure/database/repositories/sqlite-admin-repository.js';
 
 export type ApplicationServices = ReturnType<typeof createApplicationServices>;
 
@@ -115,6 +116,24 @@ export function createIdentityServices(
     verifyMagicLink: (input: { token: string }) => verifyMagicLink(input, dependencies),
     getSession: (input: { token: string }) => getSession(input, dependencies),
     revokeSession: (input: { token: string }) => revokeSession(input, dependencies),
+  };
+}
+
+export type AdminServices = ReturnType<typeof createAdminServices>;
+
+export function createAdminServices(
+  db: AppDatabase,
+  options: { idGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const admin = new SqliteAdminRepository(db);
+  const idGenerator = options.idGenerator ?? randomUUID;
+  const clock = options.clock ?? (() => new Date());
+  return {
+    listUsers: (input: { query?: string; limit: number; offset: number }) =>
+      admin.listUsers({ ...input, now: clock() }),
+    getUser: (input: { userId: string }) => admin.getUser({ ...input, now: clock() }),
+    setUserStatus: (input: { userId: string; actorUserId: string; status: 'active' | 'suspended' }) =>
+      admin.setUserStatus({ ...input, now: clock(), id: idGenerator() }),
   };
 }
 

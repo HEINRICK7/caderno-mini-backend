@@ -77,6 +77,9 @@ const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().min(32).optional(),
   ),
+  SUPERADMIN_EMAILS: z.string().default('').transform((value) =>
+    [...new Set(value.split(',').map((email) => email.trim().toLowerCase()).filter(Boolean))],
+  ).pipe(z.array(z.email())),
 });
 
 export type AppConfig = {
@@ -104,6 +107,7 @@ export type AppConfig = {
   caktoProductId?: string;
   caktoWebhookSecret?: string;
   analyticsReadToken?: string;
+  superAdminEmails: string[];
 };
 
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -153,5 +157,6 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     ...(parsed.CAKTO_PRODUCT_ID ? { caktoProductId: parsed.CAKTO_PRODUCT_ID } : {}),
     ...(parsed.CAKTO_WEBHOOK_SECRET ? { caktoWebhookSecret: parsed.CAKTO_WEBHOOK_SECRET } : {}),
     ...(parsed.ANALYTICS_READ_TOKEN ? { analyticsReadToken: parsed.ANALYTICS_READ_TOKEN } : {}),
+    superAdminEmails: parsed.SUPERADMIN_EMAILS,
   };
 }

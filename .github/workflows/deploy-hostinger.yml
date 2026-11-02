@@ -130,6 +130,32 @@ jobs:
               fi
             fi"
 
+      - name: Configure creator allowlist
+        shell: bash
+        env:
+          SUPERADMIN_EMAILS: ${{ secrets.SUPERADMIN_EMAILS }}
+        run: |
+          set -euo pipefail
+          : "${SUPERADMIN_EMAILS:?Set SUPERADMIN_EMAILS as a GitHub environment secret before deploying}"
+          if [[ ! "$SUPERADMIN_EMAILS" =~ ^[A-Za-z0-9._+@,-]+$ ]]; then
+            echo 'SUPERADMIN_EMAILS must be a comma-separated list of email addresses without spaces.' >&2
+            exit 1
+          fi
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          remote="umask 077
+          app_path='$HOSTINGER_APP_PATH'
+          config_file=\$app_path/.env.admin
+          if [ -L \"\$config_file\" ]; then
+            echo 'Refusing to write creator configuration through a symlink.' >&2
+            exit 1
+          fi
+          temp_file=\$(mktemp \"\$app_path/.env.admin.XXXXXX\")
+          cat > \"\$temp_file\"
+          chmod 600 \"\$temp_file\"
+          mv \"\$temp_file\" \"\$config_file\""
+          printf 'SUPERADMIN_EMAILS=%s\n' "$SUPERADMIN_EMAILS" | ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+            "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
+
       - name: Configure Cakto environment file
         shell: bash
         env:
@@ -196,6 +222,8 @@ jobs:
             --exclude='data/' \
             --exclude='backups/' \
             --exclude='.env' \
+            --exclude='.env.admin' \
+            --exclude='.env.cakto' \
             --exclude='.caderno-mini-backend-deploy' \
             ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_APP_PATH/"
 

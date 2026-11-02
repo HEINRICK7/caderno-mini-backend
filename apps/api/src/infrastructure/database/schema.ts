@@ -38,10 +38,27 @@ export const users = sqliteTable(
   {
     id: text('id').primaryKey(),
     email: text('email').notNull(),
+    accountStatus: text('account_status').$type<'active' | 'suspended'>().notNull().default('active'),
     emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp_ms' }).notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [uniqueIndex('users_email_unique').on(table.email)],
+);
+
+export const adminAuditLog = sqliteTable(
+  'admin_audit_log',
+  {
+    id: text('id').primaryKey(),
+    actorUserId: text('actor_user_id').notNull(),
+    targetUserId: text('target_user_id').notNull(),
+    action: text('action').$type<'account_suspended' | 'account_reactivated'>().notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.actorUserId], foreignColumns: [users.id], name: 'admin_audit_actor_user_fk' }).onDelete('restrict'),
+    foreignKey({ columns: [table.targetUserId], foreignColumns: [users.id], name: 'admin_audit_target_user_fk' }).onDelete('restrict'),
+    index('admin_audit_target_created').on(table.targetUserId, table.createdAt),
+  ],
 );
 
 export const drafts = sqliteTable(

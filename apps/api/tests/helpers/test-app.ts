@@ -12,6 +12,7 @@ import {
   createPublishingServices,
   createDemoServices,
   createImageServices,
+  createAdminServices,
 } from '../../src/bootstrap/services.js';
 import { buildApp } from '../../src/bootstrap/app.js';
 import { createDatabase } from '../../src/infrastructure/database/connection.js';
@@ -60,6 +61,8 @@ export async function createTestApp(
       clock: () => new Date(),
     }),
     commerceServices,
+    adminServices: createAdminServices(database.db),
+    superAdminEmails: ['admin@example.com'],
     imageServices: createImageServices(imageStorage),
     previewServices: createPreviewServices(database.db, renderer),
     publishingServices: createPublishingServices(database.db, renderer, {
