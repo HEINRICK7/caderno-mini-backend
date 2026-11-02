@@ -24,7 +24,15 @@ import type { ImageStorage, StoredImage } from '../../src/application/ports/imag
 
 export async function createTestApp(
   databaseFile = ':memory:',
-  options: { authCookieSecure?: boolean; publicApiUrl?: string; publicAppUrl?: string } = {},
+  options: {
+    authCookieSecure?: boolean;
+    publicApiUrl?: string;
+    publicAppUrl?: string;
+    plans?: {
+      annual: { checkoutUrl: string; productId: string; webhookSecret: string };
+      lifetime: { checkoutUrl: string; productId: string; webhookSecret: string };
+    };
+  } = {},
 ): Promise<{
   app: FastifyInstance;
   database: ReturnType<typeof createDatabase>;
@@ -46,9 +54,13 @@ export async function createTestApp(
     get: async (id) => storedImages.get(id),
   };
   const commerceServices = createCommerceServices(database.db, {
-    checkoutUrl: 'https://pay.cakto.com.br/test-offer',
-    expectedProductId: 'test-product-id',
-    webhookSecret: 'test-webhook-secret-with-at-least-16-chars',
+    ...(options.plans
+      ? { plans: options.plans }
+      : {
+        checkoutUrl: 'https://pay.cakto.com.br/test-offer',
+        expectedProductId: 'test-product-id',
+        webhookSecret: 'test-webhook-secret-with-at-least-16-chars',
+      }),
     idGenerator: randomUUID,
     callbackGenerator: randomUUID,
     clock: () => new Date(),

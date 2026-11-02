@@ -25,11 +25,13 @@ migrateDatabase(
   database.sqlite,
   resolve(process.cwd(), 'apps/api/src/infrastructure/database/migrations'),
 );
-const commerceServices = createCommerceServices(database.db, {
-  ...(config.caktoCheckoutUrl ? { checkoutUrl: config.caktoCheckoutUrl } : {}),
-  ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
-  ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
-});
+const commerceServices = createCommerceServices(database.db, config.caktoPlans
+  ? { plans: config.caktoPlans }
+  : {
+    ...(config.caktoCheckoutUrl ? { checkoutUrl: config.caktoCheckoutUrl } : {}),
+    ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
+    ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
+  });
 const imageStorage = new MinioImageStorage(config.imageStorage);
 const imageServices = createImageServices(imageStorage);
 const renderer = new SharpPngRenderer(imageStorage);

@@ -71,6 +71,13 @@
       "when": 1793630000000,
       "tag": "0009_admin_user_management",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793640000000,
+      "tag": "0010_access_grant_expiry",
+      "breakpoints": true
     }
   ]
 }

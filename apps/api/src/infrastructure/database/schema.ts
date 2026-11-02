@@ -162,6 +162,7 @@ export const accessGrants = sqliteTable(
     customerEmail: text('customer_email').notNull(),
     status: text('status').$type<'active' | 'revoked'>().notNull(),
     grantedAt: integer('granted_at', { mode: 'timestamp_ms' }).notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
     revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },

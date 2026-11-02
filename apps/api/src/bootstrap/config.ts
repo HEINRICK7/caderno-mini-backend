@@ -73,6 +73,30 @@ const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().min(16).optional(),
   ),
+  CAKTO_CHECKOUT_ANNUAL_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
+  CAKTO_PRODUCT_ANNUAL_ID: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.uuid().optional(),
+  ),
+  CAKTO_WEBHOOK_SECRET_ANNUAL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(16).optional(),
+  ),
+  CAKTO_CHECKOUT_LIFETIME_URL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().url().optional(),
+  ),
+  CAKTO_PRODUCT_LIFETIME_ID: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.uuid().optional(),
+  ),
+  CAKTO_WEBHOOK_SECRET_LIFETIME: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(16).optional(),
+  ),
   ANALYTICS_READ_TOKEN: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.string().min(32).optional(),
@@ -81,6 +105,12 @@ const configSchema = z.object({
     [...new Set(value.split(',').map((email) => email.trim().toLowerCase()).filter(Boolean))],
   ).pipe(z.array(z.email())),
 });
+
+export type CaktoPlanConfig = {
+  checkoutUrl: string;
+  productId: string;
+  webhookSecret: string;
+};
 
 export type AppConfig = {
   nodeEnv: 'development' | 'test' | 'production';
@@ -106,6 +136,10 @@ export type AppConfig = {
   caktoCheckoutUrl?: string;
   caktoProductId?: string;
   caktoWebhookSecret?: string;
+  caktoPlans?: {
+    annual: CaktoPlanConfig;
+    lifetime: CaktoPlanConfig;
+  };
   analyticsReadToken?: string;
   superAdminEmails: string[];
 };
@@ -156,7 +190,35 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     ...(parsed.CAKTO_CHECKOUT_URL ? { caktoCheckoutUrl: parsed.CAKTO_CHECKOUT_URL } : {}),
     ...(parsed.CAKTO_PRODUCT_ID ? { caktoProductId: parsed.CAKTO_PRODUCT_ID } : {}),
     ...(parsed.CAKTO_WEBHOOK_SECRET ? { caktoWebhookSecret: parsed.CAKTO_WEBHOOK_SECRET } : {}),
+    ...caktoPlansFrom(parsed),
     ...(parsed.ANALYTICS_READ_TOKEN ? { analyticsReadToken: parsed.ANALYTICS_READ_TOKEN } : {}),
     superAdminEmails: parsed.SUPERADMIN_EMAILS,
+  };
+}
+
+function caktoPlansFrom(
+  parsed: z.infer<typeof configSchema>,
+): { caktoPlans: { annual: CaktoPlanConfig; lifetime: CaktoPlanConfig } } | Record<string, never> {
+  const annualUrl = parsed.CAKTO_CHECKOUT_ANNUAL_URL;
+  const annualProductId = parsed.CAKTO_PRODUCT_ANNUAL_ID;
+  const annualSecret = parsed.CAKTO_WEBHOOK_SECRET_ANNUAL;
+  const lifetimeUrl = parsed.CAKTO_CHECKOUT_LIFETIME_URL;
+  const lifetimeProductId = parsed.CAKTO_PRODUCT_LIFETIME_ID;
+  const lifetimeSecret = parsed.CAKTO_WEBHOOK_SECRET_LIFETIME;
+  const values = [annualUrl, annualProductId, annualSecret, lifetimeUrl, lifetimeProductId, lifetimeSecret];
+  const present = values.filter((value) => value !== undefined).length;
+  if (present === 0) return {};
+  if (present !== values.length || !annualUrl || !annualProductId || !annualSecret || !lifetimeUrl || !lifetimeProductId || !lifetimeSecret) {
+    throw new Error('Set CAKTO_CHECKOUT_ANNUAL_URL, CAKTO_PRODUCT_ANNUAL_ID, CAKTO_WEBHOOK_SECRET_ANNUAL, CAKTO_CHECKOUT_LIFETIME_URL, CAKTO_PRODUCT_LIFETIME_ID, and CAKTO_WEBHOOK_SECRET_LIFETIME together.');
+  }
+  if (annualProductId === lifetimeProductId) {
+    throw new Error('CAKTO_PRODUCT_ANNUAL_ID and CAKTO_PRODUCT_LIFETIME_ID must be different products.');
+  }
+
+  return {
+    caktoPlans: {
+      annual: { checkoutUrl: annualUrl, productId: annualProductId, webhookSecret: annualSecret },
+      lifetime: { checkoutUrl: lifetimeUrl, productId: lifetimeProductId, webhookSecret: lifetimeSecret },
+    },
   };
 }

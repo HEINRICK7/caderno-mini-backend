@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { transitionPurchase } from '../../../src/domain/commerce/purchase.js';
+import { accessExpiresAt, accessIsCurrent, transitionPurchase } from '../../../src/domain/commerce/purchase.js';
 
 describe('transitionPurchase', () => {
   it('grants access only on the first approved payment', () => {
@@ -56,5 +56,25 @@ describe('transitionPurchase', () => {
       grantAccess: true,
       revokeAccess: false,
     });
+  });
+});
+
+describe('access term', () => {
+  const grantedAt = new Date('2026-11-02T15:04:00.000Z');
+
+  it('ends an annual license twelve calendar months after payment', () => {
+    expect(accessExpiresAt('annual', grantedAt)?.toISOString()).toBe('2027-11-02T15:04:00.000Z');
+    expect(accessExpiresAt('annual', new Date('2024-02-29T00:00:00.000Z'))?.toISOString()).toBe('2025-02-28T00:00:00.000Z');
+  });
+
+  it('leaves a lifetime license without an end date', () => {
+    expect(accessExpiresAt('lifetime', grantedAt)).toBeNull();
+  });
+
+  it('treats a missing end date as current and an reached end date as finished', () => {
+    expect(accessIsCurrent({ status: 'active', expiresAt: null }, grantedAt)).toBe(true);
+    expect(accessIsCurrent({ status: 'active', expiresAt: new Date('2027-11-02T15:04:00.000Z') }, grantedAt)).toBe(true);
+    expect(accessIsCurrent({ status: 'active', expiresAt: grantedAt }, grantedAt)).toBe(false);
+    expect(accessIsCurrent({ status: 'revoked', expiresAt: null }, grantedAt)).toBe(false);
   });
 });

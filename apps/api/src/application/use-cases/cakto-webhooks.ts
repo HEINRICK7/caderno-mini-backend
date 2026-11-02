@@ -4,13 +4,15 @@ import type { IncomingCaktoEvent, NewWebhookEvent, WebhookEvent } from '../dto/p
 import type { PurchaseRepository } from '../ports/purchase-repository.js';
 import type { WebhookInboxRepository } from '../ports/webhook-inbox-repository.js';
 import type { AnalyticsRepository } from '../ports/analytics-repository.js';
-import { transitionPurchase, type PaymentSignal } from '../../domain/commerce/purchase.js';
+import { accessExpiresAt, transitionPurchase, type AccessPlan, type PaymentSignal } from '../../domain/commerce/purchase.js';
 
 export type CaktoWebhookDependencies = {
   inbox: WebhookInboxRepository;
   purchases: PurchaseRepository;
   analytics?: AnalyticsRepository;
   expectedProductId?: string;
+  expectedProductIds?: readonly string[];
+  productPlans?: Readonly<Record<string, AccessPlan>>;
   generateId?: () => string;
   clock?: () => Date;
 };
@@ -46,7 +48,9 @@ export function processCaktoInboxBatch(
   dependencies: CaktoWebhookDependencies,
   limit = 25,
 ): number {
-  if (!dependencies.expectedProductId) {
+  const expectedProductIds = dependencies.expectedProductIds
+    ?? (dependencies.expectedProductId ? [dependencies.expectedProductId] : []);
+  if (expectedProductIds.length === 0) {
     return 0;
   }
 
@@ -56,7 +60,7 @@ export function processCaktoInboxBatch(
 
   for (const event of events) {
     try {
-      processPurchaseEvent(event, dependencies, now);
+      processPurchaseEvent(event, dependencies, expectedProductIds, now);
       dependencies.inbox.markProcessed(event.id, now);
       processed += 1;
     } catch {
@@ -70,9 +74,10 @@ export function processCaktoInboxBatch(
 function processPurchaseEvent(
   event: WebhookEvent,
   dependencies: CaktoWebhookDependencies,
+  expectedProductIds: readonly string[],
   now: Date,
 ): void {
-  if (!event.providerOrderId || event.productId !== dependencies.expectedProductId || event.offerType !== 'main') {
+  if (!event.providerOrderId || !event.productId || !expectedProductIds.includes(event.productId) || event.offerType !== 'main') {
     return;
   }
 
@@ -90,7 +95,12 @@ function processPurchaseEvent(
     revokeAccess: transition.revokeAccess,
     now,
     ...(event.customerEmail ? { customerEmail: event.customerEmail } : {}),
-    ...(transition.grantAccess && event.customerEmail ? { grantEmail: event.customerEmail } : {}),
+    ...(transition.grantAccess && event.customerEmail
+      ? {
+          grantEmail: event.customerEmail,
+          accessExpiresAt: licenseExpiresAt(dependencies.productPlans?.[event.productId], now),
+        }
+      : {}),
   };
   dependencies.purchases.applyWebhookUpdate(update);
   if (transition.status === 'paid' && dependencies.analytics) {
@@ -103,6 +113,11 @@ function processPurchaseEvent(
       occurredAt: now,
     });
   }
+}
+
+function licenseExpiresAt(plan: AccessPlan | undefined, grantedAt: Date): Date | null {
+  if (plan !== 'annual' && plan !== 'lifetime') return null;
+  return accessExpiresAt(plan, grantedAt);
 }
 
 function signalFor(eventType: string, providerStatus: string | null): PaymentSignal {

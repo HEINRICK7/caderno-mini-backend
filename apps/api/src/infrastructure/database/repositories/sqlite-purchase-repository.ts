@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, gt, isNull, or } from 'drizzle-orm';
 
 import type {
   PurchaseRepository,
   NewPendingPurchase,
   PurchaseWebhookUpdate,
 } from '../../../application/ports/purchase-repository.js';
-import type { Purchase, PurchaseStatus } from '../../../domain/commerce/purchase.js';
+import { accessIsCurrent, type Purchase, type PurchaseStatus } from '../../../domain/commerce/purchase.js';
 import type { AppDatabase } from '../connection.js';
 import { accessGrants, drafts, purchases, users } from '../schema.js';
 
@@ -109,6 +109,7 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
             customerEmail: update.grantEmail,
             status: 'active',
             grantedAt: update.now,
+            expiresAt: update.accessExpiresAt ?? null,
             revokedAt: null,
             updatedAt: update.now,
           })
@@ -143,13 +144,14 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
     });
   }
 
-  findStatusForUser(purchaseId: string, userId: string) {
+  findStatusForUser(purchaseId: string, userId: string, now: Date) {
     const row = this.database
       .select({
         purchaseId: purchases.id,
         draftId: purchases.draftId,
         status: purchases.status,
         accessStatus: accessGrants.status,
+        expiresAt: accessGrants.expiresAt,
         updatedAt: purchases.updatedAt,
       })
       .from(purchases)
@@ -164,16 +166,19 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
     if (!row) {
       return undefined;
     }
+    const storedStatus = row.accessStatus ?? 'none';
+    const expiresAt = row.expiresAt ?? null;
     return {
       purchaseId: row.purchaseId,
       draftId: row.draftId,
       status: row.status,
-      accessStatus: row.accessStatus ?? 'none',
+      accessStatus: accessIsCurrent({ status: storedStatus, expiresAt }, now) ? 'active' : storedStatus === 'active' ? 'none' : storedStatus,
+      expiresAt,
       updatedAt: row.updatedAt,
     } as const;
   }
 
-  listAccessForUser(userId: string) {
+  listAccessForUser(userId: string, now: Date) {
     return this.database
       .select({
         purchaseId: accessGrants.purchaseId,
@@ -181,15 +186,23 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
         purchaseStatus: purchases.status,
         accessStatus: accessGrants.status,
         grantedAt: accessGrants.grantedAt,
+        expiresAt: accessGrants.expiresAt,
       })
       .from(accessGrants)
       .innerJoin(purchases, eq(purchases.id, accessGrants.purchaseId))
       .where(eq(accessGrants.userId, userId))
       .orderBy(purchases.createdAt)
-      .all();
+      .all()
+      .map((row) => ({
+        ...row,
+        expiresAt: row.expiresAt ?? null,
+        accessStatus: accessIsCurrent({ status: row.accessStatus, expiresAt: row.expiresAt ?? null }, now)
+          ? 'active' as const
+          : row.accessStatus === 'active' ? 'none' as const : row.accessStatus,
+      }));
   }
 
-  hasActiveGrantForUserAndDraft(userId: string, draftId: string): boolean {
+  hasActiveGrantForUserAndDraft(userId: string, draftId: string, now: Date): boolean {
     return Boolean(
       this.database
         .select({ id: accessGrants.id })
@@ -201,13 +214,14 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
             eq(accessGrants.status, 'active'),
             eq(purchases.status, 'paid'),
             eq(purchases.draftId, draftId),
+            or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
           ),
         )
         .get(),
     );
   }
 
-  hasActiveGrantForDraft(draftId: string): boolean {
+  hasActiveGrantForDraft(draftId: string, now: Date): boolean {
     return Boolean(
       this.database
         .select({ id: accessGrants.id })
@@ -218,6 +232,7 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
             eq(accessGrants.status, 'active'),
             eq(purchases.status, 'paid'),
             eq(purchases.draftId, draftId),
+            or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
           ),
         )
         .get(),

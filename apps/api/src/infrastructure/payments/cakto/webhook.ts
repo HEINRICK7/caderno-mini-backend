@@ -18,9 +18,11 @@ type CaktoEnvelope = {
 export function parseCaktoWebhook(
   rawBody: Buffer,
   headers: CaktoWebhookHeaders,
-  options: { secret: string; now?: Date },
+  options: { secret?: string; secrets?: readonly string[]; now?: Date },
 ): IncomingCaktoEvent[] {
-  if (!headers.timestamp || !headers.signature || !verifySignature(rawBody, headers, options)) {
+  const secrets = [...new Set([...(options.secrets ?? []), ...(options.secret ? [options.secret] : [])])];
+  const matchedSecret = secrets.length > 0 ? authenticatedSecret(rawBody, headers, secrets, options.now) : undefined;
+  if (!headers.timestamp || !headers.signature || !matchedSecret) {
     throw new InvalidCaktoWebhookError();
   }
 
@@ -31,7 +33,7 @@ export function parseCaktoWebhook(
     throw new InvalidCaktoWebhookError();
   }
 
-  if (!isCaktoEnvelope(envelope) || !constantTimeStringEqual(envelope.secret, options.secret)) {
+  if (!isCaktoEnvelope(envelope) || !constantTimeStringEqual(envelope.secret, matchedSecret)) {
     throw new InvalidCaktoWebhookError();
   }
 
@@ -43,20 +45,21 @@ export function parseCaktoWebhook(
   return dataEntries.map((data) => normalizeEvent(envelope.event, data));
 }
 
-function verifySignature(
+function authenticatedSecret(
   rawBody: Buffer,
   headers: CaktoWebhookHeaders,
-  options: { secret: string; now?: Date },
-): boolean {
+  secrets: readonly string[],
+  now?: Date,
+): string | undefined {
   const timestamp = headers.timestamp ?? '';
   if (!/^\d{10}$/.test(timestamp)) {
-    return false;
+    return undefined;
   }
 
   const timestampSeconds = Number(timestamp);
-  const nowSeconds = Math.floor((options.now ?? new Date()).getTime() / 1000);
+  const nowSeconds = Math.floor((now ?? new Date()).getTime() / 1000);
   if (Math.abs(nowSeconds - timestampSeconds) > 5 * 60) {
-    return false;
+    return undefined;
   }
 
   const v1Signature = (headers.signature ?? '')
@@ -65,15 +68,21 @@ function verifySignature(
     .find((part) => part.startsWith('v1='));
   const receivedHex = v1Signature?.slice(3);
   if (!receivedHex || !/^[a-f\d]{64}$/i.test(receivedHex)) {
-    return false;
+    return undefined;
   }
 
-  const expected = createHmac('sha256', options.secret)
-    .update(`${timestamp}.`)
-    .update(rawBody)
-    .digest();
   const received = Buffer.from(receivedHex, 'hex');
-  return received.length === expected.length && timingSafeEqual(received, expected);
+  let matched: string | undefined;
+  for (const secret of secrets) {
+    const expected = createHmac('sha256', secret)
+      .update(`${timestamp}.`)
+      .update(rawBody)
+      .digest();
+    if (received.length === expected.length && timingSafeEqual(received, expected)) {
+      matched = secret;
+    }
+  }
+  return matched;
 }
 
 function isCaktoEnvelope(value: unknown): value is CaktoEnvelope {
