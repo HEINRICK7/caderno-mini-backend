@@ -10,8 +10,9 @@ Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir 
 - Nenhum webhook aparece na listagem de produção da Cakto.
 - `emailAccessLink` do produto está vazio.
 - O ambiente GitHub `production` está sem as variáveis `CAKTO_CHECKOUT_URL` e `CAKTO_PRODUCT_ID`, e sem o segredo `CAKTO_WEBHOOK_SECRET`. O workflow exige os três juntos para publicar a configuração do checkout no backend.
-- O deploy pela `main` também está desabilitado no momento porque `PRODUCTION_DEPLOY_ENABLED` ainda não foi definido como `true`. Os dados de destino conferidos apontam para `/opt/caderno-mini/backend`, porta local `3224`, e URL `https://api.caderno-express.otimizanegocio.com`; o workflow recusa diretórios sem marcador Cadernô, portas ocupadas por outro serviço e redes Docker sem marcador de produção.
-- As credenciais SSH de deploy existem no ambiente `production`; os três valores Cakto e o gatilho de deploy ainda não existem.
+- O gatilho `PRODUCTION_DEPLOY_ENABLED=true` foi configurado no ambiente `production`; o deploy só roda com push/merge em `main` e CI verde. Os dados de destino conferidos apontam para `/opt/caderno-mini/backend`, porta local `3224`, e URL `https://api.caderno-express.otimizanegocio.com`; o workflow recusa diretórios sem marcador Cadernô, portas ocupadas por outro serviço e redes Docker sem marcador de produção.
+- As credenciais SSH de deploy existem no ambiente `production`; os três valores Cakto ainda faltam. O app poderá ser publicado após o merge mesmo antes do checkout, mas a compra só será habilitada depois de configurar o trio Cakto completo.
+- As implementações foram enviadas para os PRs [backend #9](https://github.com/HEINRICK7/caderno-mini-backend/pull/9) e [frontend #4](https://github.com/HEINRICK7/caderno-mini-frontend/pull/4); CI passou nos dois. O backend requer revisão; o PR do frontend está em draft e depende do backend.
 - A oferta atual segue ativa e custa R$ 67,00. O ID curto `34d9gvc` é a referência da URL hospedada atual; nenhuma oferta ou preço foi alterado.
 - `https://api.caderno-express.otimizanegocio.com/health` respondeu HTTP 200. Isso não comprova que checkout, SMTP ou webhook estejam configurados.
 - O código já valida a assinatura HMAC do webhook, guarda eventos numa inbox e associa a licença ao e-mail da compra depois da aprovação.
@@ -39,8 +40,10 @@ Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir 
 - [ ] Publicar e verificar o retorno pós-checkout e a área de conta no domínio de produção.
 - [ ] Verificar concessão após aprovação e revogação após reembolso/chargeback com eventos assinados e dados de teste correspondentes a uma compra pendente.
 - [ ] Executar o evento de teste da Cakto depois de cadastrar o webhook. O evento fixo testa entrega/assinatura; não deve ser tratado como compra paga.
-- [ ] Fazer push dos repositórios e deploy pela `main`; o workflow de produção roda migration e importa as novas versões do catálogo.
-- [ ] Habilitar `PRODUCTION_DEPLOY_ENABLED=true` no ambiente `production` do backend para que um merge aprovado em `main` dispare o deploy isolado.
+- [x] Enviar as alterações para branches do GitHub e abrir PRs; CI passou no backend e frontend.
+- [ ] Revisar e integrar o PR do backend; o deploy em `main` roda migrations e importa as novas versões do catálogo.
+- [ ] Depois da API estar no ar, retirar o PR do frontend de draft, revisar e integrar a interface.
+- [x] Habilitar `PRODUCTION_DEPLOY_ENABLED=true` no ambiente `production` do backend para que um merge aprovado em `main` dispare o deploy isolado.
 - [ ] Confirmar em produção API, checkout, e-mail de login e teste assinado do webhook antes de considerar o fluxo liberado.
 
 ### Demonstração grátis compartilhável
