@@ -1,0 +1,10 @@
+services:
+  api:
+    networks:
+      - default
+      - production
+
+networks:
+  production:
+    name: caderno-mini-production
+    external: true

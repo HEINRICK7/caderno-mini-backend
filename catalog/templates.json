@@ -1,0 +1,3269 @@
+[
+  {
+    "id": "boas-vindas",
+    "version": 5,
+    "name": "Boas-vindas",
+    "description": "Recebe novos clientes de forma acolhedora.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Boas-vindas"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "actionLink",
+          "type": "url",
+          "label": "Link para falar com a empresa",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "detail1Value",
+          "type": "text",
+          "label": "Texto do detalhe 1",
+          "placeholder": "Texto",
+          "maxLength": 180,
+          "required": false,
+          "section": "Detalhes editáveis",
+          "width": "half"
+        },
+        {
+          "id": "detail2Value",
+          "type": "text",
+          "label": "Texto do detalhe 2",
+          "placeholder": "Texto",
+          "maxLength": 180,
+          "required": false,
+          "section": "Detalhes editáveis",
+          "width": "half"
+        },
+        {
+          "id": "detail3Value",
+          "type": "text",
+          "label": "Texto do detalhe 3",
+          "placeholder": "Texto",
+          "maxLength": 180,
+          "required": false,
+          "section": "Detalhes editáveis",
+          "width": "half"
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#008060",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "wave",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "actionLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "welcome",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "details": [
+          {
+            "value": "{{detail1Value}}",
+            "icon": "chat",
+            "valueStyle": "supporting"
+          },
+          {
+            "value": "{{detail2Value}}",
+            "icon": "badge",
+            "valueStyle": "supporting"
+          },
+          {
+            "value": "{{detail3Value}}",
+            "icon": "wallet",
+            "valueStyle": "supporting"
+          }
+        ],
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "highlightedText": "Que bom ter você por aqui!",
+        "message": "Estamos felizes em ter você com a gente. Conte conosco sempre que precisar.",
+        "detail1Value": "Atendimento próximo",
+        "detail2Value": "Qualidade em cada detalhe",
+        "detail3Value": "Pagamento facilitado",
+        "primaryActionLabel": "Falar com a loja"
+      }
+    }
+  },
+  {
+    "id": "agradecimento-compra",
+    "version": 4,
+    "name": "Agradecimento pela compra",
+    "description": "Valoriza o cliente após a venda.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "product",
+        "category": "Agradecimento"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "productName",
+          "type": "text",
+          "label": "Produto",
+          "maxLength": 120,
+          "required": false,
+          "section": "Detalhes do pedido",
+          "width": "half"
+        },
+        {
+          "id": "purchaseAmount",
+          "type": "number",
+          "label": "Valor",
+          "format": "currency",
+          "section": "Detalhes do pedido",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "productImage",
+          "type": "image",
+          "label": "Imagem do produto",
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
+          "section": "Detalhes do pedido",
+          "width": "full",
+          "required": false
+        },
+        {
+          "id": "purchaseLink",
+          "type": "url",
+          "label": "Link dos detalhes da compra",
+          "maxLength": 2048,
+          "section": "Detalhes do pedido",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e5f0ff",
+        "surface": "#ffffff",
+        "accent": "#0860f8",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "shopping-bag-heart",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{productName}}",
+            "imageFieldId": "productImage",
+            "icon": "shopping-bag",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{purchaseAmount}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel2"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "purchaseLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "purchaseAmount",
+          "produto": "productName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Obrigado, {nome_cliente}! 💙",
+        "highlightedText": "Sua compra foi um sucesso.",
+        "subtitle": "Agradecemos pela confiança. Foi um prazer atender você!",
+        "detailLabel1": "Produto",
+        "detailLabel2": "Valor da compra",
+        "productName": "Conjunto de mesa",
+        "purchaseAmount": 350,
+        "primaryActionLabel": "Ver detalhes da compra"
+      }
+    }
+  },
+  {
+    "id": "parcela-proxima",
+    "version": 4,
+    "name": "Parcela próxima do vencimento",
+    "description": "Lembra a data com antecedência.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel3",
+          "type": "text",
+          "label": "Rótulo do detalhe 3",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "installmentAmount",
+          "type": "number",
+          "label": "Valor da parcela",
+          "format": "currency",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link para pagamento",
+          "maxLength": 2048,
+          "section": "Pagamento",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#00b888",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "installment-calendar",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{installmentAmount}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel2"
+          },
+          {
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "receipt",
+            "labelFieldId": "detailLabel3"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "paymentLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "installmentAmount",
+          "vencimento": "dueDate"
+        },
+        "subtitlePlacement": "before-highlight",
+        "subtitleStyle": "subheading"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "subtitle": "Sua parcela vence em",
+        "highlightedText": "3 dias.",
+        "detailLabel1": "Valor da parcela",
+        "detailLabel2": "Vencimento",
+        "detailLabel3": "Parcela",
+        "installmentAmount": 70,
+        "dueDate": "2026-12-04",
+        "installmentNumber": 1,
+        "installmentTotal": 4,
+        "primaryActionLabel": "Ver cobrança"
+      }
+    }
+  },
+  {
+    "id": "parcela-hoje",
+    "version": 4,
+    "name": "Parcela vence hoje",
+    "description": "Avisa que o pagamento é para hoje.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel3",
+          "type": "text",
+          "label": "Rótulo do detalhe 3",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "installmentAmount",
+          "type": "number",
+          "label": "Valor da parcela",
+          "format": "currency",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link para pagamento",
+          "maxLength": 2048,
+          "section": "Pagamento",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#ff5808",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "due-calendar",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{installmentAmount}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel1",
+            "statusBadge": "HOJE"
+          },
+          {
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel2"
+          },
+          {
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "receipt",
+            "labelFieldId": "detailLabel3"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "paymentLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "installmentAmount",
+          "vencimento": "dueDate"
+        },
+        "subtitlePlacement": "before-highlight",
+        "subtitleStyle": "subheading"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "subtitle": "Sua parcela",
+        "highlightedText": "vence hoje.",
+        "detailLabel1": "Valor da parcela",
+        "detailLabel2": "Vencimento",
+        "detailLabel3": "Parcela",
+        "installmentAmount": 70,
+        "dueDate": "2026-12-04",
+        "installmentNumber": 1,
+        "installmentTotal": 4,
+        "primaryActionLabel": "Pagar agora"
+      }
+    }
+  },
+  {
+    "id": "parcela-atrasada",
+    "version": 4,
+    "name": "Parcela em atraso",
+    "description": "Informa que já está em atraso.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel3",
+          "type": "text",
+          "label": "Rótulo do detalhe 3",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "installmentAmount",
+          "type": "number",
+          "label": "Valor da parcela",
+          "format": "currency",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "required": false,
+          "section": "Detalhes da parcela",
+          "width": "half"
+        },
+        {
+          "id": "paymentLink",
+          "type": "url",
+          "label": "Link para pagamento",
+          "maxLength": 2048,
+          "section": "Pagamento",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#ffe5e8",
+        "surface": "#ffffff",
+        "accent": "#f03850",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "overdue-warning",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{installmentAmount}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel2"
+          },
+          {
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "receipt",
+            "labelFieldId": "detailLabel3"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "paymentLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "installmentAmount",
+          "vencimento": "dueDate"
+        },
+        "subtitlePlacement": "before-highlight",
+        "subtitleStyle": "subheading"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "subtitle": "Sua parcela está",
+        "highlightedText": "em aberto.",
+        "message": "Se você já pagou, pode desconsiderar este lembrete.",
+        "detailLabel1": "Valor da parcela",
+        "detailLabel2": "Vencimento",
+        "detailLabel3": "Parcela",
+        "installmentAmount": 70,
+        "dueDate": "2026-12-04",
+        "installmentNumber": 1,
+        "installmentTotal": 4,
+        "primaryActionLabel": "Ver cobrança"
+      }
+    }
+  },
+  {
+    "id": "cobranca-pix",
+    "version": 4,
+    "name": "Cobrança Pix",
+    "description": "Envia os dados Pix informados pela empresa.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel3",
+          "type": "text",
+          "label": "Rótulo do detalhe 3",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "amount",
+          "type": "number",
+          "label": "Valor",
+          "format": "currency",
+          "required": false,
+          "section": "Dados do Pix",
+          "width": "half"
+        },
+        {
+          "id": "dueDate",
+          "type": "date",
+          "label": "Vencimento",
+          "section": "Dados do Pix",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "pixCopyPaste",
+          "type": "textarea",
+          "label": "Código Pix copia e cola",
+          "maxLength": 2048,
+          "required": false,
+          "editable": false,
+          "width": "full",
+          "section": "Dados do Pix",
+          "helpText": "Fornecido pelo provedor de pagamento; o código precisa corresponder a uma cobrança real."
+        },
+        {
+          "id": "pixQrImage",
+          "type": "image",
+          "label": "Imagem do QR Code Pix",
+          "helpText": "Imagem de QR fornecida por uma integração confiável. Não envie um QR de demonstração.",
+          "maxBytes": 5242880,
+          "section": "Dados do Pix",
+          "width": "full",
+          "required": false,
+          "editable": false
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Parcela atual",
+          "required": false,
+          "section": "Detalhes da cobrança",
+          "width": "half"
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "required": false,
+          "section": "Detalhes da cobrança",
+          "width": "half"
+        },
+        {
+          "id": "detailLabel4",
+          "type": "text",
+          "label": "Instrução do Pix",
+          "required": false,
+          "section": "Instruções do Pix",
+          "width": "full",
+          "maxLength": 120,
+          "placeholder": "Texto de orientação"
+        },
+        {
+          "id": "pixSecurityNote",
+          "type": "text",
+          "label": "Observação de segurança",
+          "placeholder": "Escreva uma orientação de segurança",
+          "maxLength": 160,
+          "required": false,
+          "section": "Instruções do Pix",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#007058",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "pix-qr",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{amount}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{dueDate}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel2"
+          },
+          {
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "receipt",
+            "labelFieldId": "detailLabel3"
+          },
+          {
+            "value": "{{pixCopyPaste}}",
+            "imageFieldId": "pixQrImage",
+            "icon": "qrcode",
+            "labelFieldId": "detailLabel4"
+          }
+        ],
+        "action": {
+          "labelFieldId": "primaryActionLabel",
+          "copyFieldId": "pixCopyPaste"
+        },
+        "layout": "pix",
+        "pixNoteFieldId": "pixSecurityNote",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "amount",
+          "vencimento": "dueDate"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "highlightedText": "Seu Pix está pronto.",
+        "subtitle": "Sua cobrança está disponível para pagamento.",
+        "detailLabel1": "Valor da parcela",
+        "detailLabel2": "Vencimento",
+        "detailLabel3": "Parcela",
+        "amount": 70,
+        "dueDate": "2026-12-04",
+        "installmentNumber": 1,
+        "installmentTotal": 4,
+        "pixSecurityNote": "Pague com segurança.",
+        "primaryActionLabel": "Copiar código Pix"
+      }
+    }
+  },
+  {
+    "id": "pagamento-confirmado",
+    "version": 5,
+    "name": "Pagamento confirmado",
+    "description": "Confirma que o pagamento foi identificado.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel3",
+          "type": "text",
+          "label": "Rótulo do detalhe 3",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "amount",
+          "type": "number",
+          "label": "Valor pago",
+          "format": "currency",
+          "required": false,
+          "section": "Detalhes do pagamento",
+          "width": "half",
+          "editable": false,
+          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+        },
+        {
+          "id": "paidAt",
+          "type": "date",
+          "label": "Data do pagamento",
+          "required": false,
+          "section": "Detalhes do pagamento",
+          "width": "half",
+          "editable": false,
+          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+        },
+        {
+          "id": "installmentNumber",
+          "type": "number",
+          "label": "Número da parcela",
+          "section": "Detalhes do pagamento",
+          "width": "half",
+          "required": false,
+          "editable": false,
+          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+        },
+        {
+          "id": "installmentTotal",
+          "type": "number",
+          "label": "Total de parcelas",
+          "section": "Detalhes do pagamento",
+          "width": "half",
+          "required": false,
+          "editable": false,
+          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+        },
+        {
+          "id": "detailsLink",
+          "type": "url",
+          "label": "Link dos detalhes do pagamento",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        },
+        {
+          "id": "paymentStatus",
+          "type": "select",
+          "label": "Situação do pagamento",
+          "options": [
+            "confirmed",
+            "pending"
+          ],
+          "editable": false,
+          "required": false,
+          "section": "Estado financeiro",
+          "helpText": "Fornecido somente pelo domínio financeiro."
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#009068",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "payment-check",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{amount}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{paidAt}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel2"
+          },
+          {
+            "value": "{{installmentNumber}} de {{installmentTotal}}",
+            "icon": "receipt",
+            "labelFieldId": "detailLabel3"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "detailsLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "financial": {
+          "stateFieldId": "paymentStatus",
+          "expectedState": "confirmed"
+        },
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "amount"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "title": "Pagamento",
+        "highlightedText": "confirmado! 🎉",
+        "message": "Recebemos o pagamento da sua parcela.",
+        "detailLabel1": "Valor pago",
+        "detailLabel2": "Data do pagamento",
+        "detailLabel3": "Parcela",
+        "amount": 70,
+        "paidAt": "2026-12-02",
+        "installmentNumber": 1,
+        "installmentTotal": 4,
+        "paymentStatus": "confirmed",
+        "primaryActionLabel": "Ver detalhes"
+      }
+    }
+  },
+  {
+    "id": "caderneta-quitada",
+    "version": 4,
+    "name": "Caderneta quitada",
+    "description": "Celebra quando todas as parcelas foram pagas.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Cobrança"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "historyLink",
+          "type": "url",
+          "label": "Link do histórico",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "settlementStatus",
+          "type": "select",
+          "label": "Situação da caderneta",
+          "options": [
+            "settled",
+            "open"
+          ],
+          "editable": false,
+          "required": false,
+          "section": "Estado financeiro",
+          "helpText": "Fornecido somente pelo domínio financeiro."
+        },
+        {
+          "id": "outstandingBalance",
+          "type": "number",
+          "format": "currency",
+          "label": "Saldo pendente",
+          "editable": false,
+          "required": false,
+          "section": "Estado financeiro",
+          "helpText": "Fornecido somente pelo domínio financeiro."
+        },
+        {
+          "id": "settlementLabel",
+          "type": "text",
+          "label": "Rótulo da situação",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes"
+        },
+        {
+          "id": "balanceLabel",
+          "type": "text",
+          "label": "Rótulo do saldo",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes"
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#006850",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "trophy",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "historyLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "settled",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "details": [
+          {
+            "labelFieldId": "settlementLabel",
+            "value": "{{settlementStatus}}",
+            "icon": "badge"
+          },
+          {
+            "labelFieldId": "balanceLabel",
+            "value": "{{outstandingBalance}}",
+            "icon": "credit-card",
+            "format": "currency"
+          }
+        ],
+        "financial": {
+          "stateFieldId": "settlementStatus",
+          "expectedState": "settled",
+          "balanceFieldId": "outstandingBalance"
+        },
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Parabéns, {nome_cliente}!",
+        "highlightedText": "Tudo quitado!",
+        "message": "Sua caderneta foi totalmente paga. Muito obrigado pela confiança!",
+        "settlementLabel": "Situação",
+        "balanceLabel": "Saldo pendente",
+        "settlementStatus": "settled",
+        "outstandingBalance": 0,
+        "primaryActionLabel": "Ver histórico"
+      }
+    }
+  },
+  {
+    "id": "servico-contratado",
+    "version": 4,
+    "name": "Serviço contratado",
+    "description": "Confirma a contratação e informa os dados do serviço.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "service",
+        "category": "Agradecimento"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel3",
+          "type": "text",
+          "label": "Rótulo do detalhe 3",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "serviceName",
+          "type": "text",
+          "label": "Serviço",
+          "maxLength": 120,
+          "required": false,
+          "section": "Detalhes do serviço",
+          "width": "full"
+        },
+        {
+          "id": "scheduledAt",
+          "type": "date",
+          "label": "Data prevista para realização",
+          "section": "Detalhes do serviço",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "servicePrice",
+          "type": "number",
+          "label": "Valor do serviço",
+          "format": "currency",
+          "section": "Detalhes do serviço",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "serviceDetailsLink",
+          "type": "url",
+          "label": "Link com os detalhes do serviço",
+          "maxLength": 2048,
+          "section": "Detalhes do serviço",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e5f0ff",
+        "surface": "#ffffff",
+        "accent": "#0058f0",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "service-clipboard",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{serviceName}}",
+            "icon": "clipboard-check",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{servicePrice}}",
+            "icon": "credit-card",
+            "format": "currency",
+            "labelFieldId": "detailLabel2"
+          },
+          {
+            "value": "{{scheduledAt}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel3"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "serviceDetailsLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "servicePrice",
+          "servico": "serviceName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "highlightedText": "Serviço confirmado.",
+        "message": "Sua contratação foi registrada com sucesso.",
+        "detailLabel1": "Serviço",
+        "detailLabel2": "Valor",
+        "detailLabel3": "Início",
+        "serviceName": "Manutenção de equipamento",
+        "servicePrice": 1200,
+        "scheduledAt": "2026-11-10",
+        "primaryActionLabel": "Ver detalhes"
+      }
+    }
+  },
+  {
+    "id": "servico-concluido",
+    "version": 4,
+    "name": "Serviço concluído",
+    "description": "Informa que o serviço foi finalizado e convida à avaliação.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "service",
+        "category": "Entrega"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel1",
+          "type": "text",
+          "label": "Rótulo do detalhe 1",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "detailLabel2",
+          "type": "text",
+          "label": "Rótulo do detalhe 2",
+          "placeholder": "Rótulo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Rótulos dos detalhes",
+          "width": "full"
+        },
+        {
+          "id": "serviceName",
+          "type": "text",
+          "label": "Serviço realizado",
+          "maxLength": 120,
+          "required": false,
+          "section": "Detalhes do serviço",
+          "width": "full"
+        },
+        {
+          "id": "completionDate",
+          "type": "date",
+          "label": "Data de conclusão",
+          "section": "Detalhes do serviço",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "evaluationLink",
+          "type": "url",
+          "label": "Link para avaliar o atendimento",
+          "maxLength": 2048,
+          "section": "Detalhes do serviço",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#009868",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "service-seal",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "details": [
+          {
+            "value": "{{serviceName}}",
+            "icon": "receipt",
+            "labelFieldId": "detailLabel1"
+          },
+          {
+            "value": "{{completionDate}}",
+            "icon": "calendar",
+            "format": "date",
+            "labelFieldId": "detailLabel2"
+          }
+        ],
+        "action": {
+          "hrefFieldId": "evaluationLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "servico": "serviceName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "highlightedText": "Serviço concluído!",
+        "message": "Foi um prazer atender você. Esperamos que tenha gostado do resultado.",
+        "detailLabel1": "Serviço realizado",
+        "serviceName": "Manutenção de equipamento",
+        "primaryActionLabel": "Avaliar atendimento"
+      }
+    }
+  },
+  {
+    "id": "aniversario",
+    "version": 4,
+    "name": "Aniversário",
+    "description": "Parabeniza o cliente em uma data especial.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Datas especiais"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "actionLink",
+          "type": "url",
+          "label": "Link para novidades",
+          "maxLength": 2048,
+          "section": "Ação",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        },
+        {
+          "id": "signatureLabel",
+          "type": "text",
+          "label": "Saudação da assinatura",
+          "placeholder": "Personalize este conteúdo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Assinatura",
+          "width": "full"
+        },
+        {
+          "id": "signatureName",
+          "type": "text",
+          "label": "Nome na assinatura",
+          "placeholder": "Personalize este conteúdo",
+          "maxLength": 80,
+          "required": false,
+          "section": "Assinatura",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#f3e8ff",
+        "surface": "#ffffff",
+        "accent": "#8040e8",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "gift",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "actionLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "celebration",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName"
+        },
+        "details": [
+          {
+            "labelFieldId": "signatureLabel",
+            "value": "{{signatureName}}",
+            "icon": "heart"
+          }
+        ],
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Feliz aniversário,",
+        "highlightedText": "{nome_cliente}! ✨",
+        "message": "Que seu novo ciclo seja cheio de conquistas e momentos especiais. Obrigado por fazer parte da nossa história!",
+        "signatureLabel": "Com carinho,",
+        "signatureName": "equipe Cadernô",
+        "primaryActionLabel": "Ver novidades"
+      }
+    }
+  },
+  {
+    "id": "produto-destaque",
+    "version": 4,
+    "name": "Produto em destaque",
+    "description": "Apresenta um produto com destaque.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "product",
+        "category": "Promoções"
+      },
+      "fields": [
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "productName",
+          "type": "text",
+          "label": "Produto",
+          "maxLength": 120,
+          "required": false,
+          "section": "Detalhes do produto",
+          "width": "half"
+        },
+        {
+          "id": "productPrice",
+          "type": "number",
+          "label": "Valor do produto",
+          "format": "currency",
+          "section": "Detalhes do produto",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "productImage",
+          "type": "image",
+          "label": "Imagem do produto",
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
+          "section": "Detalhes do produto",
+          "width": "full",
+          "required": false
+        },
+        {
+          "id": "offerLink",
+          "type": "url",
+          "label": "Link do produto",
+          "maxLength": 2048,
+          "section": "Detalhes do produto",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#f3e8ff",
+        "surface": "#ffffff",
+        "accent": "#7830e0",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "product-tag",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "offerLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "product",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "product": {
+          "nameFieldId": "productName",
+          "imageFieldId": "productImage",
+          "priceFieldId": "productPrice",
+          "icon": "cake"
+        },
+        "variables": {
+          "nome_empresa": "businessName",
+          "valor": "productPrice",
+          "produto": "productName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "businessName": "Cadernô",
+        "title": "Produto em",
+        "highlightedText": "destaque! ✨",
+        "subtitle": "Uma delícia que merece sua atenção.",
+        "productName": "Bolo de Chocolate",
+        "productPrice": 49.9,
+        "primaryActionLabel": "Quero ver mais"
+      }
+    }
+  },
+  {
+    "id": "oferta-especial",
+    "version": 4,
+    "name": "Oferta especial",
+    "description": "Divulga uma promoção ou oportunidade.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Promoções"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "offerName",
+          "type": "text",
+          "label": "Produto ou serviço",
+          "maxLength": 120,
+          "required": false,
+          "section": "Detalhes da oferta",
+          "width": "full"
+        },
+        {
+          "id": "offerImage",
+          "type": "image",
+          "label": "Imagem da oferta",
+          "helpText": "PNG, JPEG ou WebP · até 5 MB",
+          "maxBytes": 5242880,
+          "section": "Detalhes da oferta",
+          "width": "full",
+          "required": false
+        },
+        {
+          "id": "oldPrice",
+          "type": "number",
+          "label": "Preço anterior",
+          "format": "currency",
+          "section": "Detalhes da oferta",
+          "width": "half",
+          "required": false,
+          "helpText": "Quando preencher um preço, informe também o outro. O preço final deve ser menor que o original."
+        },
+        {
+          "id": "newPrice",
+          "type": "number",
+          "label": "Preço da oferta",
+          "format": "currency",
+          "section": "Detalhes da oferta",
+          "width": "half",
+          "required": false,
+          "helpText": "Quando preencher um preço, informe também o outro. O preço final deve ser menor que o original."
+        },
+        {
+          "id": "validUntil",
+          "type": "date",
+          "label": "Válida até",
+          "section": "Detalhes da oferta",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "offerLink",
+          "type": "url",
+          "label": "Link da oferta",
+          "maxLength": 2048,
+          "section": "Detalhes da oferta",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#ff6010",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "offer-tag",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "offerLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "offer",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "product": {
+          "nameFieldId": "offerName",
+          "imageFieldId": "offerImage",
+          "priceFieldId": "newPrice",
+          "originalPriceFieldId": "oldPrice",
+          "icon": "calendar"
+        },
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "valor": "newPrice",
+          "vencimento": "validUntil",
+          "produto": "offerName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Oferta especial,",
+        "highlightedText": "{nome_cliente}! 🔥",
+        "subtitle": "Preparamos uma condição especial por tempo limitado.",
+        "offerName": "Kit de Doces",
+        "oldPrice": 99.9,
+        "newPrice": 79.9,
+        "primaryActionLabel": "Aproveitar oferta"
+      }
+    }
+  },
+  {
+    "id": "novidades-colecao",
+    "version": 4,
+    "name": "Novidades e coleção",
+    "description": "Apresenta novidades da loja e da coleção.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "product",
+        "category": "Promoções"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "collectionLink",
+          "type": "url",
+          "label": "Link da coleção",
+          "maxLength": 2048,
+          "section": "Detalhes da coleção",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "collectionImage1",
+          "type": "image",
+          "label": "Imagem da coleção 1",
+          "maxBytes": 5242880,
+          "section": "Imagens da coleção",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "collectionImage2",
+          "type": "image",
+          "label": "Imagem da coleção 2",
+          "maxBytes": 5242880,
+          "section": "Imagens da coleção",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "collectionImage3",
+          "type": "image",
+          "label": "Imagem da coleção 3",
+          "maxBytes": 5242880,
+          "section": "Imagens da coleção",
+          "width": "half",
+          "required": false
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#e1f3ef",
+        "surface": "#ffffff",
+        "accent": "#00a8a0",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "collection-bag",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "collectionLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "collection",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "product": {
+          "galleryFieldIds": [
+            "collectionImage1",
+            "collectionImage2",
+            "collectionImage3"
+          ]
+        },
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName"
+        },
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Chegaram novidades,",
+        "highlightedText": "{nome_cliente}! ✨",
+        "subtitle": "Nossa nova coleção já está disponível. Descubra o que preparamos para você.",
+        "primaryActionLabel": "Ver coleção"
+      }
+    }
+  },
+  {
+    "id": "reativacao-cliente",
+    "version": 4,
+    "name": "Reativação de cliente",
+    "description": "Retoma o contato com clientes que não interagem há um tempo.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "both",
+        "category": "Boas-vindas"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Descrição da mensagem",
+          "placeholder": "Escreva uma mensagem de apoio",
+          "helpText": "Quebras de linha são preservadas no preview.",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "actionLink",
+          "type": "url",
+          "label": "Link para saber mais",
+          "maxLength": 2048,
+          "section": "Convite",
+          "width": "full",
+          "required": false,
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": false,
+          "section": "Ações",
+          "width": "full"
+        },
+        {
+          "id": "detail1Label",
+          "type": "textarea",
+          "label": "Texto de contexto",
+          "placeholder": "Escreva este conteúdo",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Detalhes da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detail1Value",
+          "type": "textarea",
+          "label": "Texto em destaque do detalhe",
+          "placeholder": "Escreva este conteúdo",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Detalhes da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "detail2Value",
+          "type": "text",
+          "label": "Texto de apoio",
+          "placeholder": "Personalize este conteúdo",
+          "maxLength": 240,
+          "required": false,
+          "section": "Detalhes da mensagem",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#ffe5e8",
+        "surface": "#ffffff",
+        "accent": "#f84058",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "reactivation-heart",
+        "heading": "{{title}}",
+        "message": "{{message}}",
+        "footer": "none",
+        "action": {
+          "hrefFieldId": "actionLink",
+          "labelFieldId": "primaryActionLabel"
+        },
+        "layout": "standard",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName"
+        },
+        "details": [
+          {
+            "labelFieldId": "detail1Label",
+            "value": "{{detail1Value}}",
+            "icon": "heart"
+          },
+          {
+            "value": "{{detail2Value}}",
+            "icon": "shopping-bag",
+            "valueStyle": "supporting"
+          }
+        ],
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Sentimos sua falta,",
+        "highlightedText": "{nome_cliente}! 💚",
+        "detail1Label": "Passou um tempinho desde a sua última visita.",
+        "detail1Value": "Temos novidades que podem combinar com você.",
+        "detail2Value": "Que tal dar uma olhada?",
+        "primaryActionLabel": "Ver novidades"
+      }
+    }
+  },
+  {
+    "id": "lembrete-aprovacao",
+    "version": 6,
+    "name": "Lembrete com aprovação",
+    "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
+    "isActive": true,
+    "definition": {
+      "catalog": {
+        "segment": "service",
+        "category": "Entrega"
+      },
+      "fields": [
+        {
+          "id": "recipientName",
+          "type": "text",
+          "label": "Nome do cliente (variável)",
+          "placeholder": "Nome do cliente",
+          "maxLength": 60,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "businessName",
+          "type": "text",
+          "label": "Nome do negócio (variável)",
+          "placeholder": "Nome do negócio",
+          "maxLength": 80,
+          "required": false,
+          "width": "half",
+          "section": "Variáveis da mensagem"
+        },
+        {
+          "id": "title",
+          "type": "text",
+          "label": "Título",
+          "placeholder": "Escreva o título",
+          "helpText": "Você pode usar {nome_cliente}, {nome_empresa}, {valor}, {vencimento}, {produto} ou {servico}.",
+          "maxLength": 240,
+          "required": true,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "highlightedText",
+          "type": "text",
+          "label": "Palavra ou frase em destaque",
+          "placeholder": "Trecho destacado",
+          "maxLength": 240,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "subtitle",
+          "type": "text",
+          "label": "Subtítulo",
+          "placeholder": "Subtítulo",
+          "maxLength": 300,
+          "required": false,
+          "section": "Conteúdo da mensagem",
+          "width": "full"
+        },
+        {
+          "id": "serviceName",
+          "type": "text",
+          "label": "Serviço",
+          "maxLength": 120,
+          "required": false,
+          "section": "Aprovação do serviço",
+          "width": "full"
+        },
+        {
+          "id": "approveLink",
+          "type": "url",
+          "label": "Link para aprovar",
+          "maxLength": 2048,
+          "required": true,
+          "section": "Opções de resposta",
+          "width": "half",
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "rejectLink",
+          "type": "url",
+          "label": "Link para recusar",
+          "maxLength": 2048,
+          "required": true,
+          "section": "Opções de resposta",
+          "width": "half",
+          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+        },
+        {
+          "id": "primaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão principal",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": true,
+          "section": "Ações",
+          "width": "full"
+        },
+        {
+          "id": "secondaryActionLabel",
+          "type": "text",
+          "label": "Texto do botão secundário",
+          "placeholder": "Texto do botão",
+          "maxLength": 120,
+          "required": true,
+          "section": "Ações",
+          "width": "full"
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "label": "Detalhes da solicitação",
+          "placeholder": "Escreva este conteúdo",
+          "maxLength": 1000,
+          "required": false,
+          "section": "Conteúdo da aprovação",
+          "width": "full"
+        },
+        {
+          "id": "consentText",
+          "type": "textarea",
+          "label": "Texto de escolha",
+          "placeholder": "Escreva este conteúdo",
+          "maxLength": 500,
+          "required": false,
+          "section": "Detalhes da aprovação",
+          "width": "full"
+        }
+      ],
+      "visual": {
+        "layout": "centered",
+        "background": "#fff1dc",
+        "surface": "#ffffff",
+        "accent": "#f84800",
+        "heading": "#081018",
+        "text": "#5c6470",
+        "muted": "#687280",
+        "headingFont": "rounded",
+        "bodyFont": "sans",
+        "frame": "none"
+      },
+      "card": {
+        "illustration": "approval-hourglass",
+        "heading": "{{title}}",
+        "footer": "none",
+        "actions": [
+          {
+            "hrefFieldId": "approveLink",
+            "labelFieldId": "primaryActionLabel"
+          },
+          {
+            "hrefFieldId": "rejectLink",
+            "labelFieldId": "secondaryActionLabel"
+          }
+        ],
+        "layout": "approval",
+        "highlightedText": "{{highlightedText}}",
+        "subtitle": "{{subtitle}}",
+        "variables": {
+          "nome_cliente": "recipientName",
+          "nome_empresa": "businessName",
+          "servico": "serviceName",
+          "detalhes": "message"
+        },
+        "details": [
+          {
+            "value": "{{message}}",
+            "icon": "receipt",
+            "valueStyle": "supporting"
+          },
+          {
+            "value": "{{consentText}}",
+            "icon": "shield",
+            "valueStyle": "supporting"
+          }
+        ],
+        "subtitlePlacement": "after-highlight",
+        "subtitleStyle": "supporting"
+      },
+      "exampleData": {
+        "recipientName": "Maria",
+        "businessName": "Cadernô",
+        "title": "Olá, {nome_cliente}!",
+        "highlightedText": "Podemos te contar uma novidade?",
+        "message": "Temos uma condição especial e gostaríamos de compartilhar com você.",
+        "consentText": "Você escolhe se deseja receber.",
+        "approveLink": "https://exemplo.invalid/aprovar",
+        "rejectLink": "https://exemplo.invalid/recusar",
+        "primaryActionLabel": "Sim, quero",
+        "secondaryActionLabel": "Agora não"
+      }
+    }
+  }
+]

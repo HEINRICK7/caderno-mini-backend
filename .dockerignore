@@ -1,8 +1,11 @@
+.git
 node_modules
 dist
 coverage
-.git
-.env
 data
+backups
+.env
+.env.*
+!.env.example
 *.db
 *.sqlite
