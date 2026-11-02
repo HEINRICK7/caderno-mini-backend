@@ -10,6 +10,7 @@ import {
   createImageServices,
   createPreviewServices,
   createPublishingServices,
+  createDemoServices,
 } from './bootstrap/services.js';
 import { createDatabase } from './infrastructure/database/connection.js';
 import { NodemailerEmailSender } from './infrastructure/email/nodemailer-email-sender.js';
@@ -38,6 +39,7 @@ const app = buildApp({
   imageServices,
   previewServices: createPreviewServices(database.db, renderer),
   publishingServices: createPublishingServices(database.db, renderer),
+  demoServices: createDemoServices(database.db),
   analyticsServices: createAnalyticsServices(database.db),
   ...(config.analyticsReadToken ? { analyticsReadToken: config.analyticsReadToken } : {}),
   publicApiUrl: config.publicApiUrl,

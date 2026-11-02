@@ -11,6 +11,7 @@ import {
 
 import type { JsonObject } from '../../domain/shared/json-value.js';
 import type { PurchaseStatus } from '../../domain/commerce/purchase.js';
+import type { TemplateHomeCategory } from '../../domain/templates/template-catalog.js';
 
 export const templates = sqliteTable(
   'templates',
@@ -187,6 +188,30 @@ export const publications = sqliteTable(
     uniqueIndex('publications_draft_unique').on(table.draftId),
     uniqueIndex('publications_slug_unique').on(table.slug),
     index('publications_owner_status').on(table.ownerUserId, table.status),
+  ],
+);
+
+export const demoPublications = sqliteTable(
+  'demo_publications',
+  {
+    slug: text('slug').primaryKey(),
+    visitorHash: text('visitor_hash').notNull(),
+    category: text('category').$type<TemplateHomeCategory>().notNull(),
+    draftId: text('draft_id').notNull(),
+    templateId: text('template_id').notNull(),
+    templateVersion: integer('template_version').notNull(),
+    templateName: text('template_name').notNull(),
+    templateDescription: text('template_description'),
+    templateDefinition: text('template_definition', { mode: 'json' }).$type<JsonObject>().notNull(),
+    data: text('data', { mode: 'json' }).$type<JsonObject>().notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.draftId], foreignColumns: [drafts.id], name: 'demo_publications_draft_id_fk' })
+      .onDelete('cascade'),
+    uniqueIndex('demo_publications_visitor_category_unique').on(table.visitorHash, table.category),
+    index('demo_publications_expiry').on(table.expiresAt),
   ],
 );
 

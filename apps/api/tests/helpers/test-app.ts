@@ -10,6 +10,7 @@ import {
   createIdentityServices,
   createPreviewServices,
   createPublishingServices,
+  createDemoServices,
   createImageServices,
 } from '../../src/bootstrap/services.js';
 import { buildApp } from '../../src/bootstrap/app.js';
@@ -64,6 +65,7 @@ export async function createTestApp(
     publishingServices: createPublishingServices(database.db, renderer, {
       clock: () => new Date(),
     }),
+    demoServices: createDemoServices(database.db, { clock: () => new Date() }),
     analyticsServices: createAnalyticsServices(database.db, { clock: () => new Date() }),
     analyticsReadToken: 'test-analytics-read-token-with-at-least-32-chars',
     publicApiUrl: options.publicApiUrl ?? 'https://api.example.test',

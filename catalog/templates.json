@@ -1,14 +1,15 @@
 [
   {
     "id": "boas-vindas",
-    "version": 5,
+    "version": 6,
     "name": "Boas-vindas",
     "description": "Recebe novos clientes de forma acolhedora.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Boas-vindas"
+        "category": "Boas-vindas",
+        "homeCategory": "relacionamento"
       },
       "fields": [
         {
@@ -187,14 +188,15 @@
   },
   {
     "id": "agradecimento-compra",
-    "version": 4,
+    "version": 5,
     "name": "Agradecimento pela compra",
     "description": "Valoriza o cliente após a venda.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "product",
-        "category": "Agradecimento"
+        "category": "Agradecimento",
+        "homeCategory": "relacionamento"
       },
       "fields": [
         {
@@ -391,14 +393,15 @@
   },
   {
     "id": "parcela-proxima",
-    "version": 4,
+    "version": 5,
     "name": "Parcela próxima do vencimento",
     "description": "Lembra a data com antecedência.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Cobrança"
+        "category": "Cobrança",
+        "homeCategory": "cobrancas"
       },
       "fields": [
         {
@@ -618,14 +621,15 @@
   },
   {
     "id": "parcela-hoje",
-    "version": 4,
+    "version": 5,
     "name": "Parcela vence hoje",
     "description": "Avisa que o pagamento é para hoje.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Cobrança"
+        "category": "Cobrança",
+        "homeCategory": "cobrancas"
       },
       "fields": [
         {
@@ -846,14 +850,15 @@
   },
   {
     "id": "parcela-atrasada",
-    "version": 4,
+    "version": 5,
     "name": "Parcela em atraso",
     "description": "Informa que já está em atraso.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Cobrança"
+        "category": "Cobrança",
+        "homeCategory": "cobrancas"
       },
       "fields": [
         {
@@ -1074,14 +1079,15 @@
   },
   {
     "id": "cobranca-pix",
-    "version": 4,
+    "version": 5,
     "name": "Cobrança Pix",
     "description": "Envia os dados Pix informados pela empresa.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Cobrança"
+        "category": "Cobrança",
+        "homeCategory": "cobrancas"
       },
       "fields": [
         {
@@ -1341,14 +1347,15 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 5,
+    "version": 6,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Cobrança"
+        "category": "Cobrança",
+        "homeCategory": "cobrancas"
       },
       "fields": [
         {
@@ -1591,14 +1598,15 @@
   },
   {
     "id": "caderneta-quitada",
-    "version": 4,
+    "version": 5,
     "name": "Caderneta quitada",
     "description": "Celebra quando todas as parcelas foram pagas.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Cobrança"
+        "category": "Cobrança",
+        "homeCategory": "cobrancas"
       },
       "fields": [
         {
@@ -1790,14 +1798,15 @@
   },
   {
     "id": "servico-contratado",
-    "version": 4,
+    "version": 5,
     "name": "Serviço contratado",
     "description": "Confirma a contratação e informa os dados do serviço.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "service",
-        "category": "Agradecimento"
+        "category": "Agradecimento",
+        "homeCategory": "servicos"
       },
       "fields": [
         {
@@ -2009,14 +2018,15 @@
   },
   {
     "id": "servico-concluido",
-    "version": 4,
+    "version": 5,
     "name": "Serviço concluído",
     "description": "Informa que o serviço foi finalizado e convida à avaliação.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "service",
-        "category": "Entrega"
+        "category": "Entrega",
+        "homeCategory": "servicos"
       },
       "fields": [
         {
@@ -2198,14 +2208,15 @@
   },
   {
     "id": "aniversario",
-    "version": 4,
+    "version": 5,
     "name": "Aniversário",
     "description": "Parabeniza o cliente em uma data especial.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Datas especiais"
+        "category": "Datas especiais",
+        "homeCategory": "relacionamento"
       },
       "fields": [
         {
@@ -2363,14 +2374,15 @@
   },
   {
     "id": "produto-destaque",
-    "version": 4,
+    "version": 5,
     "name": "Produto em destaque",
     "description": "Apresenta um produto com destaque.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "product",
-        "category": "Promoções"
+        "category": "Promoções",
+        "homeCategory": "ofertas"
       },
       "fields": [
         {
@@ -2525,14 +2537,15 @@
   },
   {
     "id": "oferta-especial",
-    "version": 4,
+    "version": 5,
     "name": "Oferta especial",
     "description": "Divulga uma promoção ou oportunidade.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Promoções"
+        "category": "Promoções",
+        "homeCategory": "ofertas"
       },
       "fields": [
         {
@@ -2721,14 +2734,15 @@
   },
   {
     "id": "novidades-colecao",
-    "version": 4,
+    "version": 5,
     "name": "Novidades e coleção",
     "description": "Apresenta novidades da loja e da coleção.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "product",
-        "category": "Promoções"
+        "category": "Promoções",
+        "homeCategory": "ofertas"
       },
       "fields": [
         {
@@ -2891,14 +2905,15 @@
   },
   {
     "id": "reativacao-cliente",
-    "version": 4,
+    "version": 5,
     "name": "Reativação de cliente",
     "description": "Retoma o contato com clientes que não interagem há um tempo.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "both",
-        "category": "Boas-vindas"
+        "category": "Boas-vindas",
+        "homeCategory": "relacionamento"
       },
       "fields": [
         {
@@ -3071,14 +3086,15 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 6,
+    "version": 7,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
     "definition": {
       "catalog": {
         "segment": "service",
-        "category": "Entrega"
+        "category": "Entrega",
+        "homeCategory": "servicos"
       },
       "fields": [
         {

@@ -26,6 +26,20 @@ export class PublicationAccessDeniedError extends Error {
   }
 }
 
+export class TrialCategoryUnavailableError extends Error {
+  constructor() {
+    super('A free demonstration is not available for this template category.');
+    this.name = 'TrialCategoryUnavailableError';
+  }
+}
+
+export class DemoPublicationNotFoundError extends Error {
+  constructor() {
+    super('Demo publication not found or expired.');
+    this.name = 'DemoPublicationNotFoundError';
+  }
+}
+
 export class ExportContentTooLargeError extends Error {
   constructor() {
     super('The content is too large to export as an image.');

@@ -45,6 +45,8 @@ import {
   recordServerEvent,
   trackClientEvent,
 } from '../application/use-cases/analytics.js';
+import { createDemoPublication, getDemoPublication } from '../application/use-cases/demo-publications.js';
+import { SqliteDemoPublicationRepository } from '../infrastructure/database/repositories/sqlite-demo-publication-repository.js';
 
 export type ApplicationServices = ReturnType<typeof createApplicationServices>;
 
@@ -212,6 +214,29 @@ export function createPublishingServices(
     getPublicMessage: (input: { slug: string }) => getPublicMessage(input, dependencies),
     renderPublicMessagePng: (input: { slug: string }) => renderPublicMessagePng(input, dependencies),
     exportMessage: (input: { draftId: string; userId: string }) => exportMessage(input, dependencies),
+  };
+}
+
+export type DemoServices = ReturnType<typeof createDemoServices>;
+
+export function createDemoServices(
+  db: AppDatabase,
+  options: { slugGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const demos = new SqliteDemoPublicationRepository(db);
+  const drafts = new SqliteDraftRepository(db);
+  const templates = new SqliteTemplateRepository(db);
+  return {
+    create: (input: Parameters<typeof createDemoPublication>[0]) =>
+      createDemoPublication(input, {
+        demos,
+        drafts,
+        templates,
+        ...(options.slugGenerator ? { generateSlug: options.slugGenerator } : {}),
+        ...(options.clock ? { clock: options.clock } : {}),
+      }),
+    get: (input: Parameters<typeof getDemoPublication>[0]) =>
+      getDemoPublication(input, { demos, ...(options.clock ? { clock: options.clock } : {}) }),
   };
 }
 
