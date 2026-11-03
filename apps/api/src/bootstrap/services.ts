@@ -133,7 +133,7 @@ export function createAdminServices(
     listUsers: (input: { query?: string; limit: number; offset: number }) =>
       admin.listUsers({ ...input, now: clock() }),
     getUser: (input: { userId: string }) => admin.getUser({ ...input, now: clock() }),
-    setUserStatus: (input: { userId: string; actorUserId: string; status: 'active' | 'suspended' }) =>
+    setUserStatus: (input: { userId: string; actorEmail: string; status: 'active' | 'suspended' }) =>
       admin.setUserStatus({ ...input, now: clock(), id: idGenerator() }),
   };
 }

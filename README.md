@@ -66,9 +66,11 @@ O backend não consulta a Cakto para autorizar cada requisição: a assinatura v
 
 ### Painel do criador e suporte
 
-Configure `SUPERADMIN_EMAILS` com uma lista separada por vírgulas dos e-mails que podem abrir `/admin`. O painel lista e busca clientes, mostra compras, licenças, sessões e rascunhos, e permite suspender/reativar uma conta. Suspender encerra sessões existentes, bloqueia novas sessões e grava a ação no histórico administrativo. O próprio painel não concede nem remove licença paga; esses estados continuam sendo derivados dos eventos assinados da Cakto.
+O painel `/admin` tem um login separado dos clientes: usa e-mail e senha do administrador, cria uma sessão protegida por cookie `HttpOnly` com validade de 8 horas e limita tentativas de senha. A senha é guardada no servidor somente como hash scrypt. Clientes continuam acessando a própria conta com o link enviado por e-mail.
 
-Em desenvolvimento, defina `SUPERADMIN_EMAILS` no `.env`. No ambiente GitHub `production`, cadastre o segredo `SUPERADMIN_EMAILS` com o e-mail que você usa no magic link. O deploy grava o allowlist em `.env.admin` com permissão restrita. Depois de entrar com esse e-mail, abra `/admin`; em **Minha conta** aparece o atalho **Abrir painel do criador**. O painel também abre o editor e a área do cliente para experimentar os links gratuitos. Uma compra paga de ponta a ponta só pode ser validada com um checkout de teste aceito pela Cakto e o webhook configurado.
+Para configurar o administrador em desenvolvimento, gere o hash da senha com `npm run admin:hash-password` em um terminal interativo e informe `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` e `ADMIN_SESSION_SECRET` no `.env`. Gere o segredo de sessão com `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`. Em produção, cadastre esses três valores como segredos do ambiente GitHub `production`; o deploy os grava em `.env.admin` com permissão restrita. Não cadastre a senha original como segredo nem a envie por chat. Depois do deploy, entre em `/admin` com as credenciais configuradas.
+
+O painel lista e busca clientes, mostra compras, licenças, sessões e rascunhos, e permite suspender/reativar uma conta. Suspender encerra sessões existentes, bloqueia novas sessões e grava a ação no histórico administrativo. O painel não concede nem remove licença paga; esses estados continuam sendo derivados dos eventos assinados da Cakto. Uma compra paga de ponta a ponta só pode ser validada com um checkout de teste aceito pela Cakto e o webhook configurado.
 
 ### Backup SQLite
 

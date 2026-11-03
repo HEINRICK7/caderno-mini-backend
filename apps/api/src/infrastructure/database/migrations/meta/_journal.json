@@ -78,6 +78,13 @@
       "when": 1793640000000,
       "tag": "0010_access_grant_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1793740000000,
+      "tag": "0011_admin_email_audit",
+      "breakpoints": true
     }
   ]
 }

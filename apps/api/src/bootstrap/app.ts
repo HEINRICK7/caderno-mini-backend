@@ -5,6 +5,7 @@ import fastifyRawBody from 'fastify-raw-body';
 import Fastify, { LogController } from 'fastify';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyLoggerOptions } from 'fastify';
+import { ADMIN_SESSION_TTL_SECONDS, createAdminSessionToken, getAdminSessionEmail, verifyAdminPassword } from '../application/use-cases/admin-auth.js';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import {
   jsonSchemaTransform,
@@ -99,6 +100,11 @@ const userResponseSchema = z.object({
 });
 const sessionResponseSchema = z.object({ data: z.object({ user: userResponseSchema }) });
 const authMessageResponseSchema = z.object({ data: z.object({ message: z.string() }) });
+const adminSessionBodySchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(14).max(1_024),
+}).strict();
+const adminSessionResponseSchema = z.object({ data: z.object({ email: z.email() }) });
 const attributionSchema = z.object({
   source: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/).optional(),
   medium: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/).optional(),
@@ -267,7 +273,9 @@ export type BuildAppOptions = {
   imageServices?: ImageServices;
   analyticsServices?: AnalyticsServices;
   adminServices?: AdminServices;
-  superAdminEmails?: string[];
+  adminEmail?: string;
+  adminPasswordHash?: string;
+  adminSessionSecret?: string;
   analyticsReadToken?: string;
   authCookieSecure?: boolean;
   authPublicAppUrl?: string;
@@ -292,6 +300,7 @@ export function buildApp(options: BuildAppOptions = {}) {
   const publicApiOrigin = new URL(options.publicApiUrl ?? 'http://localhost:3000').origin;
   const publicAppOrigin = new URL(options.publicAppUrl ?? 'http://localhost:3001').origin;
   const sessionCookieName = authCookieSecure ? '__Host-caderno_session' : 'caderno_session';
+  const adminSessionCookieName = authCookieSecure ? '__Host-caderno_admin' : 'caderno_admin';
   const demoVisitorCookieName = authCookieSecure ? '__Host-caderno_demo_visitor' : 'caderno_demo_visitor';
   const getAuthenticatedUser = (request: FastifyRequest) => {
     const token = request.cookies[sessionCookieName];
@@ -309,14 +318,20 @@ export function buildApp(options: BuildAppOptions = {}) {
     }
     return user;
   };
-  const requireSuperAdmin = (request: FastifyRequest, response: FastifyReply) => {
-    const user = requireSession(request, response);
-    if (!user) return undefined;
-    if (!options.superAdminEmails?.includes(user.email.trim().toLowerCase())) {
-      response.code(403).send({ error: { code: 'ADMIN_REQUIRED', message: 'Esta área é exclusiva da administração.' } });
+  const getAuthenticatedAdminEmail = (request: FastifyRequest) => getAdminSessionEmail({
+    token: request.cookies[adminSessionCookieName],
+    email: options.adminEmail,
+    secret: options.adminSessionSecret && options.adminPasswordHash
+      ? `${options.adminSessionSecret}.${options.adminPasswordHash}`
+      : undefined,
+  });
+  const requireAdmin = (request: FastifyRequest, response: FastifyReply) => {
+    const email = getAuthenticatedAdminEmail(request);
+    if (!email) {
+      response.code(401).send({ error: { code: 'ADMIN_AUTH_REQUIRED', message: 'Entre com o acesso administrativo.' } });
       return undefined;
     }
-    return user;
+    return email;
   };
   const healthResponseSchema = z.object({ status: z.enum(['ok', 'unavailable']) });
 
@@ -335,15 +350,23 @@ export function buildApp(options: BuildAppOptions = {}) {
       '/api/v1/drafts/:id/publication',
       '/api/v1/analytics/events',
     ].includes(routePath ?? '');
+    const isAdminSessionMutation = routePath === '/api/v1/admin/session';
     const isAdminMutation = routePath?.startsWith('/api/v1/admin/users/') ?? false;
     const hasSessionCookie = Boolean(request.cookies[sessionCookieName]);
+    const hasAdminSessionCookie = Boolean(request.cookies[adminSessionCookieName]);
     const origin = request.headers.origin;
     const isBrowserRequest = origin !== undefined || request.headers['sec-fetch-site'] !== undefined;
 
     if (
       isUnsafeMethod &&
       isBrowserRequest &&
-      (isIdentityMutation || isDemoMutation || ((isSessionMutation || isAdminMutation) && hasSessionCookie)) &&
+      (
+        isIdentityMutation ||
+        isDemoMutation ||
+        isAdminSessionMutation ||
+        (isSessionMutation && hasSessionCookie) ||
+        (isAdminMutation && hasAdminSessionCookie)
+      ) &&
       origin !== authPublicOrigin
     ) {
       return response.code(403).send({
@@ -1013,6 +1036,97 @@ export function buildApp(options: BuildAppOptions = {}) {
       );
     }
 
+    const adminLoginRateLimit = app.rateLimit({
+      max: 5,
+      timeWindow: '15 minutes',
+      errorResponseBuilder: () => ({
+        statusCode: 429,
+        error: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
+      }),
+    });
+
+    app.post(
+      '/api/v1/admin/session',
+      {
+        schema: {
+          tags: ['admin'],
+          summary: 'Inicia uma sessão administrativa com e-mail e senha',
+          body: adminSessionBodySchema,
+          response: { 200: adminSessionResponseSchema, 400: errorResponseSchema, 401: errorResponseSchema, 429: errorResponseSchema, 503: errorResponseSchema },
+        },
+        preHandler: adminLoginRateLimit,
+      },
+      async (request, response) => {
+        response.header('cache-control', 'no-store');
+        if (!options.adminEmail || !options.adminPasswordHash || !options.adminSessionSecret) {
+          return response.code(503).send({ error: { code: 'ADMIN_AUTH_UNAVAILABLE', message: 'O acesso administrativo ainda não foi configurado.' } });
+        }
+        const passwordMatches = await verifyAdminPassword(request.body.password, options.adminPasswordHash);
+        if (request.body.email !== options.adminEmail || !passwordMatches) {
+          return response.code(401).send({ error: { code: 'INVALID_ADMIN_CREDENTIALS', message: 'E-mail ou senha inválidos.' } });
+        }
+
+        const token = createAdminSessionToken({
+          email: options.adminEmail,
+          secret: `${options.adminSessionSecret}.${options.adminPasswordHash}`,
+        });
+        response
+          .setCookie(adminSessionCookieName, token, {
+            httpOnly: true,
+            secure: authCookieSecure,
+            sameSite: 'strict',
+            path: '/',
+            maxAge: ADMIN_SESSION_TTL_SECONDS,
+          });
+        return { data: { email: options.adminEmail } };
+      },
+    );
+
+    app.get(
+      '/api/v1/admin/session',
+      {
+        schema: {
+          tags: ['admin'],
+          summary: 'Consulta a sessão administrativa atual',
+          response: { 200: adminSessionResponseSchema, 401: errorResponseSchema },
+        },
+      },
+      async (request, response) => {
+        response.header('cache-control', 'no-store');
+        const email = getAuthenticatedAdminEmail(request);
+        if (!email) {
+          response.clearCookie(adminSessionCookieName, {
+            path: '/',
+            secure: authCookieSecure,
+            httpOnly: true,
+            sameSite: 'strict',
+          });
+          return response.code(401).send({ error: { code: 'ADMIN_AUTH_REQUIRED', message: 'Entre com o acesso administrativo.' } });
+        }
+        return response.send({ data: { email } });
+      },
+    );
+
+    app.delete(
+      '/api/v1/admin/session',
+      {
+        schema: {
+          tags: ['admin'],
+          summary: 'Encerra a sessão administrativa atual',
+          response: { 204: z.null() },
+        },
+      },
+      async (_request, response) => {
+        response.clearCookie(adminSessionCookieName, {
+          path: '/',
+          secure: authCookieSecure,
+          httpOnly: true,
+          sameSite: 'strict',
+        });
+        return response.code(204).send(null);
+      },
+    );
+
     if (options.adminServices) {
       const admin = options.adminServices;
       app.get(
@@ -1028,10 +1142,9 @@ export function buildApp(options: BuildAppOptions = {}) {
           },
         },
         async (request, response) => {
-          const user = requireSession(request, response);
-          if (!user) return response;
-          const allowed = options.superAdminEmails?.includes(user.email.trim().toLowerCase()) ?? false;
-          return { data: { allowed } };
+          const email = requireAdmin(request, response);
+          if (!email) return response;
+          return { data: { allowed: true } };
         },
       );
 
@@ -1046,7 +1159,7 @@ export function buildApp(options: BuildAppOptions = {}) {
           },
         },
         async (request, response) => {
-          if (!requireSuperAdmin(request, response)) return response;
+          if (!requireAdmin(request, response)) return response;
           const result = admin.listUsers({
             ...(request.query.q ? { query: request.query.q } : {}),
             limit: request.query.limit,
@@ -1072,7 +1185,7 @@ export function buildApp(options: BuildAppOptions = {}) {
           },
         },
         async (request, response) => {
-          if (!requireSuperAdmin(request, response)) return response;
+          if (!requireAdmin(request, response)) return response;
           const result = admin.getUser({ userId: request.params.id });
           if (!result) {
             return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
@@ -1110,24 +1223,20 @@ export function buildApp(options: BuildAppOptions = {}) {
           },
         },
         async (request, response) => {
-          const actor = requireSuperAdmin(request, response);
-          if (!actor) return response;
+          const actorEmail = requireAdmin(request, response);
+          if (!actorEmail) return response;
           const target = admin.getUser({ userId: request.params.id });
           if (!target) {
             return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
           }
-          const isAllowlistedAdmin = options.superAdminEmails?.includes(target.user.email.trim().toLowerCase()) ?? false;
-          if (
-            (isAllowlistedAdmin && request.body.status === 'suspended') ||
-            (request.params.id === actor.id && request.body.status === 'suspended')
-          ) {
+          if (target.user.email.trim().toLowerCase() === actorEmail && request.body.status === 'suspended') {
             return response.code(409).send({
               error: { code: 'ADMIN_ACCOUNT_PROTECTED', message: 'Esta conta administrativa não pode ser suspensa por este painel.' },
             });
           }
           const result = admin.setUserStatus({
             userId: request.params.id,
-            actorUserId: actor.id,
+            actorEmail,
             status: request.body.status,
           });
           if (!result) {

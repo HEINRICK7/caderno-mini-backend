@@ -28,7 +28,7 @@ Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir 
 - O editor e a rota pública agora oferecem um link temporário por categoria e navegador, válido por sete dias; a demonstração não cria licença premium.
 - A API de conta já listava as licenças. A interface agora expõe essa lista em **Minha conta** e permite criar/recuperar o link de uma compra ativa.
 - O painel do criador foi implementado em `/admin`: busca clientes, inspeciona compras/licenças/sessões, suspende ou reativa contas e registra essas ações. O painel não cria licenças pagas.
-- O painel exige que o e-mail do magic link esteja em `SUPERADMIN_EMAILS`. O deploy agora espera esse valor como segredo do ambiente GitHub `production` e o mantém em `.env.admin`, separado dos dados da Cakto.
+- O painel usa credenciais administrativas próprias, separadas do magic link do cliente. O deploy recebe `ADMIN_EMAIL`, o hash `ADMIN_PASSWORD_HASH` e `ADMIN_SESSION_SECRET` como segredos do ambiente GitHub `production`, mantendo-os em `.env.admin`.
 
 ## Checklist de entrega
 
@@ -48,7 +48,7 @@ Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir 
 - [x] Implementar painel do criador com busca e diagnóstico de contas, compras, licenças e sessões.
 - [x] Permitir suspender/reativar conta, revogar sessões ativas na suspensão e registrar auditoria.
 - [x] Manter a concessão de licença paga exclusivamente no fluxo de webhook assinado da Cakto.
-- [ ] Cadastrar o segredo GitHub `SUPERADMIN_EMAILS` com o e-mail usado pelo criador para entrar e publicar a versão com painel.
+- [ ] Cadastrar os segredos GitHub `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` e `ADMIN_SESSION_SECRET` antes do deploy do novo login administrativo.
 - [x] Usar `/conta` como retorno seguro quando o magic link for aberto sem o `sessionStorage` da aba de origem ou em outro dispositivo.
 - [ ] Publicar e verificar o retorno pós-checkout e a área de conta no domínio de produção.
 - [ ] Verificar concessão após aprovação e revogação após reembolso/chargeback com eventos assinados e dados de teste correspondentes a uma compra pendente.
