@@ -102,7 +102,7 @@ const sessionResponseSchema = z.object({ data: z.object({ user: userResponseSche
 const authMessageResponseSchema = z.object({ data: z.object({ message: z.string() }) });
 const adminSessionBodySchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
-  password: z.string().min(14).max(1_024),
+  password: z.string().min(12).max(1_024),
 }).strict();
 const adminSessionResponseSchema = z.object({ data: z.object({ email: z.email() }) });
 const attributionSchema = z.object({
