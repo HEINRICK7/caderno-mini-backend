@@ -83,6 +83,20 @@ const errorResponseSchema = z.object({
     details: z.array(templateValidationIssueSchema).optional(),
   }),
 });
+
+function adminSqliteDiagnostic(error: unknown) {
+  if (!(error instanceof Error) || error.name !== 'SqliteError') return undefined;
+  const sqliteError = error as Error & { code?: unknown };
+  const message = error.message
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[email redigido]')
+    .replace(/\b(?:bearer\s+)?[A-Za-z0-9._-]{32,}\b/gi, '[token redigido]')
+    .slice(0, 240);
+  return {
+    ...(typeof sqliteError.code === 'string' ? { sqliteCode: sqliteError.code } : {}),
+    sqliteMessage: message,
+  };
+}
+
 const idParamsSchema = z.object({ id: z.uuid() }).strict();
 const templateIdParamsSchema = z.object({ id: z.string().min(1).max(120) }).strict();
 const createDraftBodySchema = z
@@ -541,8 +555,14 @@ export function buildApp(options: BuildAppOptions = {}) {
       });
     }
 
+    const sqliteDiagnostic = request.routeOptions.url === '/api/v1/admin/users'
+      ? adminSqliteDiagnostic(error)
+      : undefined;
     request.log.error(
-      { errorType: error instanceof Error ? error.name : 'UnknownError' },
+      {
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+        ...(sqliteDiagnostic ?? {}),
+      },
       'Falha ao processar requisição',
     );
     return response.code(500).send({
