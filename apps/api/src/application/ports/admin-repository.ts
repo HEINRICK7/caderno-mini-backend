@@ -39,7 +39,7 @@ export interface AdminRepository {
   } | undefined;
   setUserStatus(input: {
     userId: string;
-    actorUserId: string;
+    actorEmail: string;
     status: AdminAccountStatus;
     now: Date;
     id: string;

@@ -2,7 +2,7 @@ import { and, count, desc, eq, ne, or, sql } from 'drizzle-orm';
 
 import type { AdminRepository } from '../../../application/ports/admin-repository.js';
 import type { AppDatabase } from '../connection.js';
-import { accessGrants, adminAuditLog, drafts, purchases, sessions, users } from '../schema.js';
+import { accessGrants, adminAuditEvents, adminAuditLog, drafts, purchases, sessions, users } from '../schema.js';
 
 export class SqliteAdminRepository implements AdminRepository {
   constructor(private readonly database: AppDatabase) {}
@@ -59,7 +59,7 @@ export class SqliteAdminRepository implements AdminRepository {
         accessStatus: accessStatus === 'active' && expiresAt !== null && expiresAt <= input.now ? null : accessStatus,
       }));
 
-    const recentActions = this.database
+    const legacyActions = this.database
       .select({ action: adminAuditLog.action, actorEmail: users.email, createdAt: adminAuditLog.createdAt })
       .from(adminAuditLog)
       .innerJoin(users, eq(users.id, adminAuditLog.actorUserId))
@@ -67,13 +67,25 @@ export class SqliteAdminRepository implements AdminRepository {
       .orderBy(desc(adminAuditLog.createdAt))
       .limit(20)
       .all();
+    const recentActions = [
+      ...legacyActions,
+      ...this.database
+        .select({ action: adminAuditEvents.action, actorEmail: adminAuditEvents.actorEmail, createdAt: adminAuditEvents.createdAt })
+        .from(adminAuditEvents)
+        .where(eq(adminAuditEvents.targetUserId, input.userId))
+        .orderBy(desc(adminAuditEvents.createdAt))
+        .limit(20)
+        .all(),
+    ]
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .slice(0, 20);
 
     return { user, purchases: userPurchases, recentActions };
   }
 
   setUserStatus(input: {
     userId: string;
-    actorUserId: string;
+    actorEmail: string;
     status: 'active' | 'suspended';
     now: Date;
     id: string;
@@ -101,9 +113,9 @@ export class SqliteAdminRepository implements AdminRepository {
           .run().changes
         : 0;
 
-      transaction.insert(adminAuditLog).values({
+      transaction.insert(adminAuditEvents).values({
         id: input.id,
-        actorUserId: input.actorUserId,
+        actorEmail: input.actorEmail,
         targetUserId: input.userId,
         action: input.status === 'suspended' ? 'account_suspended' : 'account_reactivated',
         createdAt: input.now,

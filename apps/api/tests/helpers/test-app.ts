@@ -74,7 +74,6 @@ export async function createTestApp(
     }),
     commerceServices,
     adminServices: createAdminServices(database.db),
-    superAdminEmails: ['admin@example.com'],
     imageServices: createImageServices(imageStorage),
     previewServices: createPreviewServices(database.db, renderer),
     publishingServices: createPublishingServices(database.db, renderer, {

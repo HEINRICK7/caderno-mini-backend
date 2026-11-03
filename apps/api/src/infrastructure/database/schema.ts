@@ -61,6 +61,21 @@ export const adminAuditLog = sqliteTable(
   ],
 );
 
+export const adminAuditEvents = sqliteTable(
+  'admin_audit_events',
+  {
+    id: text('id').primaryKey(),
+    actorEmail: text('actor_email').notNull(),
+    targetUserId: text('target_user_id').notNull(),
+    action: text('action').$type<'account_suspended' | 'account_reactivated'>().notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.targetUserId], foreignColumns: [users.id], name: 'admin_audit_events_target_user_fk' }).onDelete('restrict'),
+    index('admin_audit_events_target_created').on(table.targetUserId, table.createdAt),
+  ],
+);
+
 export const drafts = sqliteTable(
   'drafts',
   {

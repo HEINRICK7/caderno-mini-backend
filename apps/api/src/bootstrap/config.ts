@@ -101,9 +101,18 @@ const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().min(32).optional(),
   ),
-  SUPERADMIN_EMAILS: z.string().default('').transform((value) =>
-    [...new Set(value.split(',').map((email) => email.trim().toLowerCase()).filter(Boolean))],
-  ).pipe(z.array(z.email())),
+  ADMIN_EMAIL: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().trim().toLowerCase().email().optional(),
+  ),
+  ADMIN_PASSWORD_HASH: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().regex(/^scrypt\.32768\.8\.1\.[A-Za-z0-9_-]{22}\.[a-f0-9]{128}$/).optional(),
+  ),
+  ADMIN_SESSION_SECRET: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().regex(/^[A-Za-z0-9_-]{43}$/).optional(),
+  ),
 });
 
 export type CaktoPlanConfig = {
@@ -141,7 +150,9 @@ export type AppConfig = {
     lifetime: CaktoPlanConfig;
   };
   analyticsReadToken?: string;
-  superAdminEmails: string[];
+  adminEmail?: string;
+  adminPasswordHash?: string;
+  adminSessionSecret?: string;
 };
 
 export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppConfig {
@@ -164,6 +175,18 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     (parsed.MINIO_ACCESS_KEY === 'caderno-local' || parsed.MINIO_SECRET_KEY === 'local-development-minio-secret')
   ) {
     throw new Error('MinIO credentials must be changed from development defaults in production.');
+  }
+
+  const adminCredentialCount = [
+    parsed.ADMIN_EMAIL,
+    parsed.ADMIN_PASSWORD_HASH,
+    parsed.ADMIN_SESSION_SECRET,
+  ].filter(Boolean).length;
+  if (adminCredentialCount !== 0 && adminCredentialCount !== 3) {
+    throw new Error('Set ADMIN_EMAIL, ADMIN_PASSWORD_HASH, and ADMIN_SESSION_SECRET together.');
+  }
+  if (parsed.NODE_ENV === 'production' && adminCredentialCount !== 3) {
+    throw new Error('Set ADMIN_EMAIL, ADMIN_PASSWORD_HASH, and ADMIN_SESSION_SECRET for production administration.');
   }
 
   return {
@@ -192,7 +215,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     ...(parsed.CAKTO_WEBHOOK_SECRET ? { caktoWebhookSecret: parsed.CAKTO_WEBHOOK_SECRET } : {}),
     ...caktoPlansFrom(parsed),
     ...(parsed.ANALYTICS_READ_TOKEN ? { analyticsReadToken: parsed.ANALYTICS_READ_TOKEN } : {}),
-    superAdminEmails: parsed.SUPERADMIN_EMAILS,
+    ...(parsed.ADMIN_EMAIL ? { adminEmail: parsed.ADMIN_EMAIL } : {}),
+    ...(parsed.ADMIN_PASSWORD_HASH ? { adminPasswordHash: parsed.ADMIN_PASSWORD_HASH } : {}),
+    ...(parsed.ADMIN_SESSION_SECRET ? { adminSessionSecret: parsed.ADMIN_SESSION_SECRET } : {}),
   };
 }
 
