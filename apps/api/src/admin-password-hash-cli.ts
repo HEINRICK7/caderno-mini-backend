@@ -6,7 +6,7 @@ async function readHiddenPassword(): Promise<string> {
     throw new Error('Execute este comando em um terminal interativo para ocultar a senha digitada.');
   }
 
-  process.stdout.write('Digite a senha administrativa (mínimo de 14 caracteres): ');
+  process.stdout.write('Digite a senha administrativa (mínimo de 12 caracteres): ');
   process.stdin.setRawMode(true);
   process.stdin.resume();
 
@@ -44,8 +44,8 @@ async function readHiddenPassword(): Promise<string> {
 
 try {
   const password = await readHiddenPassword();
-  if (password.length < 14 || Buffer.byteLength(password, 'utf8') > 1_024) {
-    throw new Error('A senha precisa ter de 14 a 1024 bytes.');
+  if (password.length < 12 || Buffer.byteLength(password, 'utf8') > 1_024) {
+    throw new Error('A senha precisa ter de 12 a 1024 bytes.');
   }
   process.stdout.write(`${await hashAdminPassword(password)}\n`);
 } catch (error) {
