@@ -127,6 +127,8 @@ export class SqliteAdminRepository implements AdminRepository {
 }
 
 function summarySelection(now: Date) {
+  const outerUserId = sql.raw('"users"."id"');
+
   return {
     id: users.id,
     email: users.email,
@@ -134,7 +136,7 @@ function summarySelection(now: Date) {
     createdAt: users.createdAt,
     activeSessions: sql<number>`(
       SELECT COUNT(*) FROM sessions
-      WHERE sessions.user_id = ${users.id}
+      WHERE sessions.user_id = ${outerUserId}
         AND sessions.revoked_at IS NULL
         AND sessions.expires_at > ${now.getTime()}
     )`,
@@ -142,19 +144,19 @@ function summarySelection(now: Date) {
       SELECT COUNT(DISTINCT purchases.id)
       FROM purchases
       LEFT JOIN access_grants ON access_grants.purchase_id = purchases.id
-      WHERE purchases.owner_user_id = ${users.id} OR access_grants.user_id = ${users.id}
+      WHERE purchases.owner_user_id = ${outerUserId} OR access_grants.user_id = ${outerUserId}
     )`,
     activeLicenses: sql<number>`(
       SELECT COUNT(*)
       FROM access_grants
       INNER JOIN purchases ON purchases.id = access_grants.purchase_id
-      WHERE access_grants.user_id = ${users.id}
+      WHERE access_grants.user_id = ${outerUserId}
         AND access_grants.status = 'active'
         AND purchases.status = 'paid'
         AND (access_grants.expires_at IS NULL OR access_grants.expires_at > ${now.getTime()})
     )`,
     draftCount: sql<number>`(
-      SELECT COUNT(*) FROM drafts WHERE drafts.owner_user_id = ${users.id}
+      SELECT COUNT(*) FROM drafts WHERE drafts.owner_user_id = ${outerUserId}
     )`,
   };
 }
