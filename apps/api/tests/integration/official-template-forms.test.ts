@@ -47,6 +47,7 @@ type CatalogTemplate = {
         originalPriceFieldId?: string;
       };
       financial?: { stateFieldId: string; expectedState: 'confirmed' | 'settled'; balanceFieldId?: string };
+      brand?: { businessNameFieldId?: string; logoFieldId?: string };
       action?: { label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string };
       actions?: Array<{ label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string }>;
     };
@@ -94,7 +95,7 @@ describe('formulários do catálogo oficial de modelos', () => {
     for (const template of officialCatalog) {
       expect(() => validateTemplateDefinition(template.definition as unknown as JsonObject), template.id).not.toThrow();
       expect(template.definition.fields.some((field) => field.id === 'title' && field.required)).toBe(true);
-      expect(template.definition.fields.some((field) => field.id === 'businessLogo')).toBe(false);
+      expect(template.definition.fields.some((field) => field.id === 'businessLogo')).toBe(true);
       expect(template.definition.fields.every((field) => field.editable !== false || field.required !== true)).toBe(true);
       expect(template.definition.exampleData, template.id).toBeDefined();
       expect(JSON.stringify(template.definition.card), template.id).not.toMatch(/Maria|Conjunto de mesa|Pagar agora/i);
@@ -104,9 +105,9 @@ describe('formulários do catálogo oficial de modelos', () => {
   });
 
   it('publica versões novas para as mudanças no contrato de edição', () => {
-    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(6);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(6);
-    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(7);
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(7);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(7);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(8);
   });
 
   it('mantém cada seção de edição em um único bloco e conecta todos os campos ao cartão', () => {
@@ -133,6 +134,8 @@ describe('formulários do catálogo oficial de modelos', () => {
         if (detail.imageFieldId) references.add(detail.imageFieldId);
       }
       for (const fieldId of Object.values(card.variables ?? {})) references.add(fieldId);
+      if (card.brand?.businessNameFieldId) references.add(card.brand.businessNameFieldId);
+      if (card.brand?.logoFieldId) references.add(card.brand.logoFieldId);
       if (card.pixNoteFieldId) references.add(card.pixNoteFieldId);
       if (card.product) {
         for (const [key, fieldId] of Object.entries(card.product)) {
