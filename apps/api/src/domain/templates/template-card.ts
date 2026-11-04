@@ -18,6 +18,7 @@ export type TemplateCard = {
   action?: TemplateCardAction;
   actions?: TemplateCardAction[];
   brand?: TemplateCardBrand;
+  socialLinks?: TemplateCardSocialLink[];
   footer: 'heart' | 'none';
 };
 
@@ -44,6 +45,7 @@ export type TemplateCardProduct = {
 export type TemplateFinancialRule = { stateFieldId: string; expectedState: 'confirmed' | 'settled'; balanceFieldId?: string };
 export type TemplateCardAction = { label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string };
 export type TemplateCardBrand = { businessNameFieldId: string; logoFieldId?: string };
+export type TemplateCardSocialLink = { platform: 'instagram' | 'whatsapp' | 'facebook' | 'tiktok' | 'youtube'; hrefFieldId: string };
 
 type TemplateField = { id: string; type: string };
 
@@ -65,7 +67,7 @@ const illustrations = new Set<TemplateCard['illustration']>([
   'reactivation-heart',
   'approval-hourglass',
 ]);
-const cardKeys = new Set(['illustration', 'layout', 'variables', 'heading', 'highlightedText', 'subtitle', 'subtitlePlacement', 'subtitleStyle', 'pixNoteFieldId', 'message', 'details', 'product', 'financial', 'action', 'actions', 'brand', 'footer']);
+const cardKeys = new Set(['illustration', 'layout', 'variables', 'heading', 'highlightedText', 'subtitle', 'subtitlePlacement', 'subtitleStyle', 'pixNoteFieldId', 'message', 'details', 'product', 'financial', 'action', 'actions', 'brand', 'socialLinks', 'footer']);
 const fieldIdPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const detailIcons = new Set(['package', 'credit-card', 'calendar', 'check', 'link', 'qrcode', 'chat', 'badge', 'wallet', 'receipt', 'heart', 'shield', 'gift', 'cake', 'sparkles', 'shopping-bag', 'clock', 'clipboard-check']);
 const cardLayouts = new Set(['standard', 'welcome', 'product', 'offer', 'collection', 'pix', 'approval', 'celebration', 'settled']);
@@ -84,7 +86,7 @@ export function resolveTemplateCard(
     throw new InvalidTemplateDefinitionError();
   }
 
-  const { illustration, layout, variables, heading, highlightedText, subtitle, subtitlePlacement, subtitleStyle, pixNoteFieldId, message, details, product, financial, action, actions, brand, footer } = raw;
+  const { illustration, layout, variables, heading, highlightedText, subtitle, subtitlePlacement, subtitleStyle, pixNoteFieldId, message, details, product, financial, action, actions, brand, socialLinks, footer } = raw;
   if (
     typeof illustration !== 'string' || !illustrations.has(illustration as TemplateCard['illustration']) ||
     (layout !== undefined && (typeof layout !== 'string' || !cardLayouts.has(layout))) ||
@@ -117,6 +119,7 @@ export function resolveTemplateCard(
   const resolvedActions = resolveActions(actions, fieldTypes, shouldValidateBindings);
   if (resolvedAction && resolvedActions) throw new InvalidTemplateDefinitionError();
   const resolvedBrand = resolveBrand(brand, fieldTypes, shouldValidateBindings);
+  const resolvedSocialLinks = resolveSocialLinks(socialLinks, fieldTypes, shouldValidateBindings);
 
   return {
     illustration: illustration as TemplateCard['illustration'],
@@ -135,8 +138,48 @@ export function resolveTemplateCard(
     ...(resolvedAction ? { action: resolvedAction } : {}),
     ...(resolvedActions ? { actions: resolvedActions } : {}),
     ...(resolvedBrand ? { brand: resolvedBrand } : {}),
+    ...(resolvedSocialLinks ? { socialLinks: resolvedSocialLinks } : {}),
     footer,
   };
+}
+
+function resolveSocialLinks(
+  socialLinks: unknown,
+  fieldTypes: Map<string, string | undefined>,
+  shouldValidateBindings: boolean,
+): TemplateCardSocialLink[] | undefined {
+  if (socialLinks === undefined) return undefined;
+  const socialFieldByPlatform: Record<TemplateCardSocialLink['platform'], string> = {
+    instagram: 'instagramUrl',
+    whatsapp: 'whatsappUrl',
+    facebook: 'facebookUrl',
+    tiktok: 'tiktokUrl',
+    youtube: 'youtubeUrl',
+  };
+  const supportedPlatforms = new Set<TemplateCardSocialLink['platform']>(Object.keys(socialFieldByPlatform) as TemplateCardSocialLink['platform'][]);
+  if (!Array.isArray(socialLinks) || socialLinks.length < 1 || socialLinks.length > supportedPlatforms.size) {
+    throw new InvalidTemplateDefinitionError();
+  }
+
+  const platforms = new Set<string>();
+  const fieldIds = new Set<string>();
+  return socialLinks.map((entry) => {
+    if (!isRecord(entry) || Object.keys(entry).some((key) => !['platform', 'hrefFieldId'].includes(key))) {
+      throw new InvalidTemplateDefinitionError();
+    }
+    const { platform, hrefFieldId } = entry;
+    if (
+      typeof platform !== 'string' || !supportedPlatforms.has(platform as TemplateCardSocialLink['platform']) || platforms.has(platform) ||
+      typeof hrefFieldId !== 'string' || !fieldIdPattern.test(hrefFieldId) || fieldIds.has(hrefFieldId) ||
+      (typeof platform === 'string' && supportedPlatforms.has(platform as TemplateCardSocialLink['platform']) && hrefFieldId !== socialFieldByPlatform[platform as TemplateCardSocialLink['platform']]) ||
+      (shouldValidateBindings && fieldTypes.get(hrefFieldId) !== 'url')
+    ) {
+      throw new InvalidTemplateDefinitionError();
+    }
+    platforms.add(platform);
+    fieldIds.add(hrefFieldId);
+    return { platform: platform as TemplateCardSocialLink['platform'], hrefFieldId };
+  });
 }
 
 function resolveBrand(

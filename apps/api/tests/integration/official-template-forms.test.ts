@@ -37,7 +37,7 @@ type CatalogTemplate = {
       pixNoteFieldId?: string;
       message?: string;
       variables?: Record<string, string>;
-      details?: Array<{ value: string; labelFieldId?: string; imageFieldId?: string }>;
+      details?: Array<{ value: string; labelFieldId?: string; imageFieldId?: string; icon?: string }>;
       product?: {
         nameFieldId?: string;
         descriptionFieldId?: string;
@@ -50,6 +50,7 @@ type CatalogTemplate = {
       brand?: { businessNameFieldId?: string; logoFieldId?: string };
       action?: { label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string };
       actions?: Array<{ label?: string; labelFieldId?: string; hrefFieldId?: string; copyFieldId?: string }>;
+      socialLinks?: Array<{ platform: string; hrefFieldId: string }>;
     };
   };
 };
@@ -105,9 +106,12 @@ describe('formulários do catálogo oficial de modelos', () => {
   });
 
   it('publica versões novas para as mudanças no contrato de edição', () => {
-    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(7);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(7);
-    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(8);
+    for (const id of ['parcela-proxima', 'parcela-hoje', 'parcela-atrasada', 'cobranca-pix']) {
+      expect(officialCatalog.find((template) => template.id === id)?.version).toBe(8);
+    }
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(8);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(8);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(9);
   });
 
   it('mantém cada seção de edição em um único bloco e conecta todos os campos ao cartão', () => {
@@ -137,6 +141,7 @@ describe('formulários do catálogo oficial de modelos', () => {
       if (card.brand?.businessNameFieldId) references.add(card.brand.businessNameFieldId);
       if (card.brand?.logoFieldId) references.add(card.brand.logoFieldId);
       if (card.pixNoteFieldId) references.add(card.pixNoteFieldId);
+      for (const socialLink of card.socialLinks ?? []) references.add(socialLink.hrefFieldId);
       if (card.product) {
         for (const [key, fieldId] of Object.entries(card.product)) {
           if (key === 'icon') continue;
@@ -163,11 +168,17 @@ describe('formulários do catálogo oficial de modelos', () => {
       const data: JsonObject = {};
       for (const field of template.definition.fields) {
         if (field.editable === false) continue;
-        if (field.id === 'oldPrice') data[field.id] = 130;
+        if (field.id === 'pixCopyPaste') data[field.id] = '00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***63041D3D';
+        else if (field.id === 'oldPrice') data[field.id] = 130;
         else if (field.id === 'newPrice') data[field.id] = 87.5;
         else if (field.type === 'text' || field.type === 'textarea') data[field.id] = `Conteúdo personalizado para ${field.id}`;
         else if (field.type === 'number') data[field.id] = 42;
         else if (field.type === 'date') data[field.id] = '2027-02-19';
+        else if (field.id === 'instagramUrl') data[field.id] = 'https://instagram.com/example-shop';
+        else if (field.id === 'whatsappUrl') data[field.id] = 'https://wa.me/5511999999999';
+        else if (field.id === 'facebookUrl') data[field.id] = 'https://facebook.com/example.shop';
+        else if (field.id === 'tiktokUrl') data[field.id] = 'https://tiktok.com/@example-shop';
+        else if (field.id === 'youtubeUrl') data[field.id] = 'https://youtube.com/@example-shop';
         else if (field.type === 'url') data[field.id] = `https://cliente.example/${field.id}`;
         else if (field.type === 'image') data[field.id] = '7b7d828b-f189-496a-b59b-9fae6a9b8531';
         else if (field.type === 'select') data[field.id] = field.options?.[0] ?? '';
@@ -239,15 +250,55 @@ describe('formulários do catálogo oficial de modelos', () => {
     }
   });
 
-  it('não aceita código Pix fictício vindo do formulário', () => {
+  it('valida o Pix copia e cola da cobrança Pix sem inserir código demonstrativo', () => {
     const template = requireTemplate('cobranca-pix');
-    for (const id of ['pixCopyPaste', 'pixQrImage']) {
-      expect(template.definition.fields.find((field) => field.id === id)?.editable).toBe(false);
-      expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', [id]: 'valor não confiável' })).toThrow();
-    }
+    const pixField = template.definition.fields.find((field) => field.id === 'pixCopyPaste');
+    expect(pixField?.editable).not.toBe(false);
+    expect(pixField?.required).toBe(false);
+    expect(template.definition.fields.some((field) => field.id === 'pixQrImage')).toBe(false);
+
+    const officialPixPayload = '00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***63041D3D';
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: officialPixPayload })).not.toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança' })).not.toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: `${officialPixPayload.slice(0, -1)}0` })).toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: ` ${officialPixPayload}` })).toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: `${officialPixPayload.slice(0, 20)}\u0001${officialPixPayload.slice(20)}` })).toThrow();
+
     expect(template.definition.card?.pixNoteFieldId).toBe('pixSecurityNote');
     expect(template.definition.fields.find((field) => field.id === 'pixSecurityNote')?.editable).not.toBe(false);
     expect(template.definition.card.action?.copyFieldId).toBe('pixCopyPaste');
+  });
+
+  it('oferece Pix opcional nas três cobranças de parcela e liga o campo ao botão de cópia', () => {
+    for (const id of ['parcela-proxima', 'parcela-hoje', 'parcela-atrasada']) {
+      const template = requireTemplate(id);
+      const pixField = template.definition.fields.find((field) => field.id === 'pixCopyPaste');
+      expect(pixField?.type).toBe('textarea');
+      expect(pixField?.required).toBe(false);
+      expect(template.definition.card.details?.some((detail) => detail.icon === 'qrcode')).toBe(true);
+      expect(template.definition.card.actions?.some((action) => action.copyFieldId === 'pixCopyPaste')).toBe(true);
+    }
+  });
+
+  it('inclui cinco canais sociais opcionais em todos os modelos', () => {
+    const expected = ['instagramUrl', 'whatsappUrl', 'facebookUrl', 'tiktokUrl', 'youtubeUrl'];
+    for (const template of officialCatalog) {
+      expect(template.definition.card.socialLinks?.map((link) => link.hrefFieldId).sort()).toEqual([...expected].sort());
+      for (const id of expected) {
+        const field = template.definition.fields.find((candidate) => candidate.id === id);
+        expect(field?.type, `${template.id}.${id}`).toBe('url');
+        expect(field?.required, `${template.id}.${id}`).toBe(false);
+        expect(template.definition.exampleData?.[id], `${template.id}.${id}`).toBeUndefined();
+      }
+    }
+
+    const template = requireTemplate('boas-vindas');
+    const validInput = personalizedInput(template);
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, validInput)).not.toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, {
+      ...validInput,
+      instagramUrl: 'https://instagram.com.evil.example/loja',
+    })).toThrow();
   });
 
   it('protege estado pago e saldo quitado no domínio financeiro', () => {
@@ -316,9 +367,18 @@ function requireTemplate(id: string): CatalogTemplate {
 
 function personalizedInput(template: CatalogTemplate): JsonObject {
   const data: JsonObject = {};
+  const socialUrls: Record<string, string> = {
+    instagramUrl: 'https://instagram.com/example-shop',
+    whatsappUrl: 'https://wa.me/5511999999999',
+    facebookUrl: 'https://facebook.com/example.shop',
+    tiktokUrl: 'https://tiktok.com/@example-shop',
+    youtubeUrl: 'https://youtube.com/@example-shop',
+  };
   for (const field of template.definition.fields) {
     if (field.editable === false) continue;
-    if (field.id === 'oldPrice') data[field.id] = 130;
+    if (field.id === 'pixCopyPaste') data[field.id] = '00020126580014br.gov.bcb.pix0136123e4567-e12b-12d1-a456-4266554400005204000053039865802BR5913Fulano de Tal6008BRASILIA62070503***63041D3D';
+    else if (socialUrls[field.id]) data[field.id] = socialUrls[field.id];
+    else if (field.id === 'oldPrice') data[field.id] = 130;
     else if (field.id === 'newPrice') data[field.id] = 87.5;
     else if (field.type === 'text' || field.type === 'textarea') data[field.id] = `Conteúdo personalizado para ${field.id}`;
     else if (field.type === 'number') data[field.id] = 42;
