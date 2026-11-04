@@ -32,6 +32,7 @@ export async function createTestApp(
       annual: { checkoutUrl: string; productId: string; webhookSecret: string };
       lifetime: { checkoutUrl: string; productId: string; webhookSecret: string };
     };
+    admin?: { email: string; passwordHash: string; sessionSecret: string };
   } = {},
 ): Promise<{
   app: FastifyInstance;
@@ -73,7 +74,7 @@ export async function createTestApp(
       clock: () => new Date(),
     }),
     commerceServices,
-    adminServices: createAdminServices(database.db),
+    adminServices: createAdminServices(database.db, options.admin ? { adminEmail: options.admin.email } : {}),
     imageServices: createImageServices(imageStorage),
     previewServices: createPreviewServices(database.db, renderer),
     publishingServices: createPublishingServices(database.db, renderer, {
@@ -97,6 +98,13 @@ export async function createTestApp(
       generateSessionId: randomUUID,
       clock: () => new Date(),
     }),
+    ...(options.admin
+      ? {
+        adminEmail: options.admin.email,
+        adminPasswordHash: options.admin.passwordHash,
+        adminSessionSecret: options.admin.sessionSecret,
+      }
+      : {}),
     ...(options.authCookieSecure === undefined ? {} : { authCookieSecure: options.authCookieSecure }),
     healthCheck: () => database.sqlite.prepare('select 1').get(),
   });
