@@ -66,7 +66,14 @@ export function validateTemplateInput(
       continue;
     }
 
-    const issue = validateValue(field, value);
+    const validationIssue = validateValue(field, value);
+    const issue = validationIssue ?? (
+      field.id === 'pixCopyPaste' && typeof value === 'string' && value.length > 0 && !isValidPixCopyPaste(value)
+        ? 'invalid_pix_payload'
+        : socialPlatformForField(field.id) && typeof value === 'string' && value.trim().length > 0 && !isValidSocialLink(field.id, value)
+          ? 'invalid_social_link'
+        : undefined
+    );
     if (issue) {
       issues.push({ path: field.id, code: issue, message: issueMessage(issue) });
     }
@@ -208,9 +215,62 @@ function isStoredImageId(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+function isValidPixCopyPaste(value: string): boolean {
+  const encoded = new TextEncoder().encode(value);
+  if (
+    encoded.length > 2_048 ||
+    value !== value.trim() ||
+    /[\u0000-\u001f\u007f]/.test(value) ||
+    !value.startsWith('000201') ||
+    !value.toLowerCase().includes('br.gov.bcb.pix') ||
+    value.slice(-8, -4) !== '6304'
+  ) {
+    return false;
+  }
+
+  let crc = 0xffff;
+  for (const byte of new TextEncoder().encode(value.slice(0, -4))) {
+    crc ^= byte << 8;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc & 0x8000) !== 0 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+  }
+
+  return crc.toString(16).toUpperCase().padStart(4, '0') === value.slice(-4).toUpperCase();
+}
+
+function socialPlatformForField(fieldId: string): string | undefined {
+  return {
+    instagramUrl: 'Instagram',
+    whatsappUrl: 'WhatsApp',
+    facebookUrl: 'Facebook',
+    tiktokUrl: 'TikTok',
+    youtubeUrl: 'YouTube',
+  }[fieldId];
+}
+
+function isValidSocialLink(fieldId: string, value: string): boolean {
+  const allowedHosts: Record<string, string[]> = {
+    instagramUrl: ['instagram.com'],
+    whatsappUrl: ['wa.me', 'whatsapp.com', 'api.whatsapp.com'],
+    facebookUrl: ['facebook.com', 'm.facebook.com', 'fb.com'],
+    tiktokUrl: ['tiktok.com', 'vm.tiktok.com'],
+    youtubeUrl: ['youtube.com', 'youtu.be'],
+  };
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+    return url.protocol === 'https:' && url.username === '' && url.password === '' && (allowedHosts[fieldId]?.includes(host) ?? false);
+  } catch {
+    return false;
+  }
+}
+
 function issueMessage(code: string): string {
   if (code === 'too_long') return 'O valor ultrapassa o limite de caracteres.';
   if (code === 'invalid_url') return 'Informe uma URL HTTP ou HTTPS válida.';
+  if (code === 'invalid_pix_payload') return 'Cole o código Pix completo, sem espaços extras. Confira se foi copiado diretamente do app do banco.';
+  if (code === 'invalid_social_link') return 'Cole um link HTTPS válido do canal social correspondente.';
   if (code === 'required') return 'Este campo é obrigatório.';
   if (code === 'not_editable') return 'Este valor é fornecido pelo estado confiável da aplicação.';
   if (code === 'discount_pair_required') return 'Informe o preço original e o preço final juntos.';

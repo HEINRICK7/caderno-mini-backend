@@ -1,7 +1,7 @@
 [
   {
     "id": "boas-vindas",
-    "version": 7,
+    "version": 8,
     "name": "Boas-vindas",
     "description": "Recebe novos clientes de forma acolhedora.",
     "isActive": true,
@@ -133,6 +133,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -185,7 +240,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -202,7 +279,7 @@
   },
   {
     "id": "agradecimento-compra",
-    "version": 6,
+    "version": 7,
     "name": "Agradecimento pela compra",
     "description": "Valoriza o cliente após a venda.",
     "isActive": true,
@@ -352,6 +429,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -403,7 +535,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -421,7 +575,7 @@
   },
   {
     "id": "parcela-proxima",
-    "version": 6,
+    "version": 8,
     "name": "Parcela próxima do vencimento",
     "description": "Lembra a data com antecedência.",
     "isActive": true,
@@ -568,6 +722,17 @@
           "width": "half"
         },
         {
+          "id": "pixCopyPaste",
+          "type": "textarea",
+          "label": "Pix copia e cola",
+          "placeholder": "Cole aqui o código gerado pelo seu banco",
+          "helpText": "Cole o código completo gerado pelo banco ou instituição de pagamento. O QR Code é criado automaticamente com esse mesmo código. Confira o nome do recebedor no app do banco antes de pagar.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "full",
+          "section": "Pagamento"
+        },
+        {
           "id": "paymentLink",
           "type": "url",
           "label": "Link para pagamento",
@@ -586,6 +751,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -622,13 +842,14 @@
             "value": "{{installmentNumber}} de {{installmentTotal}}",
             "icon": "receipt",
             "labelFieldId": "detailLabel3"
+          },
+          {
+            "value": "Escaneie o QR Code ou copie o código Pix para pagar.",
+            "label": "Pix copia e cola",
+            "icon": "qrcode"
           }
         ],
-        "action": {
-          "hrefFieldId": "paymentLink",
-          "labelFieldId": "primaryActionLabel"
-        },
-        "layout": "standard",
+        "layout": "pix",
         "highlightedText": "{{highlightedText}}",
         "subtitle": "{{subtitle}}",
         "variables": {
@@ -642,7 +863,39 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "actions": [
+          {
+            "label": "Copiar código Pix",
+            "copyFieldId": "pixCopyPaste"
+          },
+          {
+            "hrefFieldId": "paymentLink",
+            "labelFieldId": "primaryActionLabel"
+          }
+        ],
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -663,7 +916,7 @@
   },
   {
     "id": "parcela-hoje",
-    "version": 6,
+    "version": 8,
     "name": "Parcela vence hoje",
     "description": "Avisa que o pagamento é para hoje.",
     "isActive": true,
@@ -810,6 +1063,17 @@
           "width": "half"
         },
         {
+          "id": "pixCopyPaste",
+          "type": "textarea",
+          "label": "Pix copia e cola",
+          "placeholder": "Cole aqui o código gerado pelo seu banco",
+          "helpText": "Cole o código completo gerado pelo banco ou instituição de pagamento. O QR Code é criado automaticamente com esse mesmo código. Confira o nome do recebedor no app do banco antes de pagar.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "full",
+          "section": "Pagamento"
+        },
+        {
           "id": "paymentLink",
           "type": "url",
           "label": "Link para pagamento",
@@ -828,6 +1092,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -865,13 +1184,14 @@
             "value": "{{installmentNumber}} de {{installmentTotal}}",
             "icon": "receipt",
             "labelFieldId": "detailLabel3"
+          },
+          {
+            "value": "Escaneie o QR Code ou copie o código Pix para pagar.",
+            "label": "Pix copia e cola",
+            "icon": "qrcode"
           }
         ],
-        "action": {
-          "hrefFieldId": "paymentLink",
-          "labelFieldId": "primaryActionLabel"
-        },
-        "layout": "standard",
+        "layout": "pix",
         "highlightedText": "{{highlightedText}}",
         "subtitle": "{{subtitle}}",
         "variables": {
@@ -885,7 +1205,39 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "actions": [
+          {
+            "label": "Copiar código Pix",
+            "copyFieldId": "pixCopyPaste"
+          },
+          {
+            "hrefFieldId": "paymentLink",
+            "labelFieldId": "primaryActionLabel"
+          }
+        ],
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -906,7 +1258,7 @@
   },
   {
     "id": "parcela-atrasada",
-    "version": 6,
+    "version": 8,
     "name": "Parcela em atraso",
     "description": "Informa que já está em atraso.",
     "isActive": true,
@@ -1053,6 +1405,17 @@
           "width": "half"
         },
         {
+          "id": "pixCopyPaste",
+          "type": "textarea",
+          "label": "Pix copia e cola",
+          "placeholder": "Cole aqui o código gerado pelo seu banco",
+          "helpText": "Cole o código completo gerado pelo banco ou instituição de pagamento. O QR Code é criado automaticamente com esse mesmo código. Confira o nome do recebedor no app do banco antes de pagar.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "full",
+          "section": "Pagamento"
+        },
+        {
           "id": "paymentLink",
           "type": "url",
           "label": "Link para pagamento",
@@ -1071,6 +1434,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -1107,13 +1525,14 @@
             "value": "{{installmentNumber}} de {{installmentTotal}}",
             "icon": "receipt",
             "labelFieldId": "detailLabel3"
+          },
+          {
+            "value": "Escaneie o QR Code ou copie o código Pix para pagar.",
+            "label": "Pix copia e cola",
+            "icon": "qrcode"
           }
         ],
-        "action": {
-          "hrefFieldId": "paymentLink",
-          "labelFieldId": "primaryActionLabel"
-        },
-        "layout": "standard",
+        "layout": "pix",
         "highlightedText": "{{highlightedText}}",
         "subtitle": "{{subtitle}}",
         "variables": {
@@ -1127,7 +1546,39 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "actions": [
+          {
+            "label": "Copiar código Pix",
+            "copyFieldId": "pixCopyPaste"
+          },
+          {
+            "hrefFieldId": "paymentLink",
+            "labelFieldId": "primaryActionLabel"
+          }
+        ],
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -1149,7 +1600,7 @@
   },
   {
     "id": "cobranca-pix",
-    "version": 6,
+    "version": 8,
     "name": "Cobrança Pix",
     "description": "Envia os dados Pix informados pela empresa.",
     "isActive": true,
@@ -1282,24 +1733,13 @@
         {
           "id": "pixCopyPaste",
           "type": "textarea",
-          "label": "Código Pix copia e cola",
+          "label": "Pix copia e cola",
           "maxLength": 2048,
           "required": false,
-          "editable": false,
           "width": "full",
           "section": "Dados do Pix",
-          "helpText": "Fornecido pelo provedor de pagamento; o código precisa corresponder a uma cobrança real."
-        },
-        {
-          "id": "pixQrImage",
-          "type": "image",
-          "label": "Imagem do QR Code Pix",
-          "helpText": "Imagem de QR fornecida por uma integração confiável. Não envie um QR de demonstração.",
-          "maxBytes": 5242880,
-          "section": "Dados do Pix",
-          "width": "full",
-          "required": false,
-          "editable": false
+          "helpText": "Cole o código completo gerado pelo banco ou instituição de pagamento. O QR Code é criado automaticamente com esse mesmo código. Confira o nome do recebedor no app do banco antes de pagar.",
+          "placeholder": "Cole aqui o código gerado pelo seu banco"
         },
         {
           "id": "primaryActionLabel",
@@ -1346,6 +1786,61 @@
           "required": false,
           "section": "Instruções do Pix",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -1384,8 +1879,7 @@
             "labelFieldId": "detailLabel3"
           },
           {
-            "value": "{{pixCopyPaste}}",
-            "imageFieldId": "pixQrImage",
+            "value": "Escaneie o QR Code ou copie o código Pix para pagar.",
             "icon": "qrcode",
             "labelFieldId": "detailLabel4"
           }
@@ -1409,7 +1903,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -1431,7 +1947,7 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 7,
+    "version": 8,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
@@ -1617,6 +2133,61 @@
           "required": false,
           "section": "Estado financeiro",
           "helpText": "Fornecido somente pelo domínio financeiro."
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -1676,7 +2247,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "title": "Pagamento",
@@ -1696,7 +2289,7 @@
   },
   {
     "id": "caderneta-quitada",
-    "version": 6,
+    "version": 7,
     "name": "Caderneta quitada",
     "description": "Celebra quando todas as parcelas foram pagas.",
     "isActive": true,
@@ -1839,6 +2432,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -1892,7 +2540,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -1910,7 +2580,7 @@
   },
   {
     "id": "servico-contratado",
-    "version": 6,
+    "version": 7,
     "name": "Serviço contratado",
     "description": "Confirma a contratação e informa os dados do serviço.",
     "isActive": true,
@@ -2068,6 +2738,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -2124,7 +2849,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2144,7 +2891,7 @@
   },
   {
     "id": "servico-concluido",
-    "version": 6,
+    "version": 7,
     "name": "Serviço concluído",
     "description": "Informa que o serviço foi finalizado e convida à avaliação.",
     "isActive": true,
@@ -2283,6 +3030,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -2332,7 +3134,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2348,7 +3172,7 @@
   },
   {
     "id": "aniversario",
-    "version": 6,
+    "version": 7,
     "name": "Aniversário",
     "description": "Parabeniza o cliente em uma data especial.",
     "isActive": true,
@@ -2470,6 +3294,61 @@
           "required": false,
           "section": "Assinatura",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -2512,7 +3391,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2528,7 +3429,7 @@
   },
   {
     "id": "produto-destaque",
-    "version": 6,
+    "version": 7,
     "name": "Produto em destaque",
     "description": "Apresenta um produto com destaque.",
     "isActive": true,
@@ -2648,6 +3549,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -2690,7 +3646,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "businessName": "Cadernô",
@@ -2705,7 +3683,7 @@
   },
   {
     "id": "oferta-especial",
-    "version": 6,
+    "version": 7,
     "name": "Oferta especial",
     "description": "Divulga uma promoção ou oportunidade.",
     "isActive": true,
@@ -2854,6 +3832,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -2899,7 +3932,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2916,7 +3971,7 @@
   },
   {
     "id": "novidades-colecao",
-    "version": 6,
+    "version": 7,
     "name": "Novidades e coleção",
     "description": "Apresenta novidades da loja e da coleção.",
     "isActive": true,
@@ -3045,6 +4100,61 @@
           "required": false,
           "section": "Ações",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -3087,7 +4197,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -3101,7 +4233,7 @@
   },
   {
     "id": "reativacao-cliente",
-    "version": 6,
+    "version": 7,
     "name": "Reativação de cliente",
     "description": "Retoma o contato com clientes que não interagem há um tempo.",
     "isActive": true,
@@ -3233,6 +4365,61 @@
           "required": false,
           "section": "Detalhes da mensagem",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -3280,7 +4467,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -3296,7 +4505,7 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 8,
+    "version": 9,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
@@ -3436,6 +4645,61 @@
           "required": false,
           "section": "Detalhes da aprovação",
           "width": "full"
+        },
+        {
+          "id": "instagramUrl",
+          "type": "url",
+          "label": "Instagram",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "whatsappUrl",
+          "type": "url",
+          "label": "WhatsApp",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "facebookUrl",
+          "type": "url",
+          "label": "Facebook",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "tiktokUrl",
+          "type": "url",
+          "label": "TikTok",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
+        },
+        {
+          "id": "youtubeUrl",
+          "type": "url",
+          "label": "YouTube",
+          "placeholder": "Cole o link do perfil do seu negócio",
+          "helpText": "Opcional. Quando preenchido, o ícone desse canal aparece no rodapé da mensagem.",
+          "maxLength": 2048,
+          "required": false,
+          "width": "half",
+          "section": "Redes sociais"
         }
       ],
       "visual": {
@@ -3490,7 +4754,29 @@
         "brand": {
           "businessNameFieldId": "businessName",
           "logoFieldId": "businessLogo"
-        }
+        },
+        "socialLinks": [
+          {
+            "platform": "instagram",
+            "hrefFieldId": "instagramUrl"
+          },
+          {
+            "platform": "whatsapp",
+            "hrefFieldId": "whatsappUrl"
+          },
+          {
+            "platform": "facebook",
+            "hrefFieldId": "facebookUrl"
+          },
+          {
+            "platform": "tiktok",
+            "hrefFieldId": "tiktokUrl"
+          },
+          {
+            "platform": "youtube",
+            "hrefFieldId": "youtubeUrl"
+          }
+        ]
       },
       "exampleData": {
         "recipientName": "Maria",
