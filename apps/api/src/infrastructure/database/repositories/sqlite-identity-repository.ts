@@ -116,6 +116,30 @@ export class SqliteIdentityRepository implements IdentityRepository {
     });
   }
 
+  findOrCreateAdminTestUser(input: { email: string; userId: string; now: Date }): User | undefined {
+    return this.database.transaction((transaction) => {
+      let user = transaction.select().from(users).where(eq(users.email, input.email)).get();
+
+      if (!user) {
+        transaction
+          .insert(users)
+          .values({
+            id: input.userId,
+            email: input.email,
+            accountStatus: 'active',
+            emailVerifiedAt: input.now,
+            createdAt: input.now,
+          })
+          .onConflictDoNothing()
+          .run();
+        user = transaction.select().from(users).where(eq(users.email, input.email)).get();
+      }
+
+      if (!user || user.accountStatus !== 'active') return undefined;
+      return { id: user.id, email: user.email, createdAt: user.createdAt };
+    });
+  }
+
   findSessionByTokenHash(tokenHash: string, now: Date): User | undefined {
     const result = this.database
       .select({ id: users.id, email: users.email, createdAt: users.createdAt })

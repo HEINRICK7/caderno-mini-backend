@@ -26,11 +26,15 @@ migrateDatabase(
   resolve(process.cwd(), 'apps/api/src/infrastructure/database/migrations'),
 );
 const commerceServices = createCommerceServices(database.db, config.caktoPlans
-  ? { plans: config.caktoPlans }
+  ? {
+    plans: config.caktoPlans,
+    ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
+  }
   : {
     ...(config.caktoCheckoutUrl ? { checkoutUrl: config.caktoCheckoutUrl } : {}),
     ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
     ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
+    ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
   });
 const imageStorage = new MinioImageStorage(config.imageStorage);
 const imageServices = createImageServices(imageStorage);
