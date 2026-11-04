@@ -812,7 +812,7 @@ export function buildApp(options: BuildAppOptions = {}) {
         {
           schema: {
             tags: ['publishing'],
-            summary: 'Gera um link temporário de demonstração gratuita por categoria',
+            summary: 'Cria ou atualiza o link temporário de demonstração gratuita por categoria',
             body: createDemoPublicationBodySchema,
             response: {
               200: demoPublicationResponseSchema,
@@ -845,12 +845,13 @@ export function buildApp(options: BuildAppOptions = {}) {
             ...(user ? { userId: user.id } : {}),
           });
           const publicPath = `/d/${publication.slug}`;
-          const publicUrl = new URL(publicPath, `${publicAppOrigin}/`).toString();
+          const publicUrl = new URL(publicPath, `${publicAppOrigin}/`);
+          publicUrl.searchParams.set('v', String(publication.createdAt.getTime()));
           return response.code(publication.created ? 201 : 200).send({
             data: {
               slug: publication.slug,
               publicPath,
-              publicUrl,
+              publicUrl: publicUrl.toString(),
               category: publication.category,
               created: publication.created,
               expiresAt: publication.expiresAt.toISOString(),
@@ -871,10 +872,12 @@ export function buildApp(options: BuildAppOptions = {}) {
         },
         async (request) => {
           const publication = options.demoServices!.get(request.params);
+          const publicUrl = new URL(`/d/${publication.slug}`, `${publicAppOrigin}/`);
+          publicUrl.searchParams.set('v', String(publication.createdAt.getTime()));
           return {
             data: {
               ...publication,
-              publicUrl: new URL(`/d/${publication.slug}`, `${publicAppOrigin}/`).toString(),
+              publicUrl: publicUrl.toString(),
               createdAt: publication.createdAt.toISOString(),
               expiresAt: publication.expiresAt.toISOString(),
             },
