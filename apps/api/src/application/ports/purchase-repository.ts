@@ -13,6 +13,8 @@ export type PurchaseStatusView = {
   draftId: string;
   status: PurchaseStatus;
   accessStatus: 'active' | 'revoked' | 'none';
+  amountMinor: number | null;
+  currency: string | null;
   expiresAt: Date | null;
   updatedAt: Date;
 };
@@ -32,6 +34,8 @@ export type PurchaseWebhookUpdate = {
   providerOrderId: string;
   customerEmail?: string;
   grantEmail?: string;
+  amountMinor?: number;
+  currency?: string;
   accessExpiresAt?: Date | null;
   revokeAccess: boolean;
   now: Date;

@@ -94,6 +94,8 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
           ownerUserId: current.ownerUserId ?? existingUser?.id ?? null,
           providerOrderId: current.providerOrderId ?? update.providerOrderId,
           customerEmail: update.customerEmail ?? current.customerEmail,
+          amountMinor: current.amountMinor ?? update.amountMinor ?? null,
+          currency: current.currency ?? update.currency ?? null,
           updatedAt: update.now,
         })
         .where(eq(purchases.id, update.purchaseId))
@@ -151,6 +153,8 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
         draftId: purchases.draftId,
         status: purchases.status,
         accessStatus: accessGrants.status,
+        amountMinor: purchases.amountMinor,
+        currency: purchases.currency,
         expiresAt: accessGrants.expiresAt,
         updatedAt: purchases.updatedAt,
       })
@@ -173,6 +177,8 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       draftId: row.draftId,
       status: row.status,
       accessStatus: accessIsCurrent({ status: storedStatus, expiresAt }, now) ? 'active' : storedStatus === 'active' ? 'none' : storedStatus,
+      amountMinor: row.amountMinor ?? null,
+      currency: row.currency ?? null,
       expiresAt,
       updatedAt: row.updatedAt,
     } as const;

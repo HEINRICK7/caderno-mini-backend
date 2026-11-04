@@ -95,6 +95,12 @@ function processPurchaseEvent(
     revokeAccess: transition.revokeAccess,
     now,
     ...(event.customerEmail ? { customerEmail: event.customerEmail } : {}),
+    ...(transition.status === 'paid' && typeof event.amountMinor === 'number' && event.amountMinor > 0
+      ? { amountMinor: event.amountMinor }
+      : {}),
+    ...(transition.status === 'paid' && event.currency && /^[A-Z]{3}$/.test(event.currency.toUpperCase())
+      ? { currency: event.currency.toUpperCase() }
+      : {}),
     ...(transition.grantAccess && event.customerEmail
       ? {
           grantEmail: event.customerEmail,

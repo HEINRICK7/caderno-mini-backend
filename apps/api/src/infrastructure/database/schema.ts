@@ -146,6 +146,8 @@ export const purchases = sqliteTable(
     providerOrderId: text('provider_order_id'),
     customerEmail: text('customer_email'),
     status: text('status').$type<PurchaseStatus>().notNull().default('pending'),
+    amountMinor: integer('amount_minor'),
+    currency: text('currency'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
