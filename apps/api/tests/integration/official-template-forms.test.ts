@@ -262,6 +262,7 @@ describe('formulários do catálogo oficial de modelos', () => {
     expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança' })).not.toThrow();
     expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: `${officialPixPayload.slice(0, -1)}0` })).toThrow();
     expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: ` ${officialPixPayload}` })).toThrow();
+    expect(() => validateTemplateInput(template.definition as unknown as JsonObject, { title: 'Cobrança', pixCopyPaste: `${officialPixPayload.slice(0, 20)}\u0001${officialPixPayload.slice(20)}` })).toThrow();
 
     expect(template.definition.card?.pixNoteFieldId).toBe('pixSecurityNote');
     expect(template.definition.fields.find((field) => field.id === 'pixSecurityNote')?.editable).not.toBe(false);

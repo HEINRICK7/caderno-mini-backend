@@ -217,10 +217,14 @@ function isStoredImageId(value: string): boolean {
 
 function isValidPixCopyPaste(value: string): boolean {
   const encoded = new TextEncoder().encode(value);
+  const hasControlCharacter = Array.from(value).some((character) => {
+    const codePoint = character.codePointAt(0) ?? 0;
+    return codePoint <= 0x1f || codePoint === 0x7f;
+  });
   if (
     encoded.length > 2_048 ||
     value !== value.trim() ||
-    /[\u0000-\u001f\u007f]/.test(value) ||
+    hasControlCharacter ||
     !value.startsWith('000201') ||
     !value.toLowerCase().includes('br.gov.bcb.pix') ||
     value.slice(-8, -4) !== '6304'
