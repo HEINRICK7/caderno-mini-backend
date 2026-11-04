@@ -166,6 +166,8 @@ const purchaseStatusResponseSchema = z.object({
     draftId: z.uuid(),
     status: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
     accessStatus: z.enum(['active', 'revoked', 'none']),
+    amountMinor: z.number().int().positive().nullable(),
+    currency: z.string().length(3).nullable(),
     expiresAt: z.string().datetime().nullable(),
     updatedAt: z.string().datetime(),
   }),

@@ -158,7 +158,13 @@ describe('Cakto webhook API', () => {
     commerceServices.processCaktoInboxBatch();
 
     purchase = database.db.select().from(purchases).get();
-    expect(purchase).toMatchObject({ status: 'paid', providerOrderId: 'provider-order-1', customerEmail: 'buyer@example.com' });
+    expect(purchase).toMatchObject({
+      status: 'paid',
+      providerOrderId: 'provider-order-1',
+      customerEmail: 'buyer@example.com',
+      amountMinor: 499,
+      currency: 'BRL',
+    });
     expect(database.db.select().from(accessGrants).get()).toMatchObject({
       purchaseId: purchase?.id,
       customerEmail: 'buyer@example.com',
@@ -211,7 +217,12 @@ describe('Cakto webhook API', () => {
       url: `/api/v1/purchases/${purchase?.id}`,
       headers: { cookie },
     });
-    expect(purchaseStatus.json().data).toMatchObject({ status: 'paid', accessStatus: 'active' });
+    expect(purchaseStatus.json().data).toMatchObject({
+      status: 'paid',
+      accessStatus: 'active',
+      amountMinor: 499,
+      currency: 'BRL',
+    });
     const published = await app.inject({
       method: 'POST',
       url: `/api/v1/drafts/${draftId}/publication`,
