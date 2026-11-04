@@ -1,7 +1,7 @@
 [
   {
     "id": "boas-vindas",
-    "version": 6,
+    "version": 7,
     "name": "Boas-vindas",
     "description": "Recebe novos clientes de forma acolhedora.",
     "isActive": true,
@@ -30,7 +30,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -171,7 +181,11 @@
           "nome_empresa": "businessName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -188,7 +202,7 @@
   },
   {
     "id": "agradecimento-compra",
-    "version": 5,
+    "version": 6,
     "name": "Agradecimento pela compra",
     "description": "Valoriza o cliente após a venda.",
     "isActive": true,
@@ -217,7 +231,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -375,7 +399,11 @@
           "produto": "productName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -393,7 +421,7 @@
   },
   {
     "id": "parcela-proxima",
-    "version": 5,
+    "version": 6,
     "name": "Parcela próxima do vencimento",
     "description": "Lembra a data com antecedência.",
     "isActive": true,
@@ -422,7 +450,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -600,7 +638,11 @@
           "vencimento": "dueDate"
         },
         "subtitlePlacement": "before-highlight",
-        "subtitleStyle": "subheading"
+        "subtitleStyle": "subheading",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -621,7 +663,7 @@
   },
   {
     "id": "parcela-hoje",
-    "version": 5,
+    "version": 6,
     "name": "Parcela vence hoje",
     "description": "Avisa que o pagamento é para hoje.",
     "isActive": true,
@@ -650,7 +692,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -829,7 +881,11 @@
           "vencimento": "dueDate"
         },
         "subtitlePlacement": "before-highlight",
-        "subtitleStyle": "subheading"
+        "subtitleStyle": "subheading",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -850,7 +906,7 @@
   },
   {
     "id": "parcela-atrasada",
-    "version": 5,
+    "version": 6,
     "name": "Parcela em atraso",
     "description": "Informa que já está em atraso.",
     "isActive": true,
@@ -879,7 +935,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -1057,7 +1123,11 @@
           "vencimento": "dueDate"
         },
         "subtitlePlacement": "before-highlight",
-        "subtitleStyle": "subheading"
+        "subtitleStyle": "subheading",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -1079,7 +1149,7 @@
   },
   {
     "id": "cobranca-pix",
-    "version": 5,
+    "version": 6,
     "name": "Cobrança Pix",
     "description": "Envia os dados Pix informados pela empresa.",
     "isActive": true,
@@ -1108,7 +1178,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -1325,7 +1405,11 @@
           "vencimento": "dueDate"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -1347,7 +1431,7 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 6,
+    "version": 7,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
@@ -1376,7 +1460,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -1578,7 +1672,11 @@
           "valor": "amount"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "title": "Pagamento",
@@ -1598,7 +1696,7 @@
   },
   {
     "id": "caderneta-quitada",
-    "version": 5,
+    "version": 6,
     "name": "Caderneta quitada",
     "description": "Celebra quando todas as parcelas foram pagas.",
     "isActive": true,
@@ -1627,7 +1725,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -1780,7 +1888,11 @@
           "nome_empresa": "businessName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -1798,7 +1910,7 @@
   },
   {
     "id": "servico-contratado",
-    "version": 5,
+    "version": 6,
     "name": "Serviço contratado",
     "description": "Confirma a contratação e informa os dados do serviço.",
     "isActive": true,
@@ -1827,7 +1939,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -1998,7 +2120,11 @@
           "servico": "serviceName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2018,7 +2144,7 @@
   },
   {
     "id": "servico-concluido",
-    "version": 5,
+    "version": 6,
     "name": "Serviço concluído",
     "description": "Informa que o serviço foi finalizado e convida à avaliação.",
     "isActive": true,
@@ -2047,7 +2173,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -2192,7 +2328,11 @@
           "servico": "serviceName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2208,7 +2348,7 @@
   },
   {
     "id": "aniversario",
-    "version": 5,
+    "version": 6,
     "name": "Aniversário",
     "description": "Parabeniza o cliente em uma data especial.",
     "isActive": true,
@@ -2237,7 +2377,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -2358,7 +2508,11 @@
           }
         ],
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2374,7 +2528,7 @@
   },
   {
     "id": "produto-destaque",
-    "version": 5,
+    "version": 6,
     "name": "Produto em destaque",
     "description": "Apresenta um produto com destaque.",
     "isActive": true,
@@ -2393,7 +2547,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -2522,7 +2686,11 @@
           "produto": "productName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "businessName": "Cadernô",
@@ -2537,7 +2705,7 @@
   },
   {
     "id": "oferta-especial",
-    "version": 5,
+    "version": 6,
     "name": "Oferta especial",
     "description": "Divulga uma promoção ou oportunidade.",
     "isActive": true,
@@ -2566,7 +2734,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -2717,7 +2895,11 @@
           "produto": "offerName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2734,7 +2916,7 @@
   },
   {
     "id": "novidades-colecao",
-    "version": 5,
+    "version": 6,
     "name": "Novidades e coleção",
     "description": "Apresenta novidades da loja e da coleção.",
     "isActive": true,
@@ -2763,7 +2945,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -2891,7 +3083,11 @@
           "nome_empresa": "businessName"
         },
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -2905,7 +3101,7 @@
   },
   {
     "id": "reativacao-cliente",
-    "version": 5,
+    "version": 6,
     "name": "Reativação de cliente",
     "description": "Retoma o contato com clientes que não interagem há um tempo.",
     "isActive": true,
@@ -2934,7 +3130,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -3070,7 +3276,11 @@
           }
         ],
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
@@ -3086,7 +3296,7 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 7,
+    "version": 8,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
@@ -3115,7 +3325,17 @@
           "maxLength": 80,
           "required": false,
           "width": "half",
-          "section": "Variáveis da mensagem"
+          "section": "Identidade do negócio"
+        },
+        {
+          "id": "businessLogo",
+          "type": "image",
+          "label": "Logo do negócio",
+          "helpText": "Opcional · aparece no cartão e na prévia do link. PNG, JPEG ou WebP · até 128 KB.",
+          "maxBytes": 131072,
+          "required": false,
+          "section": "Identidade do negócio",
+          "width": "full"
         },
         {
           "id": "title",
@@ -3266,7 +3486,11 @@
           }
         ],
         "subtitlePlacement": "after-highlight",
-        "subtitleStyle": "supporting"
+        "subtitleStyle": "supporting",
+        "brand": {
+          "businessNameFieldId": "businessName",
+          "logoFieldId": "businessLogo"
+        }
       },
       "exampleData": {
         "recipientName": "Maria",
