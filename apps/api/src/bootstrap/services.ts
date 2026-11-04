@@ -126,9 +126,9 @@ export type AdminServices = ReturnType<typeof createAdminServices>;
 
 export function createAdminServices(
   db: AppDatabase,
-  options: { idGenerator?: () => string; clock?: () => Date } = {},
+  options: { idGenerator?: () => string; clock?: () => Date; adminEmail?: string } = {},
 ) {
-  const admin = new SqliteAdminRepository(db);
+  const admin = new SqliteAdminRepository(db, options.adminEmail);
   const idGenerator = options.idGenerator ?? randomUUID;
   const clock = options.clock ?? (() => new Date());
   return {

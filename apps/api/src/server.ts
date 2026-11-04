@@ -43,7 +43,7 @@ const app = buildApp({
   logger: { level: config.logLevel },
   services: createApplicationServices(database.db),
   commerceServices,
-  adminServices: createAdminServices(database.db),
+  adminServices: createAdminServices(database.db, config.adminEmail ? { adminEmail: config.adminEmail } : {}),
   ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
   ...(config.adminPasswordHash ? { adminPasswordHash: config.adminPasswordHash } : {}),
   ...(config.adminSessionSecret ? { adminSessionSecret: config.adminSessionSecret } : {}),
