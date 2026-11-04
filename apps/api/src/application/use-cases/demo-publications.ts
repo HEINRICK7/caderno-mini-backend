@@ -34,7 +34,7 @@ export function createDemoPublication(
 
   const createdAt = now;
   const expiresAt = new Date(now.getTime() + DEMO_PUBLICATION_LIFETIME_MS);
-  const result = dependencies.demos.createOncePerCategory({
+  const result = dependencies.demos.refreshOrCreateByCategory({
     slug: (dependencies.generateSlug ?? generateSlug)(),
     visitorHash: input.visitorHash,
     category: catalog.homeCategory,

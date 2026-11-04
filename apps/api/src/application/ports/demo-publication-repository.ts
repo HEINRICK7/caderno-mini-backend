@@ -18,6 +18,6 @@ export type DemoPublication = {
 export type NewDemoPublication = DemoPublication & { visitorHash: string };
 
 export interface DemoPublicationRepository {
-  createOncePerCategory(input: NewDemoPublication, now: Date): { publication: DemoPublication; created: boolean };
+  refreshOrCreateByCategory(input: NewDemoPublication, now: Date): { publication: DemoPublication; created: boolean };
   findActiveBySlug(slug: string, now: Date): DemoPublication | undefined;
 }

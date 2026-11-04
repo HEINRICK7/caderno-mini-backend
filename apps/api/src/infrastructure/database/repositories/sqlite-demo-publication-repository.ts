@@ -7,7 +7,7 @@ import { demoPublications } from '../schema.js';
 export class SqliteDemoPublicationRepository implements DemoPublicationRepository {
   constructor(private readonly database: AppDatabase) {}
 
-  createOncePerCategory(input: NewDemoPublication, now: Date) {
+  refreshOrCreateByCategory(input: NewDemoPublication, now: Date) {
     return this.database.transaction((transaction) => {
       transaction.delete(demoPublications).where(lte(demoPublications.expiresAt, now)).run();
       const existing = transaction
@@ -15,7 +15,29 @@ export class SqliteDemoPublicationRepository implements DemoPublicationRepositor
         .from(demoPublications)
         .where(and(eq(demoPublications.visitorHash, input.visitorHash), eq(demoPublications.category, input.category)))
         .get();
-      if (existing) return { publication: toDemoPublication(existing), created: false };
+      if (existing) {
+        transaction.update(demoPublications)
+          .set({
+            draftId: input.draftId,
+            templateId: input.templateId,
+            templateVersion: input.templateVersion,
+            templateName: input.templateName,
+            templateDescription: input.templateDescription,
+            templateDefinition: input.templateDefinition,
+            data: input.data,
+            createdAt: input.createdAt,
+            expiresAt: input.expiresAt,
+          })
+          .where(eq(demoPublications.slug, existing.slug))
+          .run();
+        const refreshed = transaction
+          .select()
+          .from(demoPublications)
+          .where(eq(demoPublications.slug, existing.slug))
+          .get();
+        if (!refreshed || refreshed.expiresAt <= now) throw new Error('Could not refresh the demo publication.');
+        return { publication: toDemoPublication(refreshed), created: false };
+      }
 
       transaction.insert(demoPublications).values(input).onConflictDoNothing().run();
       const stored = transaction
