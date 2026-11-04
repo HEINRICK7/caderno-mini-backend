@@ -5,12 +5,16 @@ import type { AppDatabase } from '../connection.js';
 import { accessGrants, adminAuditEvents, adminAuditLog, drafts, purchases, sessions, users } from '../schema.js';
 
 export class SqliteAdminRepository implements AdminRepository {
-  constructor(private readonly database: AppDatabase) {}
+  constructor(private readonly database: AppDatabase, private readonly adminEmail?: string) {}
 
   listUsers(input: { query?: string; limit: number; offset: number; now: Date }) {
-    const where = input.query
+    const queryFilter = input.query
       ? sql`instr(lower(${users.email}), lower(${input.query})) > 0`
       : undefined;
+    const adminFilter = this.adminEmail ? ne(users.email, this.adminEmail) : undefined;
+    const where = queryFilter && adminFilter
+      ? and(queryFilter, adminFilter)
+      : queryFilter ?? adminFilter;
     const total = this.database
       .select({ value: count() })
       .from(users)
@@ -33,7 +37,7 @@ export class SqliteAdminRepository implements AdminRepository {
     const user = this.database
       .select(summarySelection(input.now))
       .from(users)
-      .where(eq(users.id, input.userId))
+      .where(and(eq(users.id, input.userId), this.adminEmail ? ne(users.email, this.adminEmail) : undefined))
       .get();
     if (!user) return undefined;
 
