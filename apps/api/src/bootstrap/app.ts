@@ -316,11 +316,20 @@ export function buildApp(options: BuildAppOptions = {}) {
   const sessionCookieName = authCookieSecure ? '__Host-caderno_session' : 'caderno_session';
   const adminSessionCookieName = authCookieSecure ? '__Host-caderno_admin' : 'caderno_admin';
   const demoVisitorCookieName = authCookieSecure ? '__Host-caderno_demo_visitor' : 'caderno_demo_visitor';
+  const getAuthenticatedAdminEmail = (request: FastifyRequest) => getAdminSessionEmail({
+    token: request.cookies[adminSessionCookieName],
+    email: options.adminEmail,
+    secret: options.adminSessionSecret && options.adminPasswordHash
+      ? `${options.adminSessionSecret}.${options.adminPasswordHash}`
+      : undefined,
+  });
   const getAuthenticatedUser = (request: FastifyRequest) => {
+    const adminEmail = getAuthenticatedAdminEmail(request);
+    if (adminEmail && options.identityServices) {
+      return options.identityServices.getAdminTestUser({ email: adminEmail });
+    }
     const token = request.cookies[sessionCookieName];
-    return token && options.identityServices
-      ? options.identityServices.getSession({ token })
-      : undefined;
+    return token && options.identityServices ? options.identityServices.getSession({ token }) : undefined;
   };
   const requireSession = (request: FastifyRequest, response: FastifyReply) => {
     const user = getAuthenticatedUser(request);
@@ -332,13 +341,6 @@ export function buildApp(options: BuildAppOptions = {}) {
     }
     return user;
   };
-  const getAuthenticatedAdminEmail = (request: FastifyRequest) => getAdminSessionEmail({
-    token: request.cookies[adminSessionCookieName],
-    email: options.adminEmail,
-    secret: options.adminSessionSecret && options.adminPasswordHash
-      ? `${options.adminSessionSecret}.${options.adminPasswordHash}`
-      : undefined,
-  });
   const requireAdmin = (request: FastifyRequest, response: FastifyReply) => {
     const email = getAuthenticatedAdminEmail(request);
     if (!email) {
@@ -378,7 +380,7 @@ export function buildApp(options: BuildAppOptions = {}) {
         isIdentityMutation ||
         isDemoMutation ||
         isAdminSessionMutation ||
-        (isSessionMutation && hasSessionCookie) ||
+        (isSessionMutation && (hasSessionCookie || hasAdminSessionCookie)) ||
         (isAdminMutation && hasAdminSessionCookie)
       ) &&
       origin !== authPublicOrigin

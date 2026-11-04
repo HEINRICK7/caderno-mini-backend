@@ -12,7 +12,7 @@ import type { AppDatabase } from '../connection.js';
 import { accessGrants, drafts, purchases, users } from '../schema.js';
 
 export class SqlitePurchaseRepository implements PurchaseRepository {
-  constructor(private readonly database: AppDatabase) {}
+  constructor(private readonly database: AppDatabase, private readonly adminEmail?: string) {}
 
   createPendingPurchase(purchase: NewPendingPurchase): void {
     this.database
@@ -203,6 +203,23 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
   }
 
   hasActiveGrantForUserAndDraft(userId: string, draftId: string, now: Date): boolean {
+    if (this.adminEmail) {
+      const adminOwnedDraft = this.database
+        .select({ id: drafts.id })
+        .from(drafts)
+        .innerJoin(users, eq(users.id, drafts.ownerUserId))
+        .where(
+          and(
+            eq(drafts.id, draftId),
+            eq(drafts.ownerUserId, userId),
+            eq(users.email, this.adminEmail),
+            eq(users.accountStatus, 'active'),
+          ),
+        )
+        .get();
+      if (adminOwnedDraft) return true;
+    }
+
     return Boolean(
       this.database
         .select({ id: accessGrants.id })
@@ -222,6 +239,22 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
   }
 
   hasActiveGrantForDraft(draftId: string, now: Date): boolean {
+    if (this.adminEmail) {
+      const adminOwnedDraft = this.database
+        .select({ id: drafts.id })
+        .from(drafts)
+        .innerJoin(users, eq(users.id, drafts.ownerUserId))
+        .where(
+          and(
+            eq(drafts.id, draftId),
+            eq(users.email, this.adminEmail),
+            eq(users.accountStatus, 'active'),
+          ),
+        )
+        .get();
+      if (adminOwnedDraft) return true;
+    }
+
     return Boolean(
       this.database
         .select({ id: accessGrants.id })

@@ -16,6 +16,7 @@ import { CheckoutNotConfiguredError, CheckoutPlanRequiredError, WebhookNotConfig
 import { persistCaktoEvents, processCaktoInboxBatch } from '../application/use-cases/cakto-webhooks.js';
 import {
   getSession,
+  getOrCreateAdminTestUser,
   requestMagicLink,
   revokeSession,
   verifyMagicLink,
@@ -116,6 +117,7 @@ export function createIdentityServices(
     requestMagicLink: (input: { email: string }) => requestMagicLink(input, dependencies),
     verifyMagicLink: (input: { token: string }) => verifyMagicLink(input, dependencies),
     getSession: (input: { token: string }) => getSession(input, dependencies),
+    getAdminTestUser: (input: { email: string }) => getOrCreateAdminTestUser(input, dependencies),
     revokeSession: (input: { token: string }) => revokeSession(input, dependencies),
   };
 }
@@ -148,6 +150,7 @@ export function createCommerceServices(
     checkoutUrl?: string;
     expectedProductId?: string;
     webhookSecret?: string;
+    adminEmail?: string;
     plans?: { annual: CaktoPlanConfig; lifetime: CaktoPlanConfig };
     idGenerator?: () => string;
     callbackGenerator?: () => string;
@@ -155,7 +158,7 @@ export function createCommerceServices(
   } = {},
 ) {
   const drafts = new SqliteDraftRepository(db);
-  const purchases = new SqlitePurchaseRepository(db);
+  const purchases = new SqlitePurchaseRepository(db, options.adminEmail);
   const inbox = new SqliteWebhookInboxRepository(db);
   const analytics = new SqliteAnalyticsRepository(db);
   const checkoutLinks = options.checkoutUrl

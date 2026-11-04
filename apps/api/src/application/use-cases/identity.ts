@@ -75,6 +75,17 @@ export function getSession(
   return dependencies.identities.findSessionByTokenHash(hashToken(input.token), now);
 }
 
+export function getOrCreateAdminTestUser(
+  input: { email: string },
+  dependencies: IdentityDependencies,
+): User | undefined {
+  return dependencies.identities.findOrCreateAdminTestUser({
+    email: normalizeEmail(input.email),
+    userId: (dependencies.generateUserId ?? randomUUID)(),
+    now: dependencies.clock?.() ?? new Date(),
+  });
+}
+
 export function revokeSession(
   input: { token: string },
   dependencies: IdentityDependencies,
