@@ -1,12 +1,13 @@
 # Cadernô Express — backend
 
-API do Cadernô Express. O backend oferece identidade por magic link, catálogo versionado e rascunhos, checkout e licenças Cakto, publicação/exportação e analytics. O backend é a autoridade para compras, acesso e conteúdo persistido; o frontend Next.js interpreta as definições versionadas de cartão.
+API do Cadernô Express. O backend oferece identidade por magic link, catálogo versionado e rascunhos, checkout e licenças AbacatePay, publicação/exportação e analytics. O backend é a autoridade para compras, acesso e conteúdo persistido; o frontend Next.js interpreta as definições versionadas de cartão.
 
 ## Decisões técnicas
 
 - [Design técnico](docs/design/technical-design.md)
 - [ADR 0001 — Stack e arquitetura](docs/adr/0001-stack-e-arquitetura.md)
-- [ADR 0002 — Cakto e autoridade de licenças](docs/adr/0002-cakto-e-licencas-como-autoridade-do-backend.md)
+- [ADR 0002 — Cakto e autoridade de licenças (histórico; substituído pelo ADR 0005)](docs/adr/0002-cakto-e-licencas-como-autoridade-do-backend.md)
+- [ADR 0005 — AbacatePay como provedor de checkout](docs/adr/0005-abacatepay-checkout.md)
 - [ADR 0003 — Rascunhos anônimos e versões](docs/adr/0003-rascunhos-anonimos-e-versao-de-modelo.md)
 - [ADR 0004 — Identidade por magic link e sessões](docs/adr/0004-identidade-magic-link-e-sessoes.md)
 
@@ -18,7 +19,7 @@ O código está sendo finalizado em `feature/sprint-1-backend-foundation`. O flu
 
 - Sessões revogáveis por magic link, com rate limits, cookies seguros e checagem de origem em mutações de navegador.
 - Templates versionados, validação por campo, rascunhos anônimos associados à conta após compra confirmada e prévia PNG gratuita, reduzida e com marca d'água, respeitando a propriedade.
-- Checkout hospedado pela Cakto, inbox durável de webhooks assinados, processamento idempotente e licenças concedidas/revogadas exclusivamente no backend.
+- Checkout hospedado pela AbacatePay, inbox durável de webhooks assinados, processamento idempotente e licenças concedidas/revogadas exclusivamente no backend. O endpoint da Cakto continua ativo apenas para conciliar eventos de compras anteriores.
 - Estado de compras e acesso da conta, publicação por slug aleatório, página pública e exportação PNG protegidas por licença ativa.
 - Analytics de produto e conversão com deduplicação, retenção apenas do host de referência e endpoint de leitura protegido por token.
 - SQLite com migrations, backup consistente e restauração coberta por teste de integração.
@@ -58,11 +59,13 @@ O SQLite usa um volume Docker persistente. Não apague o volume ao atualizar a a
 
 Configure `AUTH_PUBLIC_APP_URL`, `PUBLIC_API_URL`, `PUBLIC_APP_URL`, `SMTP_URL` e `EMAIL_FROM` para enviar links de acesso e compartilhar publicações. `PUBLIC_APP_URL` é a origem do frontend Next.js usada nos links compartilhados; `PUBLIC_API_URL` fornece a imagem Open Graph para a prévia automática do WhatsApp. A página Next.js monta a versão publicada do cartão em HTML; a imagem Open Graph não substitui o cartão exibido ao abrir o link. Em produção, as URLs públicas precisam usar HTTPS; o cookie de sessão fica `Secure` e `HttpOnly`.
 
-Configure os dois planos no ambiente `production` do GitHub: as variáveis `CAKTO_CHECKOUT_ANNUAL_URL`, `CAKTO_PRODUCT_ANNUAL_ID`, `CAKTO_CHECKOUT_LIFETIME_URL` e `CAKTO_PRODUCT_LIFETIME_ID`; e os segredos `CAKTO_WEBHOOK_SECRET_ANNUAL` e `CAKTO_WEBHOOK_SECRET_LIFETIME`. O workflow grava esses valores em `.env.cakto` com permissão restrita. Use URLs de ofertas hospedadas sem callback; o backend acrescenta o callback ao criar cada checkout.
+No GitHub Environment, configure os segredos `ABACATEPAY_API_KEY` e `ABACATEPAY_WEBHOOK_SECRET`, e a variável `ABACATEPAY_WEBHOOK_SIGNATURE_KEY` com a chave pública documentada pela AbacatePay para validar `X-Webhook-Signature`. Esses valores habilitam o recebimento de webhooks. Para habilitar novos checkouts, configure também os dois IDs reais `ABACATEPAY_PRODUCT_ANNUAL_ID` e `ABACATEPAY_PRODUCT_LIFETIME_ID`; configure o anual conforme o fluxo escolhido no dashboard (compra única ou recorrência anual) e o vitalício como compra única. Sem os dois IDs, o webhook segue disponível e a criação de checkout responde como indisponível. A chave precisa da permissão `CHECKOUT:CREATE` para criar checkouts. O workflow grava os valores em `.env.abacatepay`, com permissão restrita. Não envie credenciais em commits ou logs.
 
-Cadastre um webhook ativo da Cakto em `POST /api/v1/webhooks/cakto`, associado aos produtos anual e vitalício, com os eventos de compra aprovada, compra recusada, reembolso e chargeback. Como um webhook cobre os dois produtos, configure o mesmo segredo retornado pela Cakto nos dois segredos do ambiente. Os botões da página inicial encaminham a pessoa para personalizar um modelo; o frontend chama `POST /api/v1/checkout`, que cria a compra pendente e inclui o callback. A URL de redirect não confirma pagamento; o acesso só muda após o worker processar o webhook assinado.
+Gere o segredo do webhook no terminal com `openssl rand -hex 32`. Cadastre exatamente o mesmo valor como secret `ABACATEPAY_WEBHOOK_SECRET` no ambiente GitHub de deploy e no campo **Secret** do webhook v2 da AbacatePay. O valor não fica no repositório e não deve ser enviado por chat.
 
-O backend não consulta a Cakto para autorizar cada requisição: a assinatura valida o evento recebido, e o ledger local guarda o estado derivado e idempotente. Mantenha os seis valores de plano no ambiente `production` do GitHub e não envie os segredos em commits ou logs.
+O código registra `POST /api/v1/webhooks/abacatepay`, mas essa URL só deve ser cadastrada na AbacatePay depois que o deploy publicar a rota. Confirme no OpenAPI público que a rota existe e faça um evento no Sandbox responder `2xx`; o domínio da API sozinho não confirma que o controller chegou ao deploy. Depois de publicado, selecione os oito eventos: `checkout.completed`, `checkout.refunded`, `checkout.disputed`, `checkout.lost`, `subscription.completed`, `subscription.renewed`, `subscription.cancelled` e `subscription.payment_failed`. Assinaturas só concedem ou estendem o acesso quando o produto é o anual configurado, a frequência vem como `ANNUALLY` e o `externalId` ou checkout já vinculado identifica a compra local. O `checkout.completed` com frequência `SUBSCRIPTION` é aceito sem repetir a concessão: a fonte da assinatura são os eventos `subscription.*`. A falha de cobrança preserva o período já pago; `NEXT_CYCLE` preserva acesso até o vencimento e `NOW` revoga imediatamente.
+
+O endpoint antigo `POST /api/v1/webhooks/cakto` e os valores legados em `.env.cakto` podem ser mantidos durante a migração para processar pagamentos e reembolsos iniciados antes da troca. Eles não criam novos checkouts. Após conciliar os pedidos pendentes e confirmar que os webhooks antigos não são mais necessários, remova as credenciais antigas.
 
 ### Painel do criador e suporte
 
@@ -70,7 +73,7 @@ O painel `/admin` tem um login separado dos clientes: usa e-mail e senha do admi
 
 Para configurar o administrador em desenvolvimento, gere o hash da senha com `npm run admin:hash-password` em um terminal interativo e informe `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` e `ADMIN_SESSION_SECRET` no `.env`. Gere o segredo de sessão com `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`. Em produção, cadastre esses três valores como segredos do ambiente GitHub `production`; o deploy os grava em `.env.admin` com permissão restrita. Não cadastre a senha original como segredo nem a envie por chat. Depois do deploy, entre em `/admin` com as credenciais configuradas.
 
-O painel lista e busca clientes, mostra compras, licenças, sessões e rascunhos, e permite suspender/reativar uma conta. Suspender encerra sessões existentes, bloqueia novas sessões e grava a ação no histórico administrativo. O painel não concede nem remove licença paga; esses estados continuam sendo derivados dos eventos assinados da Cakto. Uma compra paga de ponta a ponta só pode ser validada com um checkout de teste aceito pela Cakto e o webhook configurado.
+O painel lista e busca clientes, mostra compras, licenças, sessões e rascunhos, e permite suspender/reativar uma conta. Suspender encerra sessões existentes, bloqueia novas sessões e grava a ação no histórico administrativo. O painel não concede nem remove licença paga; esses estados continuam sendo derivados dos eventos assinados da AbacatePay. Uma compra paga de ponta a ponta pode ser validada no Modo Teste da AbacatePay com o webhook de teste configurado.
 
 ### Backup SQLite
 
@@ -108,7 +111,7 @@ Fluxo de promoção: feature abre PR para `dev`; depois da revisão e merge, `de
 
 ## Deploy na Hostinger
 
-O deploy de `production` roda somente após push em `main`, com a CI verde e `PRODUCTION_DEPLOY_ENABLED=true`. No ambiente GitHub `production`, configure `HOSTINGER_HOST`, `HOSTINGER_USER`, `HOSTINGER_SSH_PORT`, `HOSTINGER_APP_PATH`, `HOSTINGER_API_PORT` e `PUBLIC_URL`, além dos segredos `HOSTINGER_SSH_PRIVATE_KEY` e `HOSTINGER_KNOWN_HOSTS`. Para o checkout Cakto, configure as variáveis `CAKTO_CHECKOUT_ANNUAL_URL`, `CAKTO_PRODUCT_ANNUAL_ID`, `CAKTO_CHECKOUT_LIFETIME_URL` e `CAKTO_PRODUCT_LIFETIME_ID`, além dos segredos `CAKTO_WEBHOOK_SECRET_ANNUAL` e `CAKTO_WEBHOOK_SECRET_LIFETIME`. O deploy grava os seis valores em `.env.cakto`, dentro do diretório isolado do backend, com permissão restrita. `HOSTINGER_APP_PATH` deve ser um diretório exclusivo terminado em `/caderno-mini/backend`; `HOSTINGER_API_PORT` deve ser uma porta livre de loopback entre 1024 e 65535. O workflow interrompe o deploy se o diretório já tiver conteúdo sem o marcador Cadernô, se a porta estiver ocupada por outro serviço, ou se a rede Docker não estiver marcada como pertencente à produção Cadernô.
+O deploy de `production` roda somente após merge em `main`, com a CI verde e `PRODUCTION_DEPLOY_ENABLED=true`. No ambiente GitHub `production`, configure `HOSTINGER_HOST`, `HOSTINGER_USER`, `HOSTINGER_SSH_PORT`, `HOSTINGER_APP_PATH`, `HOSTINGER_API_PORT` e `PUBLIC_URL`, além dos segredos `HOSTINGER_SSH_PRIVATE_KEY` e `HOSTINGER_KNOWN_HOSTS`. `ABACATEPAY_API_KEY` e `ABACATEPAY_WEBHOOK_SECRET` habilitam o webhook; `ABACATEPAY_WEBHOOK_SIGNATURE_KEY` é uma variável pública necessária para verificar a assinatura do provedor. Os IDs `ABACATEPAY_PRODUCT_ANNUAL_ID` e `ABACATEPAY_PRODUCT_LIFETIME_ID` são opcionais para o deploy e devem ser definidos em par para habilitar checkouts. O deploy grava esses valores em `.env.abacatepay`, dentro do diretório isolado do backend, com permissão restrita. `HOSTINGER_APP_PATH` deve ser um diretório exclusivo terminado em `/caderno-mini/backend`; `HOSTINGER_API_PORT` deve ser uma porta livre de loopback entre 1024 e 65535. O workflow interrompe o deploy se o diretório já tiver conteúdo sem o marcador Cadernô, se a porta estiver ocupada por outro serviço, ou se a rede Docker não estiver marcada como pertencente à produção Cadernô. A configuração Cakto pode permanecer no `.env.cakto` existente até encerrar a conciliação de pedidos antigos.
 
 Antes de ativar, crie o `.env` de produção no diretório exclusivo, configure MinIO com TLS e credenciais próprias, e confirme que Docker Compose, `rsync`, `ssh` e `ss` estão instalados no VPS. O deploy não apaga arquivos no destino, preserva `.env` e mantém o volume SQLite do projeto. A rede privada `caderno-mini-production` conecta apenas os containers do frontend e backend; o proxy HTTPS existente deve apontar o domínio para a porta local configurada, sem substituir a configuração de outros sites. O catálogo oficial é atualizado de forma idempotente depois do health check.
 

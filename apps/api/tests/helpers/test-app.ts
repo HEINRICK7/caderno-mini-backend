@@ -32,6 +32,13 @@ export async function createTestApp(
       annual: { checkoutUrl: string; productId: string; webhookSecret: string };
       lifetime: { checkoutUrl: string; productId: string; webhookSecret: string };
     };
+    abacatePay?: {
+      apiKey: string;
+      webhookSecret: string;
+      signatureKey: string;
+      plans: { annual: { productId: string }; lifetime: { productId: string } };
+      publicAppUrl: string;
+    };
     admin?: { email: string; passwordHash: string; sessionSecret: string };
   } = {},
 ): Promise<{
@@ -62,6 +69,7 @@ export async function createTestApp(
         expectedProductId: 'test-product-id',
         webhookSecret: 'test-webhook-secret-with-at-least-16-chars',
       }),
+    ...(options.abacatePay ? { abacatePay: options.abacatePay } : {}),
     idGenerator: randomUUID,
     callbackGenerator: randomUUID,
     clock: () => new Date(),

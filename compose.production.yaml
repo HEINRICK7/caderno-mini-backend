@@ -1,7 +1,10 @@
 services:
   api:
     env_file:
-      - .env.cakto
+      - path: .env.abacatepay
+        required: true
+      - path: .env.cakto
+        required: false
       - .env.admin
     networks:
       - default

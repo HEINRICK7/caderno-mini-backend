@@ -42,7 +42,11 @@ try {
   }
 
   database.db.transaction((transaction) => {
-    transaction.update(templates).set({ isActive: false }).run();
+    transaction
+      .update(templates)
+      .set({ isActive: false, publicationStatus: 'archived' })
+      .where(eq(templates.isActive, true))
+      .run();
 
     for (const [index, template] of catalog.entries()) {
       const existing = transaction
@@ -57,6 +61,7 @@ try {
         description: template.description,
         definition: template.definition,
         isActive: template.isActive,
+        publicationStatus: template.isActive ? 'published' as const : 'archived' as const,
         createdAt: new Date(Date.UTC(2026, 9, 31, 0, 0, index)),
       };
 

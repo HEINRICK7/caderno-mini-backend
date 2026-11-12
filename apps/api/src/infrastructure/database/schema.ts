@@ -22,6 +22,7 @@ export const templates = sqliteTable(
     description: text('description'),
     definition: text('definition', { mode: 'json' }).$type<JsonObject>().notNull(),
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
+    publicationStatus: text('publication_status').$type<'draft' | 'published' | 'archived'>().notNull().default('archived'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => [
@@ -291,6 +292,7 @@ export const webhookEvents = sqliteTable(
   {
     id: text('id').primaryKey(),
     dedupeKey: text('dedupe_key').notNull(),
+    sideEffectDedupeKey: text('side_effect_dedupe_key'),
     eventType: text('event_type').notNull(),
     providerOrderId: text('provider_order_id'),
     providerStatus: text('provider_status'),
@@ -299,6 +301,7 @@ export const webhookEvents = sqliteTable(
     productId: text('product_id'),
     offerId: text('offer_id'),
     offerType: text('offer_type'),
+    planFrequency: text('plan_frequency'),
     amountMinor: integer('amount_minor'),
     currency: text('currency'),
     occurredAt: text('occurred_at'),
@@ -317,4 +320,12 @@ export const webhookEvents = sqliteTable(
     index('webhook_events_status_received').on(table.processingStatus, table.receivedAt),
     index('webhook_events_provider_order').on(table.providerOrderId, table.receivedAt),
   ],
+);
+
+export const webhookEventEffects = sqliteTable(
+  'webhook_event_effects',
+  {
+    effectKey: text('effect_key').primaryKey(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
 );

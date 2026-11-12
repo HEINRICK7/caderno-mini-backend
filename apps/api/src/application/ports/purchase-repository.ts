@@ -30,6 +30,7 @@ export type UserAccessView = {
 
 export type PurchaseWebhookUpdate = {
   purchaseId: string;
+  sideEffectDedupeKey?: string;
   status: PurchaseStatus;
   providerOrderId: string;
   customerEmail?: string;
@@ -37,6 +38,9 @@ export type PurchaseWebhookUpdate = {
   amountMinor?: number;
   currency?: string;
   accessExpiresAt?: Date | null;
+  accessEffectiveAt?: Date;
+  grantAccess?: boolean;
+  extendAnnualAccess?: boolean;
   revokeAccess: boolean;
   now: Date;
 };

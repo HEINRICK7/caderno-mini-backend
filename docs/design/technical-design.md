@@ -6,16 +6,16 @@
 
 ## Contexto e objetivo
 
-O Cadernô Express permite que uma pessoa escolha um modelo, personalize uma mensagem, veja uma prévia e solicite compartilhamento ou exportação. O visitante poderá começar sem cadastro. Compras serão feitas no checkout da Cakto; o backend manterá os estados locais de compra e licença e controlará todo acesso pago. O frontend Next.js interpreta os contratos do backend e não define catálogo, conteúdo ou estado de acesso por conta própria.
+O Cadernô Express permite que uma pessoa escolha um modelo, personalize uma mensagem, veja uma prévia e solicite compartilhamento ou exportação. O visitante poderá começar sem cadastro. Compras são feitas no checkout hospedado da AbacatePay; o backend mantém os estados locais de compra e licença e controla todo acesso pago. O frontend Next.js interpreta os contratos do backend e não define catálogo, conteúdo ou estado de acesso por conta própria.
 
-A API inclui identidade, validação de modelos, rascunhos e associação pós-compra, checkout e licenças Cakto, publicação/exportação, analytics, e-mail transacional e persistência em SQLite. A aplicação Next.js fica no repositório `mini-frontend` e transforma a definição de cartão versionada em componentes HTML/CSS.
+A API inclui identidade, validação de modelos, rascunhos e associação pós-compra, checkout e licenças AbacatePay, publicação/exportação, analytics, e-mail transacional e persistência em SQLite. A aplicação Next.js fica no repositório `mini-frontend` e transforma a definição de cartão versionada em componentes HTML/CSS.
 
 ## Princípios
 
 - O backend é a autoridade para dados persistidos, estado de compra e concessão de acesso.
 - O cliente pode solicitar operações, mas não pode declarar que uma compra foi paga, conceder licença ou escolher um estado privilegiado.
-- O domínio não depende de Fastify, Drizzle, SQLite ou Cakto.
-- A Cakto fornece evidência de pagamento por eventos assinados; o backend valida essa evidência e decide a licença local.
+- O domínio não depende de Fastify, Drizzle, SQLite ou AbacatePay.
+- A AbacatePay fornece evidência de pagamento por eventos assinados; o backend valida essa evidência e decide a licença local.
 - As features seguem TDD: teste primeiro, implementação depois.
 - A arquitetura é um monólito modular, sem filas, Redis ou microserviços nesta fase.
 
@@ -54,7 +54,8 @@ apps/api/src/
 │   ├── ports/
 │   └── use-cases/
 ├── infrastructure/
-│   ├── payments/cakto/
+│   ├── payments/abacatepay/
+│   ├── payments/cakto/       # somente para conciliar pagamentos antigos
 │   ├── email/
 │   ├── storage/
 │   └── database/
@@ -84,8 +85,9 @@ Prefixo versionado: `/api/v1`. Respostas de sucesso usam um envelope `data`; err
 | `POST /api/v1/auth/magic-link` | Solicita um link de acesso por e-mail; resposta não revela cadastro |
 | `POST /api/v1/auth/verify` | Consome o link e abre sessão por cookie seguro |
 | `GET /api/v1/auth/session`, `DELETE /api/v1/auth/session` | Consulta ou revoga a sessão atual |
-| `POST /api/v1/checkout` | Cria compra pendente e devolve link hospedado Cakto com `callback` opaco |
-| `POST /api/v1/webhooks/cakto` | Verifica assinatura e persiste eventos na inbox antes de responder `202` |
+| `POST /api/v1/checkout` | Cria compra pendente e checkout AbacatePay com `externalId` opaco |
+| `POST /api/v1/webhooks/abacatepay` | Confere secret e assinatura HMAC e persiste eventos na inbox antes de responder `202` |
+| `POST /api/v1/webhooks/cakto` | Mantido para validar eventos atrasados de compras antigas durante a migração |
 | `GET /api/v1/account/access`, `GET /api/v1/purchases/:id` | Expõe compras e acesso da sessão atual |
 | `POST /api/v1/drafts/:id/publication`, `PUT /api/v1/drafts/:id/publication`, `DELETE /api/v1/drafts/:id/publication` | Publica, atualiza ou remove uma publicação licenciada |
 | `GET /api/v1/publications/:slug`, `GET /api/v1/publications/:slug.png`, `GET /p/:slug` | Serve a mensagem publicada em JSON, PNG ou página HTML |
@@ -114,7 +116,7 @@ As migrations versionadas cobrem:
 - `templates` e `drafts`: versões imutáveis de modelos e dados personalizados, com proprietário opcional após a associação da conta.
 - `users`, `magic_login_tokens` e `sessions`: identidade verificada, tokens de uso único e sessões revogáveis; tokens são armazenados somente como hashes.
 - `purchases` e `access_grants`: ledger local de pedidos e concessões/revogações de acesso.
-- `webhook_events`: inbox durável com chave de deduplicação, estado de processamento, contagem de tentativas e erro sanitizado.
+- `webhook_events`: inbox durável com ID de entrega único, estado de processamento, contagem de tentativas e erro sanitizado. `webhook_event_effects` impõe idempotência adicional pelo checkout, assinatura ou pagamento para reenvios manuais com novo ID de entrega.
 - `publications`: slugs aleatórios e estado publicado/retirado para mensagens licenciadas.
 - `analytics_events`: eventos permitidos, atribuição sanitizada e chave de deduplicação.
 
@@ -131,29 +133,25 @@ A inbox durável é a fronteira entre o recebimento rápido do provedor e o proc
 
 Rotas implementadas: `POST /api/v1/auth/magic-link`, `POST /api/v1/auth/verify`, `GET /api/v1/auth/session` e `DELETE /api/v1/auth/session`.
 
-## Cakto, compras e autoridade do backend
+## AbacatePay, compras e autoridade do backend
 
-Este fluxo está implementado. O identificador de produto e a URL da oferta são configuração do ambiente; não há credenciais Cakto dentro do código.
+O checkout ativo é hospedado pela AbacatePay. O backend recebe `ABACATEPAY_API_KEY`, `ABACATEPAY_WEBHOOK_SECRET` e os IDs dos produtos anual e vitalício somente por variáveis de ambiente; a chave precisa da permissão `CHECKOUT:CREATE`. Os produtos de compra única são criados previamente no dashboard.
 
-1. O backend cria uma compra local pendente para o rascunho e gera um `callback` opaco (32 bytes aleatórios em base64url, portanto com caracteres permitidos pela Cakto). A associação do hash do callback à compra/rascunho é guardada no servidor. O backend acrescenta `?callback=<token>` ao link hospedado configurado para a oferta; e-mail, nome, CPF e outros dados pessoais nunca entram nesse valor.
-2. O browser pode voltar pela URL de redirect para uma tela de estado, mas essa navegação não confirma pagamento nem libera acesso.
-3. O webhook é a entrada servidor-a-servidor. O backend valida `X-Cakto-Timestamp` e `X-Cakto-Signature` com HMAC-SHA256 sobre `timestamp + "." + corpo bruto`, com tolerância temporal de cinco minutos e comparação em tempo constante. O segredo fica em variável de ambiente; HTTPS é obrigatório; segredo e payload não são escritos nos logs.
-4. O adaptador aceita o envelope V1 (objeto em `data`) e V2 (lista em `data`). `checkout_abandonment` usa outro formato e não tem ID de pedido, status nem valor; deve seguir um caminho separado de deduplicação.
-5. Validada a assinatura, o evento normalizado é gravado duravelmente na inbox e o endpoint responde `2xx` sem aguardar regras de negócio. Um worker local processa a inbox depois da gravação; isso respeita o limite de resposta de 8 segundos e permite recuperação após reinício.
-6. A chave de idempotência combina o pedido (`data.id`), o tipo do evento e um hash do payload recebido. Assim, uma repetição do mesmo evento é ignorada sem bloquear eventos posteriores, como reembolso ou chargeback, para o mesmo pedido.
-7. `purchase_approved` com pedido pago pode conceder licença, em uma transação local. `pix_gerado` e outros eventos de cobrança gerada mantêm a compra pendente e não concedem acesso. `refund` com estado `refunded` e `chargeback` com estado final de contestação atualizam a compra e revogam o acesso. `refund_requested` sozinho não revoga. O retorno do checkout nunca é prova suficiente.
-8. Dados pessoais desnecessários do payload não são persistidos. A ingestão guarda apenas os campos necessários para correlação, deduplicação, decisão de acesso e auditoria.
+1. O backend cria um token opaco aleatório, usa esse token como `externalId` do checkout e guarda somente seu hash junto da compra local pendente. Dados pessoais não entram no identificador. A API envia o ID do produto configurado, URL de retorno e URL de conclusão; o navegador não escolhe o valor, produto nem URL do checkout.
+2. A tela de retorno consulta a compra autenticada no backend. Retorno, query string e tela de sucesso do provedor nunca confirmam pagamento nem liberam acesso.
+3. O webhook exige o secret configurado e `X-Webhook-Signature`. O backend confere o secret em tempo constante e valida HMAC-SHA256 sobre o corpo bruto antes do parse JSON, conforme a chave pública de assinatura documentada pela AbacatePay. Credenciais privadas ficam em ambiente; o endpoint só aceita HTTPS público na configuração do provedor.
+4. `checkout.completed` com status `PAID` pode conceder licença, numa transação local. `checkout.refunded` revoga após reembolso confirmado; disputa ainda `UNDER_DISPUTE` não revoga, e disputa perdida/`checkout.lost` revoga. Evento de upsell não concede nem altera licença do produto principal.
+5. A idempotência usa o ID da entrega do webhook e o backend grava o evento normalizado na inbox antes de responder `202`. O worker local processa a inbox depois da gravação e pode recuperar eventos após reinício.
+6. O processador aceita somente os IDs de produto configurados, associa o evento pelo `externalId` opaco ou pelo ID de checkout já conhecido, e persiste apenas os campos necessários para correlação, deduplicação, licença e auditoria.
 
-O contrato atual da Cakto prevê até cinco retentativas automáticas com espera crescente para falhas de rede/timeout que ocorram antes de uma resposta. Uma resposta HTTP não-2xx não é retentada automaticamente. Por isso, depois de verificar a assinatura, o endpoint confirma somente após persistir a inbox; falhas de persistência recebem erro e devem ser monitoradas e reconciliadas pelo histórico/reenvio manual da Cakto. A operação distingue evento recebido de evento processado e oferece retentativa local idempotente para falhas de processamento.
-
-O `callback` da Cakto é um identificador definido pelo nosso sistema, aparece no redirect e no webhook e não deve conter nome, e-mail, CPF ou qualquer dado pessoal. O valor deve respeitar o charset permitido pela Cakto (letras, números, `.`, `_`, `~`, `-`) e até 255 caracteres. A funcionalidade de redirect pós-pagamento depende de liberação da Cakto; o sistema não depende desse redirect para liberar acesso. A URL de checkout vem de configuração de ambiente para que IDs de produto/oferta não sejam aceitos do navegador.
+O endpoint antigo da Cakto permanece exclusivamente para eventos atrasados de compras anteriores. As configurações antigas em `.env.cakto` podem ficar durante a transição; elas não participam da criação de novos checkouts. Remova-as depois de conciliar compras pendentes e confirmar que não há mais eventos de reembolso/contestação esperados.
 
 ## Segurança e privacidade
 
 - Rascunhos anônimos usam UUIDs aleatórios; o identificador funciona como capacidade de leitura/edição e deve ser tratado como segredo de acesso.
 - Limite de tamanho do corpo e validação de esquema evitam payloads excessivos ou inválidos.
 - Nenhum campo de entrada do cliente representa compra aprovada, licença, proprietário verificado ou papel administrativo.
-- Logs não incluem corpo de rascunhos, segredos ou identificadores de callback. Dados pessoais recebidos da Cakto são minimizados.
+- Logs não incluem corpo de rascunhos, segredos ou identificadores opacos de checkout. Dados pessoais recebidos dos provedores são minimizados.
 - A política e o prazo de retenção de rascunhos anônimos precisam ser definidos antes de habilitar a operação pública; não são inventados no código.
 - Segredos do deploy, SMTP e webhook são configuração de ambiente e nunca entram no repositório.
 
@@ -167,7 +165,7 @@ Docker Compose fornece execução local/na VPS, volume persistente do SQLite e h
 
 - Conteúdo, nomes, versões e campos dos 16 modelos.
 - Prazo e rotina de expiração/remoção de rascunhos anônimos.
-- IDs de produto/oferta Cakto e eventos habilitados no webhook de produção.
+- IDs dos produtos anual e vitalício da AbacatePay e eventos habilitados no webhook de cada ambiente.
 - Conteúdo e regras de validação dos 16 modelos; não inventar os modelos de produção a partir do fixture.
 - URL pública HTTPS, secrets, diretório e política de rollback da VPS Hostinger.
 - Endereço público HTTPS do backend, SMTP, token de analytics e credenciais de deploy; configure-os em secrets/variáveis do ambiente, sem commitá-los.
@@ -181,14 +179,14 @@ Docker Compose fornece execução local/na VPS, volume persistente do SQLite e h
 - API persiste rascunhos em SQLite, associa-os a uma versão de modelo e mantém alterações após reinício.
 - A documentação OpenAPI reflete as rotas e schemas publicados.
 - Docker Compose inicia API e banco persistente com health check.
-- Nenhuma licença pode ser concedida por comportamento de cliente; a integração Cakto valida assinatura, idempotência e regra de aprovação.
+- Nenhuma licença pode ser concedida por comportamento de cliente; a integração AbacatePay valida secret, assinatura, idempotência e regra de aprovação.
 
 ## Critérios de finalização do backend
 
 - Identity permite solicitar e consumir link de uso único, manter/consultar/revogar sessão e associar rascunho sem expor se um e-mail já está cadastrado.
 - Templates e rascunhos oferecem catálogo versionado, validação de conteúdo, prévia PNG reduzida e com marca d'água sem licença e recuperação autenticada quando houver proprietário.
-- Commerce cria o checkout configurado, recebe eventos Cakto assinados em inbox durável, processa-os com idempotência e expõe estado de compra/licença derivado no servidor.
+- Commerce cria o checkout configurado, recebe eventos AbacatePay autenticados em inbox durável, processa-os com idempotência e expõe estado de compra/licença derivado no servidor.
 - Somente `purchase_approved` com estado `paid` concede acesso; `pix_gerado`, outros estados pendentes, redirect do navegador e campos do cliente nunca concedem licença. Reembolso efetivo/chargeback atualizam e podem revogar o acesso; `refund_requested` sozinho não revoga.
 - Publishing cria, atualiza, remove, serve por link público não enumerável e exporta mensagens sem permitir acesso a rascunhos privados.
 - Analytics registra eventos permitidos sem confiar em conversão/pagamento declarados pelo navegador e sem armazenar dados pessoais desnecessários.
-- Migrations, OpenAPI, configuração, logs, backup/restore, CI, testes e documentação cobrem os fluxos implementados. Integrações externas são exercitadas por adaptadores falsos nos testes; validação real da Cakto ocorre quando produto, eventos e secrets forem configurados em homologação.
+- Migrations, OpenAPI, configuração, logs, backup/restore, CI, testes e documentação cobrem os fluxos implementados. Integrações externas são exercitadas por adaptadores falsos nos testes; validação real da AbacatePay ocorre quando produtos, eventos e secrets forem configurados em homologação.

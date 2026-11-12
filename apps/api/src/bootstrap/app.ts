@@ -19,12 +19,15 @@ import { z } from 'zod/v4';
 import {
   CheckoutNotConfiguredError,
   CheckoutPlanRequiredError,
+  CheckoutProviderUnavailableError,
   DemoPublicationNotFoundError,
   DraftNotFoundError,
   ExportContentTooLargeError,
   AnalyticsRangeError,
   InvalidMagicLinkError,
   InvalidCaktoWebhookError,
+  InvalidAbacatePayWebhookPayloadError,
+  UnauthorizedAbacatePayWebhookError,
   InvalidImageUploadError,
   ImageStorageUnavailableError,
   MagicLinkDeliveryError,
@@ -36,6 +39,7 @@ import {
 } from '../application/errors.js';
 import {
   TemplateFinancialStateError,
+  InvalidTemplateDefinitionError,
   TemplateInputValidationError,
 } from '../domain/templates/errors.js';
 import { MAX_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_UPLOAD_BODY_BYTES } from '../domain/images/image-limits.js';
@@ -63,6 +67,21 @@ const templateResponseSchema = z.object({
   definition: jsonObjectSchema,
   createdAt: z.string().datetime(),
 });
+const adminTemplateResponseSchema = templateResponseSchema.extend({
+  isActive: z.boolean(),
+  publicationStatus: z.enum(['draft', 'published', 'archived']),
+});
+const adminTemplatesResponseSchema = z.object({ data: z.array(adminTemplateResponseSchema) });
+const adminCreateTemplateBodySchema = z.object({
+  id: z.string().trim().regex(/^[a-z0-9][a-z0-9_-]{0,99}$/),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).nullable(),
+  definition: jsonObjectSchema,
+}).strict();
+const adminUpdateTemplateBodySchema = adminCreateTemplateBodySchema.omit({ id: true });
+const adminValidateTemplateBodySchema = z.object({ definition: jsonObjectSchema }).strict();
+const adminArchiveTemplateResponseSchema = z.object({ data: z.object({ changed: z.boolean() }) });
+const adminTemplateValidationResponseSchema = z.object({ data: z.object({ valid: z.literal(true) }) });
 const templateValidationIssueSchema = z.object({
   path: z.string(),
   code: z.string(),
@@ -99,6 +118,10 @@ function adminSqliteDiagnostic(error: unknown) {
 
 const idParamsSchema = z.object({ id: z.uuid() }).strict();
 const templateIdParamsSchema = z.object({ id: z.string().min(1).max(120) }).strict();
+const adminTemplateVersionParamsSchema = z.object({
+  id: z.string().min(1).max(120),
+  version: z.coerce.number().int().positive(),
+}).strict();
 const createDraftBodySchema = z
   .object({ templateId: z.string().min(1).max(120), data: jsonObjectSchema })
   .strict();
@@ -369,7 +392,7 @@ export function buildApp(options: BuildAppOptions = {}) {
       '/api/v1/analytics/events',
     ].includes(routePath ?? '');
     const isAdminSessionMutation = routePath === '/api/v1/admin/session';
-    const isAdminMutation = routePath?.startsWith('/api/v1/admin/users/') ?? false;
+    const isAdminMutation = routePath?.startsWith('/api/v1/admin/users/') || routePath?.startsWith('/api/v1/admin/templates') || false;
     const hasSessionCookie = Boolean(request.cookies[sessionCookieName]);
     const hasAdminSessionCookie = Boolean(request.cookies[adminSessionCookieName]);
     const origin = request.headers.origin;
@@ -498,6 +521,11 @@ export function buildApp(options: BuildAppOptions = {}) {
         },
       });
     }
+    if (error instanceof InvalidTemplateDefinitionError) {
+      return response.code(400).send({
+        error: { code: 'TEMPLATE_DEFINITION_INVALID', message: 'Revise a definição do template: campos, cartão, identidade visual e categoria do catálogo.' },
+      });
+    }
     if (error instanceof InvalidMagicLinkError) {
       return response.code(400).send({
         error: { code: 'INVALID_MAGIC_LINK', message: 'O link é inválido ou expirou.' },
@@ -506,6 +534,16 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (error instanceof InvalidCaktoWebhookError) {
       return response.code(401).send({
         error: { code: 'INVALID_WEBHOOK', message: 'A assinatura do webhook é inválida.' },
+      });
+    }
+    if (error instanceof UnauthorizedAbacatePayWebhookError) {
+      return response.code(401).send({
+        error: { code: 'INVALID_WEBHOOK', message: 'A assinatura do webhook é inválida.' },
+      });
+    }
+    if (error instanceof InvalidAbacatePayWebhookPayloadError) {
+      return response.code(400).send({
+        error: { code: 'INVALID_WEBHOOK_PAYLOAD', message: 'O conteúdo do webhook é inválido.' },
       });
     }
     if (error instanceof WebhookNotConfiguredError) {
@@ -521,6 +559,11 @@ export function buildApp(options: BuildAppOptions = {}) {
     if (error instanceof CheckoutNotConfiguredError) {
       return response.code(503).send({
         error: { code: 'CHECKOUT_UNAVAILABLE', message: 'O checkout está indisponível no momento.' },
+      });
+    }
+    if (error instanceof CheckoutProviderUnavailableError) {
+      return response.code(503).send({
+        error: { code: 'CHECKOUT_UNAVAILABLE', message: 'Não foi possível iniciar o pagamento agora. Tente novamente.' },
       });
     }
     if (error instanceof CheckoutPlanRequiredError) {
@@ -1202,6 +1245,123 @@ export function buildApp(options: BuildAppOptions = {}) {
       );
 
       app.get(
+        '/api/v1/admin/templates',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Lista todas as versões de templates para o painel do criador',
+            response: { 200: adminTemplatesResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          return { data: admin.listTemplates().map(serializeAdminTemplate) };
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/templates/validate',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Valida a definição de um template antes da prévia e publicação',
+            body: adminValidateTemplateBodySchema,
+            response: { 200: adminTemplateValidationResponseSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          return { data: admin.validateTemplate(request.body) };
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/templates',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Cria um rascunho privado de template',
+            body: adminCreateTemplateBodySchema,
+            response: {
+              201: z.object({ data: adminTemplateResponseSchema }),
+              400: errorResponseSchema,
+              401: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          const template = admin.createTemplate(request.body);
+          return response.code(201).send({ data: serializeAdminTemplate(template) });
+        },
+      );
+
+      app.put(
+        '/api/v1/admin/templates/:id/versions/:version',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Atualiza um rascunho sem alterar versões publicadas',
+            params: adminTemplateVersionParamsSchema,
+            body: adminUpdateTemplateBodySchema,
+            response: { 200: z.object({ data: adminTemplateResponseSchema }), 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          const template = admin.updateTemplate({ ...request.params, ...request.body });
+          if (!template) {
+            return response.code(404).send({ error: { code: 'ADMIN_TEMPLATE_DRAFT_NOT_FOUND', message: 'Esse rascunho não existe ou já foi publicado.' } });
+          }
+          return { data: serializeAdminTemplate(template) };
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/templates/:id/versions/:version/publish',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Publica um rascunho validado no catálogo de clientes',
+            params: adminTemplateVersionParamsSchema,
+            response: { 200: z.object({ data: adminTemplateResponseSchema }), 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          const template = admin.publishTemplate(request.params);
+          if (!template) {
+            return response.code(404).send({ error: { code: 'ADMIN_TEMPLATE_DRAFT_NOT_FOUND', message: 'Esse rascunho não existe ou já foi publicado.' } });
+          }
+          return { data: serializeAdminTemplate(template) };
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/templates/:id/archive',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Retira a versão ativa do catálogo público',
+            params: templateIdParamsSchema,
+            response: {
+              200: adminArchiveTemplateResponseSchema,
+              401: errorResponseSchema,
+              404: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          const changed = admin.archiveTemplate({ id: request.params.id });
+          if (!changed) {
+            return response.code(404).send({ error: { code: 'TEMPLATE_NOT_FOUND', message: 'Não há uma versão publicada desse template.' } });
+          }
+          return { data: { changed } };
+        },
+      );
+
+      app.get(
         '/api/v1/admin/users/:id',
         {
           schema: {
@@ -1339,7 +1499,7 @@ export function buildApp(options: BuildAppOptions = {}) {
         {
           schema: {
             tags: ['commerce'],
-            summary: 'Cria uma compra pendente e inicia o checkout hospedado da Cakto',
+            summary: 'Cria uma compra pendente e inicia o checkout hospedado da AbacatePay',
             body: createCheckoutBodySchema,
             response: {
               201: checkoutResponseSchema,
@@ -1354,7 +1514,7 @@ export function buildApp(options: BuildAppOptions = {}) {
         },
         async (request, response) => {
           const user = getAuthenticatedUser(request);
-          const checkout = commerce.createCheckout({
+          const checkout = await commerce.createCheckout({
             draftId: request.body.draftId,
             ...(request.body.plan ? { plan: request.body.plan } : {}),
             ...(user ? { userId: user.id } : {}),
@@ -1399,6 +1559,42 @@ export function buildApp(options: BuildAppOptions = {}) {
             rawBody: request.rawBody,
             headers: {
               ...(typeof timestamp === 'string' ? { timestamp } : {}),
+              ...(typeof signature === 'string' ? { signature } : {}),
+            },
+          });
+          return response.code(202).send({ data: accepted });
+        },
+      );
+
+      app.post(
+        '/api/v1/webhooks/abacatepay',
+        {
+          config: { rawBody: true },
+          bodyLimit: 256 * 1024,
+          schema: {
+            tags: ['commerce'],
+            summary: 'Valida e persiste um evento assinado da AbacatePay',
+            response: {
+              202: webhookAcceptedResponseSchema,
+              400: errorResponseSchema,
+              401: errorResponseSchema,
+              503: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          if (!Buffer.isBuffer(request.rawBody)) {
+            throw new InvalidAbacatePayWebhookPayloadError();
+          }
+          const secret = request.headers['x-webhook-secret'];
+          const signature = request.headers['x-webhook-signature'];
+          const requestUrl = new URL(request.url, 'http://localhost');
+          const querySecret = requestUrl.searchParams.get('webhookSecret') ?? undefined;
+          const accepted = commerce.acceptAbacatePayWebhook({
+            rawBody: request.rawBody,
+            headers: {
+              ...(typeof secret === 'string' ? { secret } : {}),
+              ...(querySecret ? { querySecret } : {}),
               ...(typeof signature === 'string' ? { signature } : {}),
             },
           });
@@ -1781,6 +1977,17 @@ function escapeHtmlAttribute(value: string): string {
 }
 
 function serializeTemplate(template: ReturnType<ApplicationServices['getTemplate']>) {
+  return {
+    id: template.id,
+    version: template.version,
+    name: template.name,
+    description: template.description,
+    definition: template.definition,
+    createdAt: template.createdAt.toISOString(),
+  };
+}
+
+function serializeAdminTemplate(template: ReturnType<AdminServices['listTemplates']>[number]) {
   return { ...template, createdAt: template.createdAt.toISOString() };
 }
 

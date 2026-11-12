@@ -13,7 +13,7 @@ import { previewDraft, type PreviewDraftDependencies } from '../application/use-
 import { createCheckout } from '../application/use-cases/create-checkout.js';
 import { getPurchaseStatus, listUserAccess, userHasActiveGrantForDraft } from '../application/use-cases/get-purchase-status.js';
 import { CheckoutNotConfiguredError, CheckoutPlanRequiredError, WebhookNotConfiguredError } from '../application/errors.js';
-import { persistCaktoEvents, processCaktoInboxBatch } from '../application/use-cases/cakto-webhooks.js';
+import { persistPaymentEvents, processPaymentInboxBatch } from '../application/use-cases/cakto-webhooks.js';
 import {
   getSession,
   getOrCreateAdminTestUser,
@@ -26,9 +26,11 @@ import type { EmailSender } from '../application/ports/email-sender.js';
 import { SqliteIdentityRepository } from '../infrastructure/database/repositories/sqlite-identity-repository.js';
 import { SqlitePurchaseRepository } from '../infrastructure/database/repositories/sqlite-purchase-repository.js';
 import { SqliteWebhookInboxRepository } from '../infrastructure/database/repositories/sqlite-webhook-inbox-repository.js';
-import type { CaktoPlanConfig } from './config.js';
+import type { AbacatePayConfig, CaktoPlanConfig } from './config.js';
 import { CaktoHostedCheckoutLink } from '../infrastructure/payments/cakto/hosted-checkout-link.js';
 import { parseCaktoWebhook, type CaktoWebhookHeaders } from '../infrastructure/payments/cakto/webhook.js';
+import { AbacatePayHostedCheckoutLink } from '../infrastructure/payments/abacatepay/hosted-checkout-link.js';
+import { parseAbacatePayWebhook, type AbacatePayWebhookHeaders } from '../infrastructure/payments/abacatepay/webhook.js';
 import { SqlitePublicationRepository } from '../infrastructure/database/repositories/sqlite-publication-repository.js';
 import {
   exportMessage,
@@ -50,6 +52,14 @@ import {
 import { createDemoPublication, getDemoPublication } from '../application/use-cases/demo-publications.js';
 import { SqliteDemoPublicationRepository } from '../infrastructure/database/repositories/sqlite-demo-publication-repository.js';
 import { SqliteAdminRepository } from '../infrastructure/database/repositories/sqlite-admin-repository.js';
+import {
+  archiveAdminTemplate,
+  createAdminTemplateDraft,
+  listAdminTemplates,
+  publishAdminTemplateDraft,
+  updateAdminTemplateDraft,
+  validateAdminTemplateDefinition,
+} from '../application/use-cases/admin-templates.js';
 
 export type ApplicationServices = ReturnType<typeof createApplicationServices>;
 
@@ -129,9 +139,20 @@ export function createAdminServices(
   options: { idGenerator?: () => string; clock?: () => Date; adminEmail?: string } = {},
 ) {
   const admin = new SqliteAdminRepository(db, options.adminEmail);
+  const templates = new SqliteTemplateRepository(db);
   const idGenerator = options.idGenerator ?? randomUUID;
   const clock = options.clock ?? (() => new Date());
   return {
+    listTemplates: () => listAdminTemplates({ templates }),
+    createTemplate: (input: Parameters<typeof createAdminTemplateDraft>[0]) =>
+      createAdminTemplateDraft(input, { templates, clock }),
+    updateTemplate: (input: Parameters<typeof updateAdminTemplateDraft>[0]) =>
+      updateAdminTemplateDraft(input, { templates }),
+    validateTemplate: (input: Parameters<typeof validateAdminTemplateDefinition>[0]) =>
+      validateAdminTemplateDefinition(input),
+    publishTemplate: (input: { id: string; version: number }) =>
+      publishAdminTemplateDraft(input, { templates }),
+    archiveTemplate: (input: { id: string }) => archiveAdminTemplate(input, { templates }),
     listUsers: (input: { query?: string; limit: number; offset: number }) =>
       admin.listUsers({ ...input, now: clock() }),
     getUser: (input: { userId: string }) => admin.getUser({ ...input, now: clock() }),
@@ -152,6 +173,8 @@ export function createCommerceServices(
     webhookSecret?: string;
     adminEmail?: string;
     plans?: { annual: CaktoPlanConfig; lifetime: CaktoPlanConfig };
+    legacyCaktoPlans?: { annual: CaktoPlanConfig; lifetime: CaktoPlanConfig };
+    abacatePay?: AbacatePayConfig & { publicAppUrl: string };
     idGenerator?: () => string;
     callbackGenerator?: () => string;
     clock?: () => Date;
@@ -170,32 +193,64 @@ export function createCommerceServices(
       lifetime: new CaktoHostedCheckoutLink(options.plans.lifetime.checkoutUrl),
     }
     : undefined;
-  const webhookSecrets = options.plans
-    ? [options.plans.annual.webhookSecret, options.plans.lifetime.webhookSecret]
-    : options.webhookSecret
-      ? [options.webhookSecret]
-      : [];
-  const expectedProductIds = options.plans
-    ? [options.plans.annual.productId, options.plans.lifetime.productId]
-    : options.expectedProductId
-      ? [options.expectedProductId]
-      : [];
-  const productPlans = options.plans
+  const abacatePayPlans = options.abacatePay?.plans;
+  const abacatePayPlanLinks = options.abacatePay && abacatePayPlans
     ? {
-      [options.plans.annual.productId]: 'annual' as const,
-      [options.plans.lifetime.productId]: 'lifetime' as const,
+      annual: new AbacatePayHostedCheckoutLink({
+        apiKey: options.abacatePay.apiKey,
+        productId: abacatePayPlans.annual.productId,
+        publicAppUrl: options.abacatePay.publicAppUrl,
+      }),
+      lifetime: new AbacatePayHostedCheckoutLink({
+        apiKey: options.abacatePay.apiKey,
+        productId: abacatePayPlans.lifetime.productId,
+        publicAppUrl: options.abacatePay.publicAppUrl,
+      }),
     }
     : undefined;
+  const legacyCaktoPlans = [options.plans, options.legacyCaktoPlans].filter(
+    (plans): plans is { annual: CaktoPlanConfig; lifetime: CaktoPlanConfig } => Boolean(plans),
+  );
+  const webhookSecrets = [
+    ...legacyCaktoPlans.flatMap((plans) => [plans.annual.webhookSecret, plans.lifetime.webhookSecret]),
+    ...(options.webhookSecret ? [options.webhookSecret] : []),
+  ];
+  const expectedProductIds = [
+    ...(abacatePayPlanLinks && abacatePayPlans
+      ? [abacatePayPlans.annual.productId, abacatePayPlans.lifetime.productId]
+      : []),
+    ...legacyCaktoPlans.flatMap((plans) => [plans.annual.productId, plans.lifetime.productId]),
+    ...(options.expectedProductId ? [options.expectedProductId] : []),
+  ];
+  const productPlans = Object.fromEntries([
+    ...(abacatePayPlanLinks && abacatePayPlans
+      ? [
+        [abacatePayPlans.annual.productId, 'annual'],
+        [abacatePayPlans.lifetime.productId, 'lifetime'],
+      ]
+      : []),
+    ...legacyCaktoPlans.flatMap((plans) => [
+      [plans.annual.productId, 'annual'],
+      [plans.lifetime.productId, 'lifetime'],
+    ]),
+  ]) as Readonly<Record<string, 'annual' | 'lifetime'>> | undefined;
   const idGenerator = options.idGenerator ?? randomUUID;
   const callbackGenerator = options.callbackGenerator;
   const clock = options.clock ?? (() => new Date());
 
   return {
     createCheckout: (input: { draftId: string; userId?: string; plan?: CheckoutPlan }) => {
-      if (planLinks && !input.plan) {
+      if (options.abacatePay && !options.abacatePay.plans) {
+        throw new CheckoutNotConfiguredError();
+      }
+      if ((abacatePayPlanLinks || planLinks) && !input.plan) {
         throw new CheckoutPlanRequiredError();
       }
-      const checkoutLink = planLinks && input.plan ? planLinks[input.plan] : checkoutLinks;
+      const checkoutLink = abacatePayPlanLinks && input.plan
+        ? abacatePayPlanLinks[input.plan]
+        : planLinks && input.plan
+          ? planLinks[input.plan]
+          : checkoutLinks;
       if (!checkoutLink || expectedProductIds.length === 0) {
         throw new CheckoutNotConfiguredError();
       }
@@ -222,14 +277,42 @@ export function createCommerceServices(
         secrets: webhookSecrets,
         now,
       });
-      return persistCaktoEvents(events, {
+      return persistPaymentEvents(events, {
         inbox,
         generateId: idGenerator,
         clock: () => now,
       });
     },
+    acceptAbacatePayWebhook: (input: { rawBody: Buffer; headers: AbacatePayWebhookHeaders }) => {
+      if (!options.abacatePay) {
+        throw new WebhookNotConfiguredError();
+      }
+      const now = clock();
+      const events = parseAbacatePayWebhook(input.rawBody, input.headers, {
+        secret: options.abacatePay.webhookSecret,
+        signatureKey: options.abacatePay.signatureKey,
+      });
+      return persistPaymentEvents(events, {
+        inbox,
+        generateId: idGenerator,
+        clock: () => now,
+      });
+    },
+    processPaymentInboxBatch: (limit = 25) =>
+      processPaymentInboxBatch(
+        {
+          inbox,
+          purchases,
+          analytics,
+          ...(expectedProductIds.length > 0 ? { expectedProductIds } : {}),
+          ...(productPlans ? { productPlans } : {}),
+          generateId: idGenerator,
+          clock,
+        },
+        limit,
+      ),
     processCaktoInboxBatch: (limit = 25) =>
-      processCaktoInboxBatch(
+      processPaymentInboxBatch(
         {
           inbox,
           purchases,

@@ -2,7 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 import { InvalidCaktoWebhookError } from '../../../application/errors.js';
 import { normalizeEmail } from '../../../domain/identity/identity.js';
-import type { IncomingCaktoEvent } from '../../../application/dto/payment-event.js';
+import type { IncomingPaymentEvent } from '../../../application/dto/payment-event.js';
 
 export type CaktoWebhookHeaders = {
   timestamp?: string;
@@ -19,7 +19,7 @@ export function parseCaktoWebhook(
   rawBody: Buffer,
   headers: CaktoWebhookHeaders,
   options: { secret?: string; secrets?: readonly string[]; now?: Date },
-): IncomingCaktoEvent[] {
+): IncomingPaymentEvent[] {
   const secrets = [...new Set([...(options.secrets ?? []), ...(options.secret ? [options.secret] : [])])];
   const matchedSecret = secrets.length > 0 ? authenticatedSecret(rawBody, headers, secrets, options.now) : undefined;
   if (!headers.timestamp || !headers.signature || !matchedSecret) {
@@ -99,7 +99,7 @@ function isCaktoEnvelope(value: unknown): value is CaktoEnvelope {
   );
 }
 
-function normalizeEvent(eventType: string, input: unknown): IncomingCaktoEvent {
+function normalizeEvent(eventType: string, input: unknown): IncomingPaymentEvent {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
     throw new InvalidCaktoWebhookError();
   }

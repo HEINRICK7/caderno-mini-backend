@@ -172,7 +172,74 @@ jobs:
           } | ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
             "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
 
-      - name: Configure Cakto environment file
+      - name: Configure AbacatePay environment file
+        shell: bash
+        env:
+          ABACATEPAY_API_KEY: ${{ secrets.ABACATEPAY_API_KEY }}
+          ABACATEPAY_WEBHOOK_SECRET: ${{ secrets.ABACATEPAY_WEBHOOK_SECRET }}
+          ABACATEPAY_WEBHOOK_SIGNATURE_KEY: ${{ vars.ABACATEPAY_WEBHOOK_SIGNATURE_KEY }}
+          ABACATEPAY_PRODUCT_ANNUAL_ID: ${{ vars.ABACATEPAY_PRODUCT_ANNUAL_ID }}
+          ABACATEPAY_PRODUCT_LIFETIME_ID: ${{ vars.ABACATEPAY_PRODUCT_LIFETIME_ID }}
+        run: |
+          set -euo pipefail
+          HOSTINGER_SSH_PORT="${HOSTINGER_SSH_PORT:-22}"
+          case "$HOSTINGER_SSH_PORT" in
+            *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
+          esac
+          : "${ABACATEPAY_API_KEY:?Set ABACATEPAY_API_KEY as a secret in the selected GitHub environment}"
+          : "${ABACATEPAY_WEBHOOK_SECRET:?Set ABACATEPAY_WEBHOOK_SECRET as a secret in the selected GitHub environment}"
+          : "${ABACATEPAY_WEBHOOK_SIGNATURE_KEY:?Set ABACATEPAY_WEBHOOK_SIGNATURE_KEY as a variable in the selected GitHub environment}"
+          if [[ ! "$ABACATEPAY_API_KEY" =~ ^[A-Za-z0-9._-]{8,1024}$ ]]; then
+            echo 'ABACATEPAY_API_KEY contains unsupported characters or has an invalid length.' >&2
+            exit 1
+          fi
+          if [[ ! "$ABACATEPAY_WEBHOOK_SECRET" =~ ^[A-Za-z0-9._-]{32,1024}$ ]]; then
+            echo 'ABACATEPAY_WEBHOOK_SECRET must be at least 32 safe characters.' >&2
+            exit 1
+          fi
+          if [[ ! "$ABACATEPAY_WEBHOOK_SIGNATURE_KEY" =~ ^[A-Za-z0-9+/]{64,1024}$ ]]; then
+            echo 'ABACATEPAY_WEBHOOK_SIGNATURE_KEY contains unsupported characters or has an invalid length.' >&2
+            exit 1
+          fi
+          if [ -n "$ABACATEPAY_PRODUCT_ANNUAL_ID" ] || [ -n "$ABACATEPAY_PRODUCT_LIFETIME_ID" ]; then
+            if [ -z "$ABACATEPAY_PRODUCT_ANNUAL_ID" ] || [ -z "$ABACATEPAY_PRODUCT_LIFETIME_ID" ]; then
+              echo 'Set both AbacatePay product IDs to enable checkout, or leave both empty to deploy webhook receiving only.' >&2
+              exit 1
+            fi
+          fi
+          for product_id in "$ABACATEPAY_PRODUCT_ANNUAL_ID" "$ABACATEPAY_PRODUCT_LIFETIME_ID"; do
+            if [ -z "$product_id" ]; then continue; fi
+            if [[ ! "$product_id" =~ ^[A-Za-z0-9_-]{4,200}$ ]]; then
+              echo 'AbacatePay product IDs may contain only letters, numbers, underscores, and hyphens.' >&2
+              exit 1
+            fi
+          done
+          if [ -n "$ABACATEPAY_PRODUCT_ANNUAL_ID" ] && [ "$ABACATEPAY_PRODUCT_ANNUAL_ID" = "$ABACATEPAY_PRODUCT_LIFETIME_ID" ]; then
+            echo 'The annual and lifetime AbacatePay product IDs must be different.' >&2
+            exit 1
+          fi
+
+          remote="umask 077
+          app_path='$HOSTINGER_APP_PATH'
+          config_file=\$app_path/.env.abacatepay
+          if [ -L \"\$config_file\" ]; then
+            echo 'Refusing to write AbacatePay configuration through a symlink.' >&2
+            exit 1
+          fi
+          temp_file=\$(mktemp \"\$app_path/.env.abacatepay.XXXXXX\")
+          cat > \"\$temp_file\"
+          chmod 600 \"\$temp_file\"
+          mv \"\$temp_file\" \"\$config_file\""
+          {
+            printf 'ABACATEPAY_API_KEY=%s\n' "$ABACATEPAY_API_KEY"
+            printf 'ABACATEPAY_WEBHOOK_SECRET=%s\n' "$ABACATEPAY_WEBHOOK_SECRET"
+            printf 'ABACATEPAY_WEBHOOK_SIGNATURE_KEY=%s\n' "$ABACATEPAY_WEBHOOK_SIGNATURE_KEY"
+            printf 'ABACATEPAY_PRODUCT_ANNUAL_ID=%s\n' "$ABACATEPAY_PRODUCT_ANNUAL_ID"
+            printf 'ABACATEPAY_PRODUCT_LIFETIME_ID=%s\n' "$ABACATEPAY_PRODUCT_LIFETIME_ID"
+          } | ssh -o StrictHostKeyChecking=yes -p "$HOSTINGER_SSH_PORT" \
+            "$HOSTINGER_USER@$HOSTINGER_HOST" "$remote"
+
+      - name: Refresh optional legacy Cakto environment file
         shell: bash
         env:
           CAKTO_CHECKOUT_ANNUAL_URL: ${{ vars.CAKTO_CHECKOUT_ANNUAL_URL }}
@@ -187,12 +254,28 @@ jobs:
           case "$HOSTINGER_SSH_PORT" in
             *[!0-9]*|'') echo "HOSTINGER_SSH_PORT must be numeric" >&2; exit 1 ;;
           esac
-          : "${CAKTO_CHECKOUT_ANNUAL_URL:?Set the annual Cakto checkout URL in the production environment}"
-          : "${CAKTO_PRODUCT_ANNUAL_ID:?Set the annual Cakto product ID in the production environment}"
-          : "${CAKTO_WEBHOOK_SECRET_ANNUAL:?Set the annual Cakto webhook secret in the production environment}"
-          : "${CAKTO_CHECKOUT_LIFETIME_URL:?Set the lifetime Cakto checkout URL in the production environment}"
-          : "${CAKTO_PRODUCT_LIFETIME_ID:?Set the lifetime Cakto product ID in the production environment}"
-          : "${CAKTO_WEBHOOK_SECRET_LIFETIME:?Set the lifetime Cakto webhook secret in the production environment}"
+          cakto_values=(
+            "$CAKTO_CHECKOUT_ANNUAL_URL" "$CAKTO_PRODUCT_ANNUAL_ID" "$CAKTO_WEBHOOK_SECRET_ANNUAL"
+            "$CAKTO_CHECKOUT_LIFETIME_URL" "$CAKTO_PRODUCT_LIFETIME_ID" "$CAKTO_WEBHOOK_SECRET_LIFETIME"
+          )
+          cakto_present=0
+          for value in "${cakto_values[@]}"; do
+            if [ -n "$value" ]; then cakto_present=$((cakto_present + 1)); fi
+          done
+          if [ "$cakto_present" = 0 ]; then
+            echo 'No legacy Cakto values provided; retaining any existing Cakto webhook configuration.'
+            exit 0
+          fi
+          if [ "$cakto_present" != 6 ]; then
+            echo 'Set all six legacy Cakto values together or leave all of them empty.' >&2
+            exit 1
+          fi
+          : "${CAKTO_CHECKOUT_ANNUAL_URL:?Set the annual Cakto checkout URL in the selected GitHub environment}"
+          : "${CAKTO_PRODUCT_ANNUAL_ID:?Set the annual Cakto product ID in the selected GitHub environment}"
+          : "${CAKTO_WEBHOOK_SECRET_ANNUAL:?Set the annual Cakto webhook secret in the selected GitHub environment}"
+          : "${CAKTO_CHECKOUT_LIFETIME_URL:?Set the lifetime Cakto checkout URL in the selected GitHub environment}"
+          : "${CAKTO_PRODUCT_LIFETIME_ID:?Set the lifetime Cakto product ID in the selected GitHub environment}"
+          : "${CAKTO_WEBHOOK_SECRET_LIFETIME:?Set the lifetime Cakto webhook secret in the selected GitHub environment}"
           for value in "$CAKTO_CHECKOUT_ANNUAL_URL" "$CAKTO_CHECKOUT_LIFETIME_URL"; do
             if [[ ! "$value" =~ ^https://pay\.cakto\.com\.br/[A-Za-z0-9_-]+/?$ ]]; then
               echo 'Cakto checkout URLs must be hosted offer links without a query.' >&2
@@ -242,6 +325,7 @@ jobs:
             --exclude='backups/' \
             --exclude='.env' \
             --exclude='.env.admin' \
+            --exclude='.env.abacatepay' \
             --exclude='.env.cakto' \
             --exclude='.caderno-mini-backend-deploy' \
             ./ "$HOSTINGER_USER@$HOSTINGER_HOST:$HOSTINGER_APP_PATH/"
