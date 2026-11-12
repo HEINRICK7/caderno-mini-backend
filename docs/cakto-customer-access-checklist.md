@@ -1,5 +1,7 @@
 # Checklist: Cakto, acesso e demonstração do Cadernô Express
 
+> **Documento histórico:** esta checklist descreve a integração antiga com a Cakto. Novos checkouts usam AbacatePay; consulte [ADR 0005](adr/0005-abacatepay-checkout.md) e o guia de deploy. Este arquivo serve apenas como registro da configuração anterior e não deve ser usado para configurar novas vendas.
+
 Escopo: deixar claro o caminho do checkout ao login e à publicação, permitir uma demonstração grátis compartilhável nas quatro categorias e ligar a compra da Cakto ao acesso do Cadernô. Manter as ofertas e os preços atuais; não executar compra real de teste.
 
 ## Prazo do acesso

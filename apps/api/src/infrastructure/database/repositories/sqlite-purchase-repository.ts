@@ -7,9 +7,9 @@ import type {
   NewPendingPurchase,
   PurchaseWebhookUpdate,
 } from '../../../application/ports/purchase-repository.js';
-import { accessIsCurrent, type Purchase, type PurchaseStatus } from '../../../domain/commerce/purchase.js';
+import { accessExpiresAt, accessIsCurrent, type Purchase, type PurchaseStatus } from '../../../domain/commerce/purchase.js';
 import type { AppDatabase } from '../connection.js';
-import { accessGrants, drafts, purchases, users } from '../schema.js';
+import { accessGrants, drafts, purchases, users, webhookEventEffects } from '../schema.js';
 
 export class SqlitePurchaseRepository implements PurchaseRepository {
   constructor(private readonly database: AppDatabase, private readonly adminEmail?: string) {}
@@ -45,7 +45,9 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       return undefined;
     }
 
-    const purchase = byCallback ?? byProviderOrder;
+    // A supplied externalId is the server-generated order capability. Never
+    // fall back to an unrelated order ID when that capability fails to match.
+    const purchase = callbackHash ? byCallback : byProviderOrder;
     if (!purchase) {
       return undefined;
     }
@@ -69,6 +71,16 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
         return;
       }
 
+      if (update.sideEffectDedupeKey) {
+        const effect = transaction
+          .insert(webhookEventEffects)
+          .values({ effectKey: update.sideEffectDedupeKey, createdAt: update.now })
+          .onConflictDoNothing()
+          .returning({ effectKey: webhookEventEffects.effectKey })
+          .get();
+        if (!effect) return;
+      }
+
       let status: PurchaseStatus = update.status;
       const isTerminal = current.status === 'refunded' || current.status === 'chargedback' || current.status === 'canceled';
       if (isTerminal && status === 'paid') {
@@ -80,12 +92,11 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       }
 
       const existingUser = update.grantEmail
-        ? transaction
-            .select({ id: users.id })
-            .from(users)
-            .where(eq(users.email, update.grantEmail))
-            .get()
-        : undefined;
+        ? transaction.select({ id: users.id, email: users.email }).from(users).where(eq(users.email, update.grantEmail)).get()
+        : current.ownerUserId
+          ? transaction.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, current.ownerUserId)).get()
+          : undefined;
+      const grantEmail = update.grantEmail ?? current.customerEmail ?? existingUser?.email;
 
       transaction
         .update(purchases)
@@ -101,17 +112,27 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
         .where(eq(purchases.id, update.purchaseId))
         .run();
 
-      if (update.grantEmail && status === 'paid' && current.status !== 'paid' && !isTerminal) {
+      if (update.grantAccess && grantEmail && status === 'paid' && !isTerminal) {
+        const currentGrant = transaction
+          .select({ expiresAt: accessGrants.expiresAt })
+          .from(accessGrants)
+          .where(eq(accessGrants.purchaseId, update.purchaseId))
+          .get();
+        const now = update.accessEffectiveAt ?? update.now;
+        const existingExpiry = currentGrant?.expiresAt ?? null;
+        const accessExpiry = update.extendAnnualAccess
+          ? accessExpiresAt('annual', existingExpiry && existingExpiry > now ? existingExpiry : now)
+          : update.accessExpiresAt ?? existingExpiry;
         transaction
           .insert(accessGrants)
           .values({
             id: randomUUID(),
             purchaseId: update.purchaseId,
             userId: existingUser?.id ?? null,
-            customerEmail: update.grantEmail,
+            customerEmail: grantEmail,
             status: 'active',
-            grantedAt: update.now,
-            expiresAt: update.accessExpiresAt ?? null,
+            grantedAt: update.accessEffectiveAt ?? update.now,
+            expiresAt: accessExpiry,
             revokedAt: null,
             updatedAt: update.now,
           })
@@ -119,8 +140,10 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
             target: accessGrants.purchaseId,
             set: {
               userId: existingUser?.id ?? null,
-              customerEmail: update.grantEmail,
+              customerEmail: grantEmail,
               status: 'active',
+              expiresAt: accessExpiry,
+              grantedAt: update.accessEffectiveAt ?? update.now,
               revokedAt: null,
               updatedAt: update.now,
             },

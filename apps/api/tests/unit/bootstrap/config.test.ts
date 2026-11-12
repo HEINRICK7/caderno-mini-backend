@@ -150,4 +150,49 @@ describe('loadConfig', () => {
       MINIO_SECRET_KEY: 'caderno-api-secret-key-value',
     })).toThrow('MINIO_USE_SSL must be true in production.');
   });
+
+  it('requires a configured AbacatePay webhook secret in production', () => {
+    expect(() => loadConfig({
+      NODE_ENV: 'production',
+      AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+      PUBLIC_API_URL: 'https://api.example.com',
+      PUBLIC_APP_URL: 'https://app.example.com',
+      MINIO_USE_SSL: 'true',
+      MINIO_ACCESS_KEY: 'production-minio-user',
+      MINIO_SECRET_KEY: 'production-minio-secret-value',
+      ADMIN_EMAIL: 'admin@example.com',
+      ADMIN_PASSWORD_HASH: `scrypt.32768.8.1.${'a'.repeat(22)}.${'b'.repeat(128)}`,
+      ADMIN_SESSION_SECRET: 'a'.repeat(43),
+    })).toThrow('Set ABACATEPAY_WEBHOOK_SECRET for production webhook verification.');
+  });
+
+  it('loads AbacatePay webhook credentials without checkout products', () => {
+    const config = loadConfig({
+      ABACATEPAY_API_KEY: 'test-abacatepay-api-key',
+      ABACATEPAY_WEBHOOK_SECRET: 'a'.repeat(32),
+      ABACATEPAY_WEBHOOK_SIGNATURE_KEY: 'test-public-signature-key'.repeat(3),
+    });
+
+    expect(config.abacatePay).toEqual({
+      apiKey: 'test-abacatepay-api-key',
+      webhookSecret: 'a'.repeat(32),
+      signatureKey: 'test-public-signature-key'.repeat(3),
+    });
+  });
+
+  it('requires the documented signature key when AbacatePay webhook credentials are configured', () => {
+    expect(() => loadConfig({
+      ABACATEPAY_API_KEY: 'test-abacatepay-api-key',
+      ABACATEPAY_WEBHOOK_SECRET: 'a'.repeat(32),
+    })).toThrow('Set ABACATEPAY_WEBHOOK_SIGNATURE_KEY for AbacatePay webhook signature verification.');
+  });
+
+  it('requires both AbacatePay product IDs before enabling checkouts', () => {
+    expect(() => loadConfig({
+      ABACATEPAY_API_KEY: 'test-abacatepay-api-key',
+      ABACATEPAY_WEBHOOK_SECRET: 'a'.repeat(32),
+      ABACATEPAY_WEBHOOK_SIGNATURE_KEY: 'test-public-signature-key'.repeat(3),
+      ABACATEPAY_PRODUCT_ANNUAL_ID: 'prod_annual',
+    })).toThrow('Set ABACATEPAY_PRODUCT_ANNUAL_ID and ABACATEPAY_PRODUCT_LIFETIME_ID together to enable AbacatePay checkout.');
+  });
 });

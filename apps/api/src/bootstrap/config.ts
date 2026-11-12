@@ -61,6 +61,26 @@ const configSchema = z.object({
     (value) => (value === '' ? undefined : value),
     z.string().min(3).optional(),
   ),
+  ABACATEPAY_API_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(8).max(1_024).optional(),
+  ),
+  ABACATEPAY_WEBHOOK_SECRET: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(32).max(1_024).optional(),
+  ),
+  ABACATEPAY_WEBHOOK_SIGNATURE_KEY: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(64).max(1_024).optional(),
+  ),
+  ABACATEPAY_PRODUCT_ANNUAL_ID: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(4).max(200).optional(),
+  ),
+  ABACATEPAY_PRODUCT_LIFETIME_ID: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(4).max(200).optional(),
+  ),
   CAKTO_CHECKOUT_URL: z.preprocess(
     (value) => (value === '' ? undefined : value),
     z.string().url().optional(),
@@ -121,6 +141,16 @@ export type CaktoPlanConfig = {
   webhookSecret: string;
 };
 
+export type AbacatePayConfig = {
+  apiKey: string;
+  webhookSecret: string;
+  signatureKey: string;
+  plans?: {
+    annual: { productId: string };
+    lifetime: { productId: string };
+  };
+};
+
 export type AppConfig = {
   nodeEnv: 'development' | 'test' | 'production';
   host: string;
@@ -142,6 +172,7 @@ export type AppConfig = {
   publicAppUrl: string;
   smtpUrl?: string;
   emailFrom?: string;
+  abacatePay?: AbacatePayConfig;
   caktoCheckoutUrl?: string;
   caktoProductId?: string;
   caktoWebhookSecret?: string;
@@ -188,6 +219,12 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
   if (parsed.NODE_ENV === 'production' && adminCredentialCount !== 3) {
     throw new Error('Set ADMIN_EMAIL, ADMIN_PASSWORD_HASH, and ADMIN_SESSION_SECRET for production administration.');
   }
+  if (parsed.NODE_ENV === 'production' && !parsed.ABACATEPAY_WEBHOOK_SECRET) {
+    throw new Error('Set ABACATEPAY_WEBHOOK_SECRET for production webhook verification.');
+  }
+  if (parsed.NODE_ENV === 'production' && !parsed.ABACATEPAY_WEBHOOK_SIGNATURE_KEY) {
+    throw new Error('Set ABACATEPAY_WEBHOOK_SIGNATURE_KEY for production webhook signature verification.');
+  }
 
   return {
     nodeEnv: parsed.NODE_ENV,
@@ -210,6 +247,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     publicAppUrl: parsed.PUBLIC_APP_URL,
     ...(parsed.SMTP_URL ? { smtpUrl: parsed.SMTP_URL } : {}),
     ...(parsed.EMAIL_FROM ? { emailFrom: parsed.EMAIL_FROM } : {}),
+    ...abacatePayFrom(parsed),
     ...(parsed.CAKTO_CHECKOUT_URL ? { caktoCheckoutUrl: parsed.CAKTO_CHECKOUT_URL } : {}),
     ...(parsed.CAKTO_PRODUCT_ID ? { caktoProductId: parsed.CAKTO_PRODUCT_ID } : {}),
     ...(parsed.CAKTO_WEBHOOK_SECRET ? { caktoWebhookSecret: parsed.CAKTO_WEBHOOK_SECRET } : {}),
@@ -218,6 +256,42 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     ...(parsed.ADMIN_EMAIL ? { adminEmail: parsed.ADMIN_EMAIL } : {}),
     ...(parsed.ADMIN_PASSWORD_HASH ? { adminPasswordHash: parsed.ADMIN_PASSWORD_HASH } : {}),
     ...(parsed.ADMIN_SESSION_SECRET ? { adminSessionSecret: parsed.ADMIN_SESSION_SECRET } : {}),
+  };
+}
+
+function abacatePayFrom(
+  parsed: z.infer<typeof configSchema>,
+): { abacatePay: AbacatePayConfig } | Record<string, never> {
+  const hasApiKey = parsed.ABACATEPAY_API_KEY !== undefined;
+  const hasWebhookSecret = parsed.ABACATEPAY_WEBHOOK_SECRET !== undefined;
+  const signatureKey = parsed.ABACATEPAY_WEBHOOK_SIGNATURE_KEY;
+  const annualProductId = parsed.ABACATEPAY_PRODUCT_ANNUAL_ID;
+  const lifetimeProductId = parsed.ABACATEPAY_PRODUCT_LIFETIME_ID;
+  const hasAnnualProduct = annualProductId !== undefined;
+  const hasLifetimeProduct = lifetimeProductId !== undefined;
+
+  if (!hasApiKey && !hasWebhookSecret && !signatureKey && !hasAnnualProduct && !hasLifetimeProduct) return {};
+  if (!hasApiKey || !hasWebhookSecret) {
+    throw new Error('Set ABACATEPAY_API_KEY and ABACATEPAY_WEBHOOK_SECRET together.');
+  }
+  if (!signatureKey) {
+    throw new Error('Set ABACATEPAY_WEBHOOK_SIGNATURE_KEY for AbacatePay webhook signature verification.');
+  }
+  if (hasAnnualProduct !== hasLifetimeProduct) {
+    throw new Error('Set ABACATEPAY_PRODUCT_ANNUAL_ID and ABACATEPAY_PRODUCT_LIFETIME_ID together to enable AbacatePay checkout.');
+  }
+  if (hasAnnualProduct && annualProductId === lifetimeProductId) {
+    throw new Error('ABACATEPAY_PRODUCT_ANNUAL_ID and ABACATEPAY_PRODUCT_LIFETIME_ID must be different products.');
+  }
+  return {
+    abacatePay: {
+      apiKey: parsed.ABACATEPAY_API_KEY!,
+      webhookSecret: parsed.ABACATEPAY_WEBHOOK_SECRET!,
+      signatureKey,
+      ...(hasAnnualProduct && hasLifetimeProduct
+        ? { plans: { annual: { productId: annualProductId! }, lifetime: { productId: lifetimeProductId! } } }
+        : {}),
+    },
   };
 }
 

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import type { IncomingCaktoEvent, NewWebhookEvent, WebhookEvent } from '../dto/payment-event.js';
+import type { IncomingPaymentEvent, NewWebhookEvent, WebhookEvent } from '../dto/payment-event.js';
 import type { PurchaseRepository } from '../ports/purchase-repository.js';
 import type { WebhookInboxRepository } from '../ports/webhook-inbox-repository.js';
 import type { AnalyticsRepository } from '../ports/analytics-repository.js';
@@ -18,7 +18,7 @@ export type CaktoWebhookDependencies = {
 };
 
 export function persistCaktoEvents(
-  events: IncomingCaktoEvent[],
+  events: IncomingPaymentEvent[],
   dependencies: Pick<CaktoWebhookDependencies, 'inbox' | 'generateId' | 'clock'>,
 ): { accepted: number; duplicates: number } {
   const now = dependencies.clock?.() ?? new Date();
@@ -26,15 +26,19 @@ export function persistCaktoEvents(
   const rows: NewWebhookEvent[] = events.map((event) => ({
     id: generateId(),
     dedupeKey: event.dedupeKey,
+    sideEffectDedupeKey: event.sideEffectDedupeKey ?? null,
     eventType: event.eventType,
     providerOrderId: event.providerOrderId ?? null,
     providerStatus: event.providerStatus ?? null,
     callbackHash: event.callbackToken ? hashToken(event.callbackToken) : null,
     // Keep the e-mail only until an approved purchase is processed and linked to its license.
-    customerEmail: event.eventType === 'purchase_approved' ? event.customerEmail ?? null : null,
+    customerEmail: ['purchase_approved', 'subscription_approved', 'subscription_renewed'].includes(event.eventType)
+      ? event.customerEmail ?? null
+      : null,
     productId: event.productId ?? null,
     offerId: event.offerId ?? null,
     offerType: event.offerType ?? null,
+    planFrequency: event.planFrequency ?? null,
     amountMinor: event.amountMinor ?? null,
     currency: event.currency ?? null,
     occurredAt: event.occurredAt ?? null,
@@ -43,6 +47,8 @@ export function persistCaktoEvents(
   const accepted = dependencies.inbox.insert(rows);
   return { accepted, duplicates: events.length - accepted };
 }
+
+export const persistPaymentEvents = persistCaktoEvents;
 
 export function processCaktoInboxBatch(
   dependencies: CaktoWebhookDependencies,
@@ -71,15 +77,20 @@ export function processCaktoInboxBatch(
   return processed;
 }
 
+export const processPaymentInboxBatch = processCaktoInboxBatch;
+
 function processPurchaseEvent(
   event: WebhookEvent,
   dependencies: CaktoWebhookDependencies,
   expectedProductIds: readonly string[],
   now: Date,
 ): void {
-  if (!event.providerOrderId || !event.productId || !expectedProductIds.includes(event.productId) || event.offerType !== 'main') {
-    return;
-  }
+  const isConfiguredProduct = Boolean(event.productId && expectedProductIds.includes(event.productId));
+  const isSinglePayment = event.offerType === 'main';
+  const isAnnualSubscription = event.offerType === 'subscription' &&
+    event.planFrequency === 'ANNUALLY' &&
+    dependencies.productPlans?.[event.productId ?? ''] === 'annual';
+  if (!event.providerOrderId || !event.productId || !isConfiguredProduct || (!isSinglePayment && !isAnnualSubscription)) return;
 
   const purchase = dependencies.purchases.findForWebhook(event.callbackHash, event.providerOrderId);
   if (!purchase || (purchase.providerOrderId && purchase.providerOrderId !== event.providerOrderId)) {
@@ -88,12 +99,18 @@ function processPurchaseEvent(
 
   const signal = signalFor(event.eventType, event.providerStatus);
   const transition = transitionPurchase(purchase.status, signal);
+  const extendAnnualAccess = event.eventType === 'subscription_renewed' &&
+    signal === 'approved' && purchase.status === 'paid';
+  const grantAccess = transition.grantAccess || extendAnnualAccess;
+  const accessEffectiveAt = event.occurredAt ? new Date(event.occurredAt) : now;
   const update = {
     purchaseId: purchase.id,
+    ...(event.sideEffectDedupeKey ? { sideEffectDedupeKey: event.sideEffectDedupeKey } : {}),
     status: transition.status,
     providerOrderId: event.providerOrderId,
     revokeAccess: transition.revokeAccess,
     now,
+    ...(grantAccess ? { accessEffectiveAt } : {}),
     ...(event.customerEmail ? { customerEmail: event.customerEmail } : {}),
     ...(transition.status === 'paid' && typeof event.amountMinor === 'number' && event.amountMinor > 0
       ? { amountMinor: event.amountMinor }
@@ -101,12 +118,15 @@ function processPurchaseEvent(
     ...(transition.status === 'paid' && event.currency && /^[A-Z]{3}$/.test(event.currency.toUpperCase())
       ? { currency: event.currency.toUpperCase() }
       : {}),
-    ...(transition.grantAccess && event.customerEmail
-      ? {
-          grantEmail: event.customerEmail,
-          accessExpiresAt: licenseExpiresAt(dependencies.productPlans?.[event.productId], now),
-        }
-      : {}),
+    grantAccess,
+    ...(extendAnnualAccess ? { extendAnnualAccess: true } : {}),
+    ...(grantAccess ? {
+      ...(event.customerEmail ? { grantEmail: event.customerEmail } : {}),
+      accessExpiresAt: licenseExpiresAt(
+        event.offerType === 'subscription' ? 'annual' : dependencies.productPlans?.[event.productId],
+        accessEffectiveAt,
+      ),
+    } : {}),
   };
   dependencies.purchases.applyWebhookUpdate(update);
   if (transition.status === 'paid' && dependencies.analytics) {
@@ -116,7 +136,7 @@ function processPurchaseEvent(
       name: 'purchase_paid',
       purchaseId: purchase.id,
       draftId: purchase.draftId,
-      occurredAt: now,
+      occurredAt: accessEffectiveAt,
     });
   }
 }
@@ -127,7 +147,8 @@ function licenseExpiresAt(plan: AccessPlan | undefined, grantedAt: Date): Date |
 }
 
 function signalFor(eventType: string, providerStatus: string | null): PaymentSignal {
-  if (eventType === 'purchase_approved' && providerStatus === 'paid') {
+  if (['purchase_approved', 'subscription_approved', 'subscription_renewed'].includes(eventType) &&
+    ['paid', 'approved'].includes(providerStatus ?? '')) {
     return 'approved';
   }
   if (eventType === 'purchase_refused' && providerStatus === 'refused') {
@@ -141,6 +162,9 @@ function signalFor(eventType: string, providerStatus: string | null): PaymentSig
   }
   if (eventType === 'refund_requested') {
     return 'refund_requested';
+  }
+  if (eventType === 'subscription_cancelled' && providerStatus === 'NOW') {
+    return 'canceled';
   }
   if (eventType.endsWith('_gerado') && providerStatus === 'waiting_payment') {
     return 'pending';

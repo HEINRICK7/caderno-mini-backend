@@ -28,7 +28,7 @@ export class SqliteWebhookInboxRepository implements WebhookInboxRepository {
             processedAt: null,
             lastErrorCode: null,
           })
-          .onConflictDoNothing({ target: webhookEvents.dedupeKey })
+          .onConflictDoNothing()
           .returning({ id: webhookEvents.id })
           .get();
         if (inserted) {
@@ -73,6 +73,7 @@ export class SqliteWebhookInboxRepository implements WebhookInboxRepository {
       return pending.map((event) => ({
         id: event.id,
         dedupeKey: event.dedupeKey,
+        sideEffectDedupeKey: event.sideEffectDedupeKey,
         eventType: event.eventType,
         providerOrderId: event.providerOrderId,
         providerStatus: event.providerStatus,
@@ -81,6 +82,7 @@ export class SqliteWebhookInboxRepository implements WebhookInboxRepository {
         productId: event.productId,
         offerId: event.offerId,
         offerType: event.offerType,
+        planFrequency: event.planFrequency,
         amountMinor: event.amountMinor,
         currency: event.currency,
         occurredAt: event.occurredAt,

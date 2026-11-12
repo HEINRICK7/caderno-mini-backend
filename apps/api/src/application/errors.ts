@@ -89,10 +89,31 @@ export class InvalidCaktoWebhookError extends Error {
   }
 }
 
+export class UnauthorizedAbacatePayWebhookError extends Error {
+  constructor() {
+    super('The AbacatePay webhook authentication failed.');
+    this.name = 'UnauthorizedAbacatePayWebhookError';
+  }
+}
+
+export class InvalidAbacatePayWebhookPayloadError extends Error {
+  constructor() {
+    super('The AbacatePay webhook payload is invalid.');
+    this.name = 'InvalidAbacatePayWebhookPayloadError';
+  }
+}
+
 export class CheckoutNotConfiguredError extends Error {
   constructor() {
     super('Hosted checkout is not configured.');
     this.name = 'CheckoutNotConfiguredError';
+  }
+}
+
+export class CheckoutProviderUnavailableError extends Error {
+  constructor() {
+    super('The checkout provider is temporarily unavailable.');
+    this.name = 'CheckoutProviderUnavailableError';
   }
 }
 
@@ -105,7 +126,7 @@ export class CheckoutPlanRequiredError extends Error {
 
 export class WebhookNotConfiguredError extends Error {
   constructor() {
-    super('Cakto webhook verification is not configured.');
+    super('Payment webhook verification is not configured.');
     this.name = 'WebhookNotConfiguredError';
   }
 }

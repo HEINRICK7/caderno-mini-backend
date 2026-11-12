@@ -25,22 +25,30 @@ migrateDatabase(
   database.sqlite,
   resolve(process.cwd(), 'apps/api/src/infrastructure/database/migrations'),
 );
-const commerceServices = createCommerceServices(database.db, config.caktoPlans
-  ? {
-    plans: config.caktoPlans,
-    ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
-  }
-  : {
-    ...(config.caktoCheckoutUrl ? { checkoutUrl: config.caktoCheckoutUrl } : {}),
-    ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
-    ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
-    ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
-  });
+const commerceServices = createCommerceServices(database.db, {
+  ...(config.abacatePay
+    ? { abacatePay: { ...config.abacatePay, publicAppUrl: config.publicAppUrl } }
+    : {}),
+  ...(config.caktoPlans ? { legacyCaktoPlans: config.caktoPlans } : {}),
+  ...(config.caktoProductId ? { expectedProductId: config.caktoProductId } : {}),
+  ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
+  ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
+});
 const imageStorage = new MinioImageStorage(config.imageStorage);
 const imageServices = createImageServices(imageStorage);
 const renderer = new SharpPngRenderer(imageStorage);
 const app = buildApp({
-  logger: { level: config.logLevel },
+  logger: {
+    level: config.logLevel,
+    serializers: {
+      req: (request) => ({
+        method: request.method,
+        // Fastify's default request serializer includes query parameters.
+        // Log only the route template so webhookSecret and customer data stay out.
+        url: request.routeOptions.url ?? '[unmatched]',
+      }),
+    },
+  },
   services: createApplicationServices(database.db),
   commerceServices,
   adminServices: createAdminServices(database.db, config.adminEmail ? { adminEmail: config.adminEmail } : {}),
@@ -78,7 +86,7 @@ try {
   await app.listen({ host: config.host, port: config.port });
   const runWebhookWorker = () => {
     try {
-      commerceServices.processCaktoInboxBatch();
+      commerceServices.processPaymentInboxBatch();
     } catch (error) {
       app.log.error(
         { errorType: error instanceof Error ? error.name : 'UnknownError' },

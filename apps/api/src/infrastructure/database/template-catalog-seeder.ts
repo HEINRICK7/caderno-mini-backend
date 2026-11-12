@@ -108,16 +108,21 @@ export function seedTemplateCatalog(
       if (entry.isActive) {
         transaction
           .update(templates)
-          .set({ isActive: false })
-          .where(and(eq(templates.id, entry.id), ne(templates.version, entry.version)))
+          .set({ isActive: false, publicationStatus: 'archived' })
+          .where(and(
+            eq(templates.id, entry.id),
+            eq(templates.publicationStatus, 'published'),
+            ne(templates.version, entry.version),
+          ))
           .run();
       }
 
       if (existing) {
-        if (existing.isActive !== entry.isActive) {
+        const publicationStatus = entry.isActive ? 'published' : 'archived';
+        if (existing.isActive !== entry.isActive || existing.publicationStatus !== publicationStatus) {
           transaction
             .update(templates)
-            .set({ isActive: entry.isActive })
+            .set({ isActive: entry.isActive, publicationStatus })
             .where(and(eq(templates.id, entry.id), eq(templates.version, entry.version)))
             .run();
           result.statusChanged += 1;
@@ -136,6 +141,7 @@ export function seedTemplateCatalog(
           description: entry.description,
           definition: entry.definition,
           isActive: entry.isActive,
+          publicationStatus: entry.isActive ? 'published' : 'archived',
           createdAt: clock(),
         })
         .run();

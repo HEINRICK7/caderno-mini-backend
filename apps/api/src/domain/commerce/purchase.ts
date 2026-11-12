@@ -17,6 +17,7 @@ export type PaymentSignal =
   | 'refused'
   | 'refunded'
   | 'chargeback'
+  | 'canceled'
   | 'refund_requested'
   | 'other';
 
@@ -83,6 +84,10 @@ export function transitionPurchase(
       grantAccess: false,
       revokeAccess: currentStatus === 'paid',
     };
+  }
+
+  if (signal === 'canceled' && !['refunded', 'chargedback', 'canceled'].includes(currentStatus)) {
+    return { status: 'canceled', grantAccess: false, revokeAccess: currentStatus === 'paid' };
   }
 
   return { status: currentStatus, grantAccess: false, revokeAccess: false };

@@ -17,7 +17,7 @@ export type CreateCheckoutDependencies = {
 export function createCheckout(
   input: { draftId: string; userId?: string },
   dependencies: CreateCheckoutDependencies,
-): { purchaseId: string; checkoutUrl: string; status: 'pending' } {
+): { purchaseId: string; checkoutUrl: string; status: 'pending' } | Promise<{ purchaseId: string; checkoutUrl: string; status: 'pending' }> {
   const draft = dependencies.drafts.findByIdForUser(input.draftId, input.userId);
   if (!draft) {
     throw new DraftNotFoundError();
@@ -25,25 +25,28 @@ export function createCheckout(
 
   const callbackToken = (dependencies.generateCallback ?? generateCallbackToken)();
   if (!/^[A-Za-z0-9._~-]{1,255}$/.test(callbackToken)) {
-    throw new Error('Generated Cakto callback token is invalid.');
+    throw new Error('Generated payment reference is invalid.');
   }
 
   const purchaseId = (dependencies.generateId ?? randomUUID)();
   const createdAt = (dependencies.clock ?? (() => new Date()))();
-  const checkoutUrl = dependencies.checkoutLinks.createUrl(callbackToken);
-  dependencies.purchases.createPendingPurchase({
-    id: purchaseId,
-    draftId: draft.id,
-    ...(input.userId ? { ownerUserId: input.userId } : {}),
-    callbackHash: hashToken(callbackToken),
-    createdAt,
-  });
-
-  return {
+  const checkoutUrl = dependencies.checkoutLinks.createUrl(callbackToken, {
     purchaseId,
-    checkoutUrl,
-    status: 'pending',
+    draftId: draft.id,
+  });
+  const finish = (url: string) => {
+    dependencies.purchases.createPendingPurchase({
+      id: purchaseId,
+      draftId: draft.id,
+      ...(input.userId ? { ownerUserId: input.userId } : {}),
+      callbackHash: hashToken(callbackToken),
+      createdAt,
+    });
+
+    return { purchaseId, checkoutUrl: url, status: 'pending' as const };
   };
+
+  return checkoutUrl instanceof Promise ? checkoutUrl.then(finish) : finish(checkoutUrl);
 }
 
 function generateCallbackToken(): string {

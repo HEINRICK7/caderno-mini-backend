@@ -1,3 +1,6 @@
 export interface CheckoutLink {
-  createUrl(callbackToken: string): string;
+  createUrl(
+    callbackToken: string,
+    context: { purchaseId: string; draftId: string },
+  ): string | Promise<string>;
 }
