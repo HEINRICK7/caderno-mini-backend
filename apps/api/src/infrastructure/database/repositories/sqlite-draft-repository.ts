@@ -18,6 +18,16 @@ export class SqliteDraftRepository implements DraftRepository {
     if (!row || (row.ownerUserId && row.ownerUserId !== userId)) {
       return undefined;
     }
+
+    if (!row.ownerUserId && userId) {
+      const claimed = this.db
+        .update(drafts)
+        .set({ ownerUserId: userId })
+        .where(and(eq(drafts.id, id), isNull(drafts.ownerUserId)))
+        .run();
+      if (claimed.changes === 0) return undefined;
+    }
+
     return toDraft(row);
   }
 
@@ -57,7 +67,7 @@ export class SqliteDraftRepository implements DraftRepository {
       : isNull(drafts.ownerUserId);
     const result = this.db
       .update(drafts)
-      .set({ data: draft.data, updatedAt: draft.updatedAt })
+      .set({ data: draft.data, updatedAt: draft.updatedAt, ...(userId ? { ownerUserId: userId } : {}) })
       .where(and(eq(drafts.id, draft.id), ownerPredicate))
       .run();
     return result.changes > 0;
