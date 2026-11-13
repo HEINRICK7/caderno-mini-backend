@@ -50,6 +50,18 @@ export class SqliteDraftRepository implements DraftRepository {
       }));
   }
 
+  transferOwnership(id: string, currentOwnerUserId: string, nextOwnerUserId: string): boolean {
+    const result = this.db
+      .update(drafts)
+      .set({ ownerUserId: nextOwnerUserId })
+      .where(and(
+        eq(drafts.id, id),
+        eq(drafts.ownerUserId, currentOwnerUserId),
+      ))
+      .run();
+    return result.changes > 0;
+  }
+
   insert(draft: Draft, ownerUserId?: string): void {
     this.db
       .insert(drafts)

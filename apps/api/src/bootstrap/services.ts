@@ -82,6 +82,8 @@ export function createApplicationServices(
     createDraft: (input: Parameters<typeof createDraft>[0]) =>
       createDraft(input, { templates, drafts, idGenerator, clock }),
     getDraft: (input: Parameters<typeof getDraft>[0]) => getDraft(input, { drafts }),
+    transferAdminPreviewDraft: (input: { id: string; adminPreviewUserId: string; customerUserId: string }) =>
+      drafts.transferOwnership(input.id, input.adminPreviewUserId, input.customerUserId),
     updateDraft: (input: Parameters<typeof updateDraft>[0]) =>
       updateDraft(input, { drafts, templates, clock }),
   };

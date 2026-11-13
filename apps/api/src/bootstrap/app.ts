@@ -452,12 +452,15 @@ export function buildApp(options: BuildAppOptions = {}) {
       : undefined,
   });
   const getAuthenticatedUser = (request: FastifyRequest) => {
+    const token = request.cookies[sessionCookieName];
+    const customerUser = token && options.identityServices ? options.identityServices.getSession({ token }) : undefined;
+    if (customerUser) return customerUser;
+
     const adminEmail = getAuthenticatedAdminEmail(request);
     if (adminEmail && options.identityServices) {
       return options.identityServices.getAdminTestUser({ email: adminEmail });
     }
-    const token = request.cookies[sessionCookieName];
-    return token && options.identityServices ? options.identityServices.getSession({ token }) : undefined;
+    return undefined;
   };
   const requireCustomerSession = (request: FastifyRequest, response: FastifyReply) => {
     const token = request.cookies[sessionCookieName];
@@ -913,6 +916,17 @@ export function buildApp(options: BuildAppOptions = {}) {
       },
       async (request) => {
         const user = getAuthenticatedUser(request);
+        const adminEmail = getAuthenticatedAdminEmail(request);
+        if (user && adminEmail && options.identityServices) {
+          const adminPreviewUser = options.identityServices.getAdminTestUser({ email: adminEmail });
+          if (adminPreviewUser && adminPreviewUser.id !== user.id) {
+            services.transferAdminPreviewDraft({
+              id: request.params.id,
+              adminPreviewUserId: adminPreviewUser.id,
+              customerUserId: user.id,
+            });
+          }
+        }
         return {
           data: serializeDraft(services.getDraft({ ...request.params, ...(user ? { userId: user.id } : {}) })),
         };
