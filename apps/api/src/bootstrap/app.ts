@@ -2198,12 +2198,7 @@ export function buildApp(options: BuildAppOptions = {}) {
             `${publicApiOrigin}/`,
           ).toString();
           const businessName = resolveTemplateBusinessName(message.templateDefinition, message.data);
-          const displayBusinessName = businessName.length > 42
-            ? `${businessName.slice(0, 41).trimEnd()}…`
-            : businessName;
-          const title = businessName
-            ? `Cartão de ${displayBusinessName} · Cadernô Express`
-            : `${message.templateName} · Cadernô Express`;
+          const title = `${message.templateName} · Cadernô`;
           const description = businessName
             ? `Cartão digital de ${businessName}, criado com o Cadernô Express. Confira o conteúdo e valide os dados antes de pagar.`
             : `Você recebeu um cartão digital criado com o Cadernô Express. Se houver cobrança, confira o recebedor e o valor antes de pagar.`;
