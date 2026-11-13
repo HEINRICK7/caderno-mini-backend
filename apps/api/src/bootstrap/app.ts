@@ -227,6 +227,12 @@ const customerPortalResponseSchema = z.object({
     user: authUserResponseSchema,
     platformAccess: platformAccessSummarySchema,
     accountAccess: z.array(userAccessItemSchema),
+    drafts: z.array(z.object({
+      id: z.uuid(),
+      templateId: z.string(),
+      templateName: z.string(),
+      updatedAt: z.string().datetime(),
+    })),
   }),
 });
 const adminAccountStatusSchema = z.enum(['active', 'suspended']);
@@ -1778,6 +1784,10 @@ export function buildApp(options: BuildAppOptions = {}) {
                   ...item,
                   grantedAt: item.grantedAt.toISOString(),
                   expiresAt: item.expiresAt?.toISOString() ?? null,
+                })),
+                drafts: commerce.listUserDrafts({ userId: user.id }).map((draft) => ({
+                  ...draft,
+                  updatedAt: draft.updatedAt.toISOString(),
                 })),
               },
             };

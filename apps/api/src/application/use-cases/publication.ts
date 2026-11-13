@@ -18,6 +18,7 @@ export type PublicationDependencies = {
   purchases: PurchaseRepository;
   templates: TemplateRepository;
   renderer: PngRenderer;
+  hasActivePlatformAccess?: (userId: string, now: Date) => boolean;
   generateId?: () => string;
   generateSlug?: () => string;
   clock?: () => Date;
@@ -29,7 +30,7 @@ export function publishMessage(
 ): Publication {
   const draft = requireOwnedDraft(input, dependencies.drafts);
   const now = dependencies.clock?.() ?? new Date();
-  if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id, now)) {
+  if (!hasPublicationAccess(input.userId, draft.id, now, dependencies)) {
     throw new PublicationAccessDeniedError();
   }
   const template = dependencies.templates.findByIdAndVersion(draft.templateId, draft.templateVersion);
@@ -70,7 +71,10 @@ export function getPublicMessage(
 } | undefined {
   const now = dependencies.clock?.() ?? new Date();
   const publication = dependencies.publications.findPublishedBySlug(input.slug);
-  if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId, now)) {
+  if (!publication || (
+    !dependencies.purchases.hasActiveGrantForDraft(publication.draftId, now)
+    && !hasActivePlatformAccess(publication.ownerUserId, now, dependencies)
+  )) {
     return undefined;
   }
 
@@ -105,7 +109,10 @@ export async function renderPublicMessagePng(
 ): Promise<Buffer | undefined> {
   const now = dependencies.clock?.() ?? new Date();
   const publication = dependencies.publications.findPublishedBySlug(input.slug);
-  if (!publication || !dependencies.purchases.hasActiveGrantForDraft(publication.draftId, now)) {
+  if (!publication || (
+    !dependencies.purchases.hasActiveGrantForDraft(publication.draftId, now)
+    && !hasActivePlatformAccess(publication.ownerUserId, now, dependencies)
+  )) {
     return undefined;
   }
   const draft = dependencies.drafts.findById(publication.draftId);
@@ -131,7 +138,7 @@ export async function exportMessage(
 ): Promise<Buffer> {
   const draft = requireOwnedDraft(input, dependencies.drafts);
   const now = dependencies.clock?.() ?? new Date();
-  if (!dependencies.purchases.hasActiveGrantForUserAndDraft(input.userId, draft.id, now)) {
+  if (!hasPublicationAccess(input.userId, draft.id, now, dependencies)) {
     throw new PublicationAccessDeniedError();
   }
   const template = dependencies.templates.findByIdAndVersion(draft.templateId, draft.templateVersion);
@@ -140,6 +147,20 @@ export async function exportMessage(
   }
   assertTemplateFinancialState(template.definition, draft.data, template.id, now);
   return dependencies.renderer.render(template as Template, draft.data);
+}
+
+function hasPublicationAccess(
+  userId: string,
+  draftId: string,
+  now: Date,
+  dependencies: PublicationDependencies,
+): boolean {
+  return dependencies.purchases.hasActiveGrantForUserAndDraft(userId, draftId, now)
+    || hasActivePlatformAccess(userId, now, dependencies);
+}
+
+function hasActivePlatformAccess(userId: string, now: Date, dependencies: PublicationDependencies): boolean {
+  return dependencies.hasActivePlatformAccess?.(userId, now) ?? false;
 }
 
 function requireOwnedDraft(
