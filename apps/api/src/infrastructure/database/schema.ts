@@ -10,7 +10,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 
 import type { JsonObject } from '../../domain/shared/json-value.js';
-import type { PurchaseStatus } from '../../domain/commerce/purchase.js';
+import type { AccessPlan, PurchaseStatus } from '../../domain/commerce/purchase.js';
 import type { TemplateHomeCategory } from '../../domain/templates/template-catalog.js';
 
 export const templates = sqliteTable(
@@ -39,6 +39,9 @@ export const users = sqliteTable(
   {
     id: text('id').primaryKey(),
     email: text('email').notNull(),
+    name: text('name'),
+    whatsapp: text('whatsapp'),
+    birthDate: text('birth_date'),
     accountStatus: text('account_status').$type<'active' | 'suspended'>().notNull().default('active'),
     emailVerifiedAt: integer('email_verified_at', { mode: 'timestamp_ms' }).notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
@@ -59,21 +62,6 @@ export const adminAuditLog = sqliteTable(
     foreignKey({ columns: [table.actorUserId], foreignColumns: [users.id], name: 'admin_audit_actor_user_fk' }).onDelete('restrict'),
     foreignKey({ columns: [table.targetUserId], foreignColumns: [users.id], name: 'admin_audit_target_user_fk' }).onDelete('restrict'),
     index('admin_audit_target_created').on(table.targetUserId, table.createdAt),
-  ],
-);
-
-export const adminAuditEvents = sqliteTable(
-  'admin_audit_events',
-  {
-    id: text('id').primaryKey(),
-    actorEmail: text('actor_email').notNull(),
-    targetUserId: text('target_user_id').notNull(),
-    action: text('action').$type<'account_suspended' | 'account_reactivated'>().notNull(),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
-  },
-  (table) => [
-    foreignKey({ columns: [table.targetUserId], foreignColumns: [users.id], name: 'admin_audit_events_target_user_fk' }).onDelete('restrict'),
-    index('admin_audit_events_target_created').on(table.targetUserId, table.createdAt),
   ],
 );
 
@@ -149,6 +137,11 @@ export const purchases = sqliteTable(
     status: text('status').$type<PurchaseStatus>().notNull().default('pending'),
     amountMinor: integer('amount_minor'),
     currency: text('currency'),
+    saleSource: text('sale_source').$type<'checkout' | 'manual'>().notNull().default('checkout'),
+    accessPlan: text('access_plan').$type<AccessPlan>(),
+    paymentMethod: text('payment_method').$type<'pix' | 'bank_transfer' | 'cash' | 'other'>(),
+    paymentReference: text('payment_reference'),
+    recordedByAdminEmail: text('recorded_by_admin_email'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
   },
@@ -168,6 +161,23 @@ export const purchases = sqliteTable(
     index('purchases_draft_created').on(table.draftId, table.createdAt),
     index('purchases_status_updated').on(table.status, table.updatedAt),
     index('purchases_owner_user_created').on(table.ownerUserId, table.createdAt),
+  ],
+);
+
+export const adminAuditEvents = sqliteTable(
+  'admin_audit_events',
+  {
+    id: text('id').primaryKey(),
+    actorEmail: text('actor_email').notNull(),
+    targetUserId: text('target_user_id').notNull(),
+    action: text('action').$type<'account_suspended' | 'account_reactivated' | 'manual_payment_recorded' | 'manual_platform_sale_recorded' | 'customer_created'>().notNull(),
+    purchaseId: text('purchase_id'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.targetUserId], foreignColumns: [users.id], name: 'admin_audit_events_target_user_fk' }).onDelete('restrict'),
+    foreignKey({ columns: [table.purchaseId], foreignColumns: [purchases.id], name: 'admin_audit_events_purchase_fk' }).onDelete('set null'),
+    index('admin_audit_events_target_created').on(table.targetUserId, table.createdAt),
   ],
 );
 
@@ -198,6 +208,30 @@ export const accessGrants = sqliteTable(
     uniqueIndex('access_grants_purchase_id_unique').on(table.purchaseId),
     index('access_grants_user_status').on(table.userId, table.status),
     index('access_grants_email_status').on(table.customerEmail, table.status),
+  ],
+);
+
+export const platformAccessGrants = sqliteTable(
+  'platform_access_grants',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    status: text('status').$type<'active' | 'revoked'>().notNull(),
+    accessPlan: text('access_plan').$type<AccessPlan>().notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    currency: text('currency').notNull().default('BRL'),
+    paymentMethod: text('payment_method').$type<'pix' | 'bank_transfer' | 'cash' | 'other'>().notNull(),
+    paymentReference: text('payment_reference'),
+    recordedByAdminEmail: text('recorded_by_admin_email').notNull(),
+    grantedAt: integer('granted_at', { mode: 'timestamp_ms' }).notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.userId], foreignColumns: [users.id], name: 'platform_access_grants_user_fk' }).onDelete('restrict'),
+    index('platform_access_grants_user_status').on(table.userId, table.status),
+    index('platform_access_grants_expiry').on(table.userId, table.expiresAt),
   ],
 );
 

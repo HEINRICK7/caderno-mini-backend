@@ -183,6 +183,9 @@ function validateValue(field: TemplateField, value: JsonValue): string | undefin
     return value.length <= (field.maxLength ?? 10_000) ? undefined : 'too_long';
   }
   if (field.type === 'number' && typeof value === 'number' && Number.isFinite(value)) {
+    if (field.id === 'installmentNumber' || field.id === 'installmentTotal') {
+      return Number.isInteger(value) && value > 0 ? undefined : 'invalid_installment';
+    }
     return undefined;
   }
   if (field.type === 'boolean' && typeof value === 'boolean') {
@@ -272,6 +275,7 @@ function isValidSocialLink(fieldId: string, value: string): boolean {
 
 function issueMessage(code: string): string {
   if (code === 'too_long') return 'O valor ultrapassa o limite de caracteres.';
+  if (code === 'invalid_installment') return 'Informe um número inteiro maior que zero para as parcelas.';
   if (code === 'invalid_url') return 'Informe uma URL HTTP ou HTTPS válida.';
   if (code === 'invalid_pix_payload') return 'Cole o código Pix completo, sem espaços extras. Confira se foi copiado diretamente do app do banco.';
   if (code === 'invalid_social_link') return 'Cole um link HTTPS válido do canal social correspondente.';

@@ -135,7 +135,21 @@ const userResponseSchema = z.object({
   email: z.email(),
   createdAt: z.string().datetime(),
 });
-const sessionResponseSchema = z.object({ data: z.object({ user: userResponseSchema }) });
+const authUserResponseSchema = userResponseSchema.extend({
+  name: z.string().nullable(),
+  whatsapp: z.string().nullable(),
+  birthDate: z.iso.date().nullable(),
+  profileComplete: z.boolean(),
+});
+const sessionResponseSchema = z.object({ data: z.object({ user: authUserResponseSchema }) });
+const customerProfileBodySchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  whatsapp: z.string().trim().min(8).max(24).regex(/^\+?[\d\s().-]+$/).refine((value) => {
+    const length = value.replace(/\D/g, '').length;
+    return length >= 10 && length <= 15;
+  }),
+  birthDate: z.iso.date().refine((value) => value <= new Date().toISOString().slice(0, 10)),
+}).strict();
 const authMessageResponseSchema = z.object({ data: z.object({ message: z.string() }) });
 const adminSessionBodySchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
@@ -203,6 +217,18 @@ const userAccessItemSchema = z.object({
   grantedAt: z.string().datetime(),
   expiresAt: z.string().datetime().nullable(),
 });
+const platformAccessSummarySchema = z.object({
+  active: z.boolean(),
+  accessPlan: z.enum(['annual', 'lifetime']).nullable(),
+  expiresAt: z.string().datetime().nullable(),
+});
+const customerPortalResponseSchema = z.object({
+  data: z.object({
+    user: authUserResponseSchema,
+    platformAccess: platformAccessSummarySchema,
+    accountAccess: z.array(userAccessItemSchema),
+  }),
+});
 const adminAccountStatusSchema = z.enum(['active', 'suspended']);
 const adminUserSummarySchema = z.object({
   id: z.uuid(),
@@ -224,24 +250,95 @@ const adminUsersResponseSchema = z.object({
 });
 const adminUserResponseSchema = z.object({
   data: z.object({
-    user: adminUserSummarySchema,
+    user: adminUserSummarySchema.extend({
+      name: z.string().nullable(),
+      whatsapp: z.string().nullable(),
+      birthDate: z.iso.date().nullable(),
+    }),
     purchases: z.array(z.object({
       purchaseId: z.uuid(),
       draftId: z.uuid(),
       templateId: z.string(),
+      templateName: z.string(),
       purchaseStatus: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
       accessStatus: z.enum(['active', 'revoked']).nullable(),
+      saleSource: z.enum(['checkout', 'manual']),
+      accessPlan: z.enum(['annual', 'lifetime']).nullable(),
+      amountMinor: z.number().int().positive().nullable(),
+      currency: z.string().length(3).nullable(),
+      paymentMethod: z.enum(['pix', 'bank_transfer', 'cash', 'other']).nullable(),
+      paymentReference: z.string().nullable(),
+      recordedByAdminEmail: z.email().nullable(),
+      expiresAt: z.string().datetime().nullable(),
       createdAt: z.string().datetime(),
       updatedAt: z.string().datetime(),
     })),
+    platformSales: z.array(z.object({
+      saleId: z.uuid(),
+      accessStatus: z.enum(['active', 'expired', 'revoked']),
+      accessPlan: z.enum(['annual', 'lifetime']),
+      amountMinor: z.number().int().positive(),
+      currency: z.string().length(3),
+      paymentMethod: z.enum(['pix', 'bank_transfer', 'cash', 'other']),
+      paymentReference: z.string().nullable(),
+      recordedByAdminEmail: z.email(),
+      expiresAt: z.string().datetime().nullable(),
+      createdAt: z.string().datetime(),
+    })),
+    drafts: z.array(z.object({
+      id: z.uuid(),
+      templateId: z.string(),
+      templateName: z.string(),
+      updatedAt: z.string().datetime(),
+    })),
     recentActions: z.array(z.object({
-      action: z.enum(['account_suspended', 'account_reactivated']),
+      action: z.enum(['account_suspended', 'account_reactivated', 'manual_payment_recorded', 'manual_platform_sale_recorded', 'customer_created']),
       actorEmail: z.email(),
+      purchaseId: z.uuid().nullable(),
       createdAt: z.string().datetime(),
     })),
   }),
 });
 const adminSetUserStatusBodySchema = z.object({ status: adminAccountStatusSchema }).strict();
+const adminCreateCustomerBodySchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+}).strict();
+const adminCreateCustomerResponseSchema = z.object({
+  data: z.object({
+    user: userResponseSchema,
+    accessLinkSent: z.boolean(),
+  }),
+});
+const adminManualPaymentBodySchema = z.object({
+  draftId: z.uuid(),
+  plan: z.enum(['annual', 'lifetime']),
+  amountMinor: z.number().int().positive().max(100_000_000),
+  paymentMethod: z.enum(['pix', 'bank_transfer', 'cash', 'other']),
+  paymentReference: z.string().trim().max(160).optional(),
+}).strict();
+const adminManualPlatformSaleBodySchema = z.object({
+  plan: z.enum(['annual', 'lifetime']),
+  amountMinor: z.number().int().positive().max(100_000_000),
+  paymentMethod: z.enum(['pix', 'bank_transfer', 'cash', 'other']),
+  paymentReference: z.string().trim().max(160).optional(),
+  confirmPaymentReceived: z.literal(true),
+}).strict();
+const adminManualPlatformSaleResponseSchema = z.object({
+  data: z.object({
+    saleId: z.uuid(),
+    accessStatus: z.literal('active'),
+    accessPlan: z.enum(['annual', 'lifetime']),
+    expiresAt: z.string().datetime().nullable(),
+  }),
+});
+const adminManualPaymentResponseSchema = z.object({
+  data: z.object({
+    purchaseId: z.uuid(),
+    status: z.literal('paid'),
+    accessStatus: z.literal('active'),
+    expiresAt: z.string().datetime().nullable(),
+  }),
+});
 const adminSetUserStatusResponseSchema = z.object({
   data: z.object({ status: adminAccountStatusSchema, changed: z.boolean(), revokedSessions: z.number().int().nonnegative() }),
 });
@@ -356,6 +453,15 @@ export function buildApp(options: BuildAppOptions = {}) {
     const token = request.cookies[sessionCookieName];
     return token && options.identityServices ? options.identityServices.getSession({ token }) : undefined;
   };
+  const requireCustomerSession = (request: FastifyRequest, response: FastifyReply) => {
+    const token = request.cookies[sessionCookieName];
+    const user = token && options.identityServices ? options.identityServices.getSession({ token }) : undefined;
+    if (!user) {
+      response.code(401).send({ error: { code: 'AUTH_REQUIRED', message: 'Entre para continuar.' } });
+      return undefined;
+    }
+    return user;
+  };
   const requireSession = (request: FastifyRequest, response: FastifyReply) => {
     const user = getAuthenticatedUser(request);
     if (!user) {
@@ -387,12 +493,13 @@ export function buildApp(options: BuildAppOptions = {}) {
     const isSessionMutation = [
       '/api/v1/drafts',
       '/api/v1/drafts/:id',
+      '/api/v1/account/profile',
       '/api/v1/checkout',
       '/api/v1/drafts/:id/publication',
       '/api/v1/analytics/events',
     ].includes(routePath ?? '');
     const isAdminSessionMutation = routePath === '/api/v1/admin/session';
-    const isAdminMutation = routePath?.startsWith('/api/v1/admin/users/') || routePath?.startsWith('/api/v1/admin/templates') || false;
+    const isAdminMutation = routePath?.startsWith('/api/v1/admin/users/') || routePath?.startsWith('/api/v1/admin/customers') || routePath?.startsWith('/api/v1/admin/templates') || false;
     const hasSessionCookie = Boolean(request.cookies[sessionCookieName]);
     const hasAdminSessionCookie = Boolean(request.cookies[adminSessionCookieName]);
     const origin = request.headers.origin;
@@ -1086,6 +1193,29 @@ export function buildApp(options: BuildAppOptions = {}) {
         },
       );
 
+      app.put(
+        '/api/v1/account/profile',
+        {
+          schema: {
+            tags: ['identity'],
+            summary: 'Salva os dados do perfil do cliente autenticado',
+            body: customerProfileBodySchema,
+            response: { 200: sessionResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const updatedUser = identity.updateCustomerProfile({ userId: user.id, ...request.body });
+          if (!updatedUser) return response.code(401).send({ error: { code: 'AUTH_REQUIRED', message: 'Entre para continuar.' } });
+          return {
+            data: {
+              user: { ...updatedUser, createdAt: updatedUser.createdAt.toISOString() },
+            },
+          };
+        },
+      );
+
       app.delete(
         '/api/v1/auth/session',
         {
@@ -1244,6 +1374,55 @@ export function buildApp(options: BuildAppOptions = {}) {
         },
       );
 
+      app.post(
+        '/api/v1/admin/customers',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Cria uma conta de cliente e envia um link de acesso por e-mail',
+            body: adminCreateCustomerBodySchema,
+            response: {
+              201: adminCreateCustomerResponseSchema,
+              401: errorResponseSchema,
+              409: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          const actorEmail = requireAdmin(request, response);
+          if (!actorEmail) return response;
+          if (request.body.email === normalizeEmail(actorEmail)) {
+            return response.code(409).send({
+              error: { code: 'ADMIN_CUSTOMER_EMAIL_EXISTS', message: 'Esse e-mail já é usado no painel administrativo.' },
+            });
+          }
+
+          const user = admin.createCustomer({ email: request.body.email, actorEmail });
+          if (!user) {
+            return response.code(409).send({
+              error: { code: 'ADMIN_CUSTOMER_EMAIL_EXISTS', message: 'Já existe uma conta com esse e-mail. Busque-a na lista de clientes.' },
+            });
+          }
+
+          let accessLinkSent = false;
+          if (options.identityServices) {
+            try {
+              await options.identityServices.requestMagicLink({ email: user.email });
+              accessLinkSent = true;
+            } catch (error) {
+              if (!(error instanceof MagicLinkDeliveryError)) throw error;
+            }
+          }
+
+          return response.code(201).send({
+            data: {
+              user: { ...user, createdAt: user.createdAt.toISOString() },
+              accessLinkSent,
+            },
+          });
+        },
+      );
+
       app.get(
         '/api/v1/admin/templates',
         {
@@ -1382,12 +1561,145 @@ export function buildApp(options: BuildAppOptions = {}) {
               user: { ...result.user, createdAt: result.user.createdAt.toISOString() },
               purchases: result.purchases.map((purchase) => ({
                 ...purchase,
+                expiresAt: purchase.expiresAt?.toISOString() ?? null,
                 createdAt: purchase.createdAt.toISOString(),
                 updatedAt: purchase.updatedAt.toISOString(),
               })),
+              platformSales: result.platformSales.map((sale) => ({
+                ...sale,
+                expiresAt: sale.expiresAt?.toISOString() ?? null,
+                createdAt: sale.createdAt.toISOString(),
+              })),
+              drafts: result.drafts.map((draft) => ({ ...draft, updatedAt: draft.updatedAt.toISOString() })),
               recentActions: result.recentActions.map((action) => ({ ...action, createdAt: action.createdAt.toISOString() })),
             },
           };
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/users/:id/access-link',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Reenvia o link de entrada para o e-mail do cliente',
+            params: idParamsSchema,
+            response: {
+              202: authMessageResponseSchema,
+              401: errorResponseSchema,
+              404: errorResponseSchema,
+              409: errorResponseSchema,
+              503: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          if (!requireAdmin(request, response)) return response;
+          const target = admin.getUser({ userId: request.params.id });
+          if (!target) {
+            return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
+          }
+          if (target.user.accountStatus !== 'active') {
+            return response.code(409).send({ error: { code: 'ADMIN_CUSTOMER_SUSPENDED', message: 'Reative a conta antes de enviar um link de entrada.' } });
+          }
+          if (!options.identityServices) {
+            return response.code(503).send({ error: { code: 'AUTH_UNAVAILABLE', message: 'O envio de links está indisponível.' } });
+          }
+          await options.identityServices.requestMagicLink({ email: target.user.email });
+          return response.code(202).send({
+            data: {
+              message: 'O servidor de e-mail aceitou o envio. Isso não confirma a entrega; confira a caixa de entrada, Spam e Promoções.',
+            },
+          });
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/users/:id/platform-sales',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Registra uma venda direta e libera o acesso premium da conta do cliente',
+            params: idParamsSchema,
+            body: adminManualPlatformSaleBodySchema,
+            response: {
+              201: adminManualPlatformSaleResponseSchema,
+              400: errorResponseSchema,
+              401: errorResponseSchema,
+              403: errorResponseSchema,
+              404: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          const actorEmail = requireAdmin(request, response);
+          if (!actorEmail) return response;
+          const { confirmPaymentReceived: _confirmed, paymentReference, ...saleInput } = request.body;
+          const sale = admin.recordManualPlatformSale({
+            ...saleInput,
+            userId: request.params.id,
+            actorEmail,
+            ...(paymentReference !== undefined ? { paymentReference } : {}),
+          });
+          if (!sale) {
+            return response.code(404).send({
+              error: { code: 'ADMIN_PLATFORM_SALE_TARGET_NOT_FOUND', message: 'Cliente ativo não encontrado para liberar o acesso.' },
+            });
+          }
+          return response.code(201).send({
+            data: {
+              saleId: sale.saleId,
+              accessStatus: 'active',
+              accessPlan: saleInput.plan,
+              expiresAt: sale.expiresAt?.toISOString() ?? null,
+            },
+          });
+        },
+      );
+
+      app.post(
+        '/api/v1/admin/users/:id/manual-sales',
+        {
+          schema: {
+            tags: ['admin'],
+            summary: 'Registra um pagamento recebido diretamente e concede acesso ao modelo selecionado',
+            params: idParamsSchema,
+            body: adminManualPaymentBodySchema,
+            response: {
+              201: adminManualPaymentResponseSchema,
+              400: errorResponseSchema,
+              401: errorResponseSchema,
+              403: errorResponseSchema,
+              404: errorResponseSchema,
+            },
+          },
+        },
+        async (request, response) => {
+          const actorEmail = requireAdmin(request, response);
+          if (!actorEmail) return response;
+          const { paymentReference, ...saleInput } = request.body;
+          const sale = admin.recordManualPayment({
+            ...saleInput,
+            userId: request.params.id,
+            actorEmail,
+            ...(paymentReference !== undefined ? { paymentReference } : {}),
+          });
+          if (!sale) {
+            return response.code(404).send({
+              error: {
+                code: 'ADMIN_MANUAL_SALE_TARGET_NOT_FOUND',
+                message: 'Cliente ativo ou mensagem salva não encontrada para registrar a venda.',
+              },
+            });
+          }
+          return response.code(201).send({
+            data: {
+              purchaseId: sale.purchaseId,
+              status: 'paid',
+              accessStatus: 'active',
+              expiresAt: sale.expiresAt?.toISOString() ?? null,
+            },
+          });
         },
       );
 
@@ -1436,6 +1748,38 @@ export function buildApp(options: BuildAppOptions = {}) {
 
     if (options.commerceServices) {
       const commerce = options.commerceServices;
+      if (options.identityServices) {
+        app.get(
+          '/api/v1/customer-portal',
+          {
+            schema: {
+              tags: ['commerce'],
+              summary: 'Carrega a área privada do cliente autenticado',
+              response: { 200: customerPortalResponseSchema, 401: errorResponseSchema },
+            },
+          },
+          async (request, response) => {
+            const user = requireCustomerSession(request, response);
+            if (!user) return response;
+            const access = commerce.getUserPlatformAccess({ userId: user.id });
+            return {
+              data: {
+                user: { ...user, createdAt: user.createdAt.toISOString() },
+                platformAccess: {
+                  ...access,
+                  expiresAt: access.expiresAt?.toISOString() ?? null,
+                },
+                accountAccess: commerce.listUserAccess({ userId: user.id }).map((item) => ({
+                  ...item,
+                  grantedAt: item.grantedAt.toISOString(),
+                  expiresAt: item.expiresAt?.toISOString() ?? null,
+                })),
+              },
+            };
+          },
+        );
+      }
+
       app.get(
         '/api/v1/account/access',
         {
@@ -1454,6 +1798,28 @@ export function buildApp(options: BuildAppOptions = {}) {
               grantedAt: item.grantedAt.toISOString(),
               expiresAt: item.expiresAt?.toISOString() ?? null,
             })),
+          };
+        },
+      );
+
+      app.get(
+        '/api/v1/account/platform-access',
+        {
+          schema: {
+            tags: ['commerce'],
+            summary: 'Consulta se a conta atual tem acesso premium ativo à plataforma',
+            response: { 200: z.object({ data: platformAccessSummarySchema }), 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireSession(request, response);
+          if (!user) return response;
+          const access = commerce.getUserPlatformAccess({ userId: user.id });
+          return {
+            data: {
+              ...access,
+              expiresAt: access.expiresAt?.toISOString() ?? null,
+            },
           };
         },
       );

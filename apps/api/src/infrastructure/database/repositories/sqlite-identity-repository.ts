@@ -109,10 +109,7 @@ export class SqliteIdentityRepository implements IdentityRepository {
         })
         .run();
 
-      return {
-        user: { id: user.id, email: user.email, createdAt: user.createdAt },
-        expiresAt: input.expiresAt,
-      };
+      return { user: toDomainUser(user), expiresAt: input.expiresAt };
     });
   }
 
@@ -136,13 +133,23 @@ export class SqliteIdentityRepository implements IdentityRepository {
       }
 
       if (!user || user.accountStatus !== 'active') return undefined;
-      return { id: user.id, email: user.email, createdAt: user.createdAt };
+      return toDomainUser(user);
     });
+  }
+
+  updateCustomerProfile(input: { userId: string; name: string; whatsapp: string; birthDate: string }): User | undefined {
+    const user = this.database
+      .update(users)
+      .set({ name: input.name, whatsapp: input.whatsapp, birthDate: input.birthDate })
+      .where(and(eq(users.id, input.userId), eq(users.accountStatus, 'active')))
+      .returning()
+      .get();
+    return user ? toDomainUser(user) : undefined;
   }
 
   findSessionByTokenHash(tokenHash: string, now: Date): User | undefined {
     const result = this.database
-      .select({ id: users.id, email: users.email, createdAt: users.createdAt })
+      .select()
       .from(sessions)
       .innerJoin(users, eq(sessions.userId, users.id))
       .where(
@@ -155,7 +162,7 @@ export class SqliteIdentityRepository implements IdentityRepository {
       )
       .get();
 
-    return result;
+    return result ? toDomainUser(result.users) : undefined;
   }
 
   revokeSessionByTokenHash(tokenHash: string, now: Date): void {
@@ -165,4 +172,16 @@ export class SqliteIdentityRepository implements IdentityRepository {
       .where(and(eq(sessions.tokenHash, tokenHash), isNull(sessions.revokedAt)))
       .run();
   }
+}
+
+function toDomainUser(user: typeof users.$inferSelect): User {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    whatsapp: user.whatsapp,
+    birthDate: user.birthDate,
+    profileComplete: Boolean(user.name && user.whatsapp && user.birthDate),
+    createdAt: user.createdAt,
+  };
 }
