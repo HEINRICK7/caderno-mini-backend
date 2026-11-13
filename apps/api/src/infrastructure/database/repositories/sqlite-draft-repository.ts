@@ -40,10 +40,14 @@ export class SqliteDraftRepository implements DraftRepository {
         updatedAt: drafts.updatedAt,
       })
       .from(drafts)
-      .innerJoin(templates, and(eq(templates.id, drafts.templateId), eq(templates.version, drafts.templateVersion)))
+      .leftJoin(templates, and(eq(templates.id, drafts.templateId), eq(templates.version, drafts.templateVersion)))
       .where(eq(drafts.ownerUserId, userId))
       .orderBy(desc(drafts.updatedAt))
-      .all();
+      .all()
+      .map((draft) => ({
+        ...draft,
+        templateName: draft.templateName ?? draft.templateId,
+      }));
   }
 
   insert(draft: Draft, ownerUserId?: string): void {
