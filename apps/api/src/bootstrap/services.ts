@@ -19,6 +19,7 @@ import {
   getOrCreateAdminTestUser,
   requestMagicLink,
   revokeSession,
+  updateCustomerProfile,
   verifyMagicLink,
   type IdentityDependencies,
 } from '../application/use-cases/identity.js';
@@ -60,6 +61,7 @@ import {
   updateAdminTemplateDraft,
   validateAdminTemplateDefinition,
 } from '../application/use-cases/admin-templates.js';
+import { recordAdminManualPayment } from '../application/use-cases/admin-manual-payment.js';
 
 export type ApplicationServices = ReturnType<typeof createApplicationServices>;
 
@@ -126,6 +128,8 @@ export function createIdentityServices(
   return {
     requestMagicLink: (input: { email: string }) => requestMagicLink(input, dependencies),
     verifyMagicLink: (input: { token: string }) => verifyMagicLink(input, dependencies),
+    updateCustomerProfile: (input: { userId: string; name: string; whatsapp: string; birthDate: string }) =>
+      updateCustomerProfile(input, dependencies),
     getSession: (input: { token: string }) => getSession(input, dependencies),
     getAdminTestUser: (input: { email: string }) => getOrCreateAdminTestUser(input, dependencies),
     revokeSession: (input: { token: string }) => revokeSession(input, dependencies),
@@ -143,6 +147,12 @@ export function createAdminServices(
   const idGenerator = options.idGenerator ?? randomUUID;
   const clock = options.clock ?? (() => new Date());
   return {
+    createCustomer: (input: { email: string; actorEmail: string }) => admin.createCustomer({
+      ...input,
+      now: clock(),
+      id: idGenerator(),
+      auditId: idGenerator(),
+    }),
     listTemplates: () => listAdminTemplates({ templates }),
     createTemplate: (input: Parameters<typeof createAdminTemplateDraft>[0]) =>
       createAdminTemplateDraft(input, { templates, clock }),
@@ -158,6 +168,21 @@ export function createAdminServices(
     getUser: (input: { userId: string }) => admin.getUser({ ...input, now: clock() }),
     setUserStatus: (input: { userId: string; actorEmail: string; status: 'active' | 'suspended' }) =>
       admin.setUserStatus({ ...input, now: clock(), id: idGenerator() }),
+    recordManualPayment: (input: Parameters<typeof recordAdminManualPayment>[0]) =>
+      recordAdminManualPayment(input, { admin, generateId: idGenerator, clock }),
+    recordManualPlatformSale: (input: {
+      userId: string;
+      actorEmail: string;
+      plan: 'annual' | 'lifetime';
+      amountMinor: number;
+      paymentMethod: 'pix' | 'bank_transfer' | 'cash' | 'other';
+      paymentReference?: string;
+    }) => admin.recordManualPlatformSale({
+      ...input,
+      saleId: idGenerator(),
+      auditId: idGenerator(),
+      now: clock(),
+    }),
   };
 }
 
@@ -266,6 +291,7 @@ export function createCommerceServices(
     getPurchaseStatus: (input: Parameters<typeof getPurchaseStatus>[0]) =>
       getPurchaseStatus(input, { purchases, clock }),
     listUserAccess: (input: Parameters<typeof listUserAccess>[0]) => listUserAccess(input, { purchases, clock }),
+    getUserPlatformAccess: (input: { userId: string }) => purchases.getPlatformAccessForUser(input.userId, clock()),
     userHasActiveGrantForDraft: (input: Parameters<typeof userHasActiveGrantForDraft>[0]) =>
       userHasActiveGrantForDraft(input, { purchases, clock }),
     acceptCaktoWebhook: (input: { rawBody: Buffer; headers: CaktoWebhookHeaders }) => {

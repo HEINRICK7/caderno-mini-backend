@@ -9,7 +9,7 @@ import type {
 } from '../../../application/ports/purchase-repository.js';
 import { accessExpiresAt, accessIsCurrent, type Purchase, type PurchaseStatus } from '../../../domain/commerce/purchase.js';
 import type { AppDatabase } from '../connection.js';
-import { accessGrants, drafts, purchases, users, webhookEventEffects } from '../schema.js';
+import { accessGrants, drafts, platformAccessGrants, purchases, users, webhookEventEffects } from '../schema.js';
 
 export class SqlitePurchaseRepository implements PurchaseRepository {
   constructor(private readonly database: AppDatabase, private readonly adminEmail?: string) {}
@@ -231,6 +231,44 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       }));
   }
 
+  getPlatformAccessForUser(userId: string, now: Date) {
+    const manualGrants = this.database
+      .select({ accessPlan: platformAccessGrants.accessPlan, expiresAt: platformAccessGrants.expiresAt })
+      .from(platformAccessGrants)
+      .innerJoin(users, eq(users.id, platformAccessGrants.userId))
+      .where(and(
+        eq(platformAccessGrants.userId, userId),
+        eq(platformAccessGrants.status, 'active'),
+        eq(users.accountStatus, 'active'),
+        or(isNull(platformAccessGrants.expiresAt), gt(platformAccessGrants.expiresAt, now)),
+      ))
+      .all();
+    const purchaseGrants = this.database
+      .select({ accessPlan: purchases.accessPlan, expiresAt: accessGrants.expiresAt })
+      .from(accessGrants)
+      .innerJoin(purchases, eq(purchases.id, accessGrants.purchaseId))
+      .innerJoin(users, eq(users.id, accessGrants.userId))
+      .where(and(
+        eq(accessGrants.userId, userId),
+        eq(accessGrants.status, 'active'),
+        eq(purchases.status, 'paid'),
+        eq(users.accountStatus, 'active'),
+        or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
+      ))
+      .all();
+    const grants = [...manualGrants, ...purchaseGrants];
+    const lifetimeGrant = grants.some((grant) => grant.accessPlan === 'lifetime');
+    const expiresAt = grants.reduce<Date | null>((latest, grant) =>
+      grant.expiresAt && (!latest || grant.expiresAt > latest) ? grant.expiresAt : latest,
+    null);
+
+    return {
+      active: grants.length > 0,
+      accessPlan: grants.length === 0 ? null : lifetimeGrant ? 'lifetime' as const : 'annual' as const,
+      expiresAt: lifetimeGrant ? null : expiresAt,
+    };
+  }
+
   hasActiveGrantForUserAndDraft(userId: string, draftId: string, now: Date): boolean {
     if (this.adminEmail) {
       const adminOwnedDraft = this.database
@@ -248,6 +286,29 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
         .get();
       if (adminOwnedDraft) return true;
     }
+
+    const ownedDraft = this.database
+      .select({ id: drafts.id })
+      .from(drafts)
+      .innerJoin(users, eq(users.id, drafts.ownerUserId))
+      .where(and(
+        eq(drafts.id, draftId),
+        eq(drafts.ownerUserId, userId),
+        eq(users.accountStatus, 'active'),
+      ))
+      .get();
+    if (!ownedDraft) return false;
+
+    const platformGrant = this.database
+      .select({ id: platformAccessGrants.id })
+      .from(platformAccessGrants)
+      .where(and(
+        eq(platformAccessGrants.userId, userId),
+        eq(platformAccessGrants.status, 'active'),
+        or(isNull(platformAccessGrants.expiresAt), gt(platformAccessGrants.expiresAt, now)),
+      ))
+      .get();
+    if (platformGrant) return true;
 
     return Boolean(
       this.database
@@ -284,19 +345,26 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       if (adminOwnedDraft) return true;
     }
 
+    const draft = this.database
+      .select({ ownerUserId: drafts.ownerUserId })
+      .from(drafts)
+      .where(eq(drafts.id, draftId))
+      .get();
+    if (draft?.ownerUserId) {
+      return this.hasActiveGrantForUserAndDraft(draft.ownerUserId, draftId, now);
+    }
+
     return Boolean(
       this.database
         .select({ id: accessGrants.id })
         .from(accessGrants)
         .innerJoin(purchases, eq(purchases.id, accessGrants.purchaseId))
-        .where(
-          and(
-            eq(accessGrants.status, 'active'),
-            eq(purchases.status, 'paid'),
-            eq(purchases.draftId, draftId),
-            or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
-          ),
-        )
+        .where(and(
+          eq(purchases.draftId, draftId),
+          eq(accessGrants.status, 'active'),
+          eq(purchases.status, 'paid'),
+          or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
+        ))
         .get(),
     );
   }

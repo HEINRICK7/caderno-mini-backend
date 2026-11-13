@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { InvalidMagicLinkError, MagicLinkDeliveryError } from '../errors.js';
 import type { EmailSender } from '../ports/email-sender.js';
 import type { IdentityRepository } from '../ports/identity-repository.js';
-import { normalizeEmail, type User } from '../../domain/identity/identity.js';
+import { normalizeEmail, normalizeWhatsApp, type User } from '../../domain/identity/identity.js';
 
 const MAGIC_LINK_TTL_MS = 15 * 60 * 1000;
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -65,6 +65,17 @@ export async function verifyMagicLink(
   }
 
   return { token, user: result.user, expiresAt: result.expiresAt };
+}
+
+export function updateCustomerProfile(
+  input: { userId: string; name: string; whatsapp: string; birthDate: string },
+  dependencies: IdentityDependencies,
+): User | undefined {
+  return dependencies.identities.updateCustomerProfile({
+    ...input,
+    name: input.name.trim(),
+    whatsapp: normalizeWhatsApp(input.whatsapp),
+  });
 }
 
 export function getSession(

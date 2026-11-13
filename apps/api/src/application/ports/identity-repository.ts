@@ -27,6 +27,12 @@ export interface IdentityRepository {
   deleteMagicLink(tokenHash: string): void;
   consumeMagicLinkAndCreateSession(input: ConsumeMagicLink): { user: User; expiresAt: Date } | undefined;
   findOrCreateAdminTestUser(input: AdminTestUser): User | undefined;
+  updateCustomerProfile(input: {
+    userId: string;
+    name: string;
+    whatsapp: string;
+    birthDate: string;
+  }): User | undefined;
   findSessionByTokenHash(tokenHash: string, now: Date): User | undefined;
   revokeSessionByTokenHash(tokenHash: string, now: Date): void;
 }
