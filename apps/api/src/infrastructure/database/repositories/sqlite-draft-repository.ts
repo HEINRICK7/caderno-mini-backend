@@ -2,6 +2,7 @@ import { and, desc, eq, isNull, or } from 'drizzle-orm';
 
 import type { DraftRepository } from '../../../application/ports/draft-repository.js';
 import type { Draft } from '../../../domain/drafts/draft.js';
+import { resolveTemplateBusinessName } from '../../../domain/templates/template-brand.js';
 import type { AppDatabase } from '../connection.js';
 import { drafts, templates } from '../schema.js';
 
@@ -31,12 +32,14 @@ export class SqliteDraftRepository implements DraftRepository {
     return toDraft(row);
   }
 
-  listOwnedByUser(userId: string): Array<{ id: string; templateId: string; templateName: string; updatedAt: Date }> {
+  listOwnedByUser(userId: string): Array<{ id: string; templateId: string; templateName: string; businessName: string; updatedAt: Date }> {
     return this.db
       .select({
         id: drafts.id,
         templateId: drafts.templateId,
         templateName: templates.name,
+        templateDefinition: templates.definition,
+        data: drafts.data,
         updatedAt: drafts.updatedAt,
       })
       .from(drafts)
@@ -45,8 +48,11 @@ export class SqliteDraftRepository implements DraftRepository {
       .orderBy(desc(drafts.updatedAt))
       .all()
       .map((draft) => ({
-        ...draft,
+        id: draft.id,
+        templateId: draft.templateId,
         templateName: draft.templateName ?? draft.templateId,
+        businessName: resolveTemplateBusinessName(draft.templateDefinition, draft.data),
+        updatedAt: draft.updatedAt,
       }));
   }
 

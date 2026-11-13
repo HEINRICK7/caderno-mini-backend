@@ -44,6 +44,7 @@ import {
 } from '../domain/templates/errors.js';
 import { MAX_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_UPLOAD_BODY_BYTES } from '../domain/images/image-limits.js';
 import type { Draft } from '../domain/drafts/draft.js';
+import { resolveTemplateBusinessName } from '../domain/templates/template-brand.js';
 import { normalizeEmail } from '../domain/identity/identity.js';
 import type {
   AnalyticsServices,
@@ -231,6 +232,7 @@ const customerPortalResponseSchema = z.object({
       id: z.uuid(),
       templateId: z.string(),
       templateName: z.string(),
+      businessName: z.string().max(80),
       updatedAt: z.string().datetime(),
     })),
   }),
@@ -2195,8 +2197,16 @@ export function buildApp(options: BuildAppOptions = {}) {
             `/api/v1/publications/${request.params.slug}.png`,
             `${publicApiOrigin}/`,
           ).toString();
-          const title = `${message.templateName} · Cadernô`;
-          const description = message.templateDescription || 'Veja esta mensagem criada no Cadernô Express.';
+          const businessName = resolveTemplateBusinessName(message.templateDefinition, message.data);
+          const displayBusinessName = businessName.length > 42
+            ? `${businessName.slice(0, 41).trimEnd()}…`
+            : businessName;
+          const title = businessName
+            ? `Cartão de ${displayBusinessName} · Cadernô Express`
+            : `${message.templateName} · Cadernô Express`;
+          const description = businessName
+            ? `Cartão digital de ${businessName}, criado com o Cadernô Express. Confira o conteúdo e valide os dados antes de pagar.`
+            : `Você recebeu um cartão digital criado com o Cadernô Express. Se houver cobrança, confira o recebedor e o valor antes de pagar.`;
           const safeTitle = escapeHtmlAttribute(title);
           const safeDescription = escapeHtmlAttribute(description);
           const safePublicUrl = escapeHtmlAttribute(publicUrl);
@@ -2209,7 +2219,7 @@ export function buildApp(options: BuildAppOptions = {}) {
     <title>${safeTitle}</title>
     <meta name="description" content="${safeDescription}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Cadernô">
+    <meta property="og:site_name" content="Cadernô Express">
     <meta property="og:title" content="${safeTitle}">
     <meta property="og:description" content="${safeDescription}">
     <meta property="og:url" content="${safePublicUrl}">
