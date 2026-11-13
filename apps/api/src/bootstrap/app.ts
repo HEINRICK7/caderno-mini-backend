@@ -1634,7 +1634,12 @@ export function buildApp(options: BuildAppOptions = {}) {
         async (request, response) => {
           const actorEmail = requireAdmin(request, response);
           if (!actorEmail) return response;
-          const { confirmPaymentReceived: _confirmed, paymentReference, ...saleInput } = request.body;
+          const { confirmPaymentReceived, paymentReference, ...saleInput } = request.body;
+          if (confirmPaymentReceived !== true) {
+            return response.code(400).send({
+              error: { code: 'ADMIN_PAYMENT_CONFIRMATION_REQUIRED', message: 'Confirme o recebimento antes de registrar a venda.' },
+            });
+          }
           const sale = admin.recordManualPlatformSale({
             ...saleInput,
             userId: request.params.id,
