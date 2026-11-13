@@ -320,6 +320,7 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
             eq(accessGrants.userId, userId),
             eq(accessGrants.status, 'active'),
             eq(purchases.status, 'paid'),
+            eq(purchases.draftId, draftId),
             or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
           ),
         )
@@ -349,8 +350,22 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       .from(drafts)
       .where(eq(drafts.id, draftId))
       .get();
-    return draft?.ownerUserId
-      ? this.hasActiveGrantForUserAndDraft(draft.ownerUserId, draftId, now)
-      : false;
+    if (draft?.ownerUserId) {
+      return this.hasActiveGrantForUserAndDraft(draft.ownerUserId, draftId, now);
+    }
+
+    return Boolean(
+      this.database
+        .select({ id: accessGrants.id })
+        .from(accessGrants)
+        .innerJoin(purchases, eq(purchases.id, accessGrants.purchaseId))
+        .where(and(
+          eq(purchases.draftId, draftId),
+          eq(accessGrants.status, 'active'),
+          eq(purchases.status, 'paid'),
+          or(isNull(accessGrants.expiresAt), gt(accessGrants.expiresAt, now)),
+        ))
+        .get(),
+    );
   }
 }
