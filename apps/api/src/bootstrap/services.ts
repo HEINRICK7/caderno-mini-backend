@@ -291,6 +291,7 @@ export function createCommerceServices(
     getPurchaseStatus: (input: Parameters<typeof getPurchaseStatus>[0]) =>
       getPurchaseStatus(input, { purchases, clock }),
     listUserAccess: (input: Parameters<typeof listUserAccess>[0]) => listUserAccess(input, { purchases, clock }),
+    listUserDrafts: (input: { userId: string }) => drafts.listOwnedByUser(input.userId),
     getUserPlatformAccess: (input: { userId: string }) => purchases.getPlatformAccessForUser(input.userId, clock()),
     userHasActiveGrantForDraft: (input: Parameters<typeof userHasActiveGrantForDraft>[0]) =>
       userHasActiveGrantForDraft(input, { purchases, clock }),
@@ -360,12 +361,14 @@ export function createPublishingServices(
   renderer: PngRenderer,
   options: { idGenerator?: () => string; slugGenerator?: () => string; clock?: () => Date } = {},
 ) {
+  const purchases = new SqlitePurchaseRepository(db);
   const dependencies: PublicationDependencies = {
     drafts: new SqliteDraftRepository(db),
     publications: new SqlitePublicationRepository(db),
-    purchases: new SqlitePurchaseRepository(db),
+    purchases,
     templates: new SqliteTemplateRepository(db),
     renderer,
+    hasActivePlatformAccess: (userId, now) => purchases.getPlatformAccessForUser(userId, now).active,
     ...(options.idGenerator ? { generateId: options.idGenerator } : {}),
     ...(options.slugGenerator ? { generateSlug: options.slugGenerator } : {}),
     ...(options.clock ? { clock: options.clock } : {}),

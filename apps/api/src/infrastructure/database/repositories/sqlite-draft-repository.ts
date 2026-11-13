@@ -1,9 +1,9 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, desc, eq, isNull, or } from 'drizzle-orm';
 
 import type { DraftRepository } from '../../../application/ports/draft-repository.js';
 import type { Draft } from '../../../domain/drafts/draft.js';
 import type { AppDatabase } from '../connection.js';
-import { drafts } from '../schema.js';
+import { drafts, templates } from '../schema.js';
 
 export class SqliteDraftRepository implements DraftRepository {
   constructor(private readonly db: AppDatabase) {}
@@ -19,6 +19,21 @@ export class SqliteDraftRepository implements DraftRepository {
       return undefined;
     }
     return toDraft(row);
+  }
+
+  listOwnedByUser(userId: string): Array<{ id: string; templateId: string; templateName: string; updatedAt: Date }> {
+    return this.db
+      .select({
+        id: drafts.id,
+        templateId: drafts.templateId,
+        templateName: templates.name,
+        updatedAt: drafts.updatedAt,
+      })
+      .from(drafts)
+      .innerJoin(templates, and(eq(templates.id, drafts.templateId), eq(templates.version, drafts.templateVersion)))
+      .where(eq(drafts.ownerUserId, userId))
+      .orderBy(desc(drafts.updatedAt))
+      .all();
   }
 
   insert(draft: Draft, ownerUserId?: string): void {
