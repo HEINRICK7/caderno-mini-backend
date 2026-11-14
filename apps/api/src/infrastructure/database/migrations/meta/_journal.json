@@ -155,6 +155,13 @@
       "when": 1794622303533,
       "tag": "0021_loose_blackheart",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1794661962662,
+      "tag": "0022_chief_jetstream",
+      "breakpoints": true
     }
   ]
 }

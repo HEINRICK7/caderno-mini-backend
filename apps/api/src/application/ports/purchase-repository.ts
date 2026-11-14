@@ -1,8 +1,9 @@
-import type { Purchase, PurchaseStatus } from '../../domain/commerce/purchase.js';
+import type { AccessPlan, Purchase, PurchaseStatus } from '../../domain/commerce/purchase.js';
 
 export type NewPendingPurchase = {
   id: string;
-  draftId: string;
+  draftId: string | null;
+  accessPlan?: AccessPlan;
   ownerUserId?: string;
   callbackHash: string;
   createdAt: Date;
@@ -10,7 +11,7 @@ export type NewPendingPurchase = {
 
 export type PurchaseStatusView = {
   purchaseId: string;
-  draftId: string;
+  draftId: string | null;
   status: PurchaseStatus;
   accessStatus: 'active' | 'revoked' | 'none';
   amountMinor: number | null;

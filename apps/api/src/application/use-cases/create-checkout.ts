@@ -4,6 +4,7 @@ import { DraftNotFoundError } from '../errors.js';
 import type { CheckoutLink } from '../ports/checkout-link.js';
 import type { DraftRepository } from '../ports/draft-repository.js';
 import type { PurchaseRepository } from '../ports/purchase-repository.js';
+import type { AccessPlan } from '../../domain/commerce/purchase.js';
 
 export type CreateCheckoutDependencies = {
   drafts: DraftRepository;
@@ -15,11 +16,13 @@ export type CreateCheckoutDependencies = {
 };
 
 export function createCheckout(
-  input: { draftId: string; userId?: string },
+  input: { draftId?: string; userId?: string; plan?: AccessPlan },
   dependencies: CreateCheckoutDependencies,
 ): { purchaseId: string; checkoutUrl: string; status: 'pending' } | Promise<{ purchaseId: string; checkoutUrl: string; status: 'pending' }> {
-  const draft = dependencies.drafts.findByIdForUser(input.draftId, input.userId);
-  if (!draft) {
+  const draft = input.draftId
+    ? dependencies.drafts.findByIdForUser(input.draftId, input.userId)
+    : undefined;
+  if (input.draftId && !draft) {
     throw new DraftNotFoundError();
   }
 
@@ -32,12 +35,13 @@ export function createCheckout(
   const createdAt = (dependencies.clock ?? (() => new Date()))();
   const checkoutUrl = dependencies.checkoutLinks.createUrl(callbackToken, {
     purchaseId,
-    draftId: draft.id,
+    ...(draft ? { draftId: draft.id } : {}),
   });
   const finish = (url: string) => {
     dependencies.purchases.createPendingPurchase({
       id: purchaseId,
-      draftId: draft.id,
+      draftId: draft?.id ?? null,
+      ...(input.plan ? { accessPlan: input.plan } : {}),
       ...(input.userId ? { ownerUserId: input.userId } : {}),
       callbackHash: hashToken(callbackToken),
       createdAt,

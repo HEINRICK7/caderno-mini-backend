@@ -44,6 +44,7 @@ describe('loadConfig', () => {
       authPublicAppUrl: 'https://app.example.com',
       publicApiUrl: 'https://api.example.com',
       publicAppUrl: 'https://app.example.com',
+      platformCheckoutEnabled: true,
       smtpUrl: 'smtps://mailer:secret@mail.example.com:465',
       emailFrom: 'Cadernô <login@example.com>',
     });
@@ -69,7 +70,16 @@ describe('loadConfig', () => {
       authPublicAppUrl: 'http://localhost:3000',
       publicApiUrl: 'http://localhost:3000',
       publicAppUrl: 'http://localhost:3001',
+      platformCheckoutEnabled: true,
     });
+  });
+
+  it('disables platform checkout in production until it is explicitly enabled', () => {
+    const environment = productionEnvironment();
+
+    expect(loadConfig(environment).platformCheckoutEnabled).toBe(false);
+    expect(loadConfig({ ...environment, PLATFORM_CHECKOUT_ENABLED: 'true' }).platformCheckoutEnabled).toBe(true);
+    expect(loadConfig({ ...environment, PLATFORM_CHECKOUT_ENABLED: '' }).platformCheckoutEnabled).toBe(false);
   });
 
   it('rejects a port outside the valid range', () => {
@@ -187,12 +197,41 @@ describe('loadConfig', () => {
     })).toThrow('Set ABACATEPAY_WEBHOOK_SIGNATURE_KEY for AbacatePay webhook signature verification.');
   });
 
-  it('requires both AbacatePay product IDs before enabling checkouts', () => {
-    expect(() => loadConfig({
+  it('allows the annual AbacatePay product without a lifetime product', () => {
+    const config = loadConfig({
       ABACATEPAY_API_KEY: 'test-abacatepay-api-key',
       ABACATEPAY_WEBHOOK_SECRET: 'a'.repeat(32),
       ABACATEPAY_WEBHOOK_SIGNATURE_KEY: 'test-public-signature-key'.repeat(3),
       ABACATEPAY_PRODUCT_ANNUAL_ID: 'prod_annual',
-    })).toThrow('Set ABACATEPAY_PRODUCT_ANNUAL_ID and ABACATEPAY_PRODUCT_LIFETIME_ID together to enable AbacatePay checkout.');
+    });
+
+    expect(config.abacatePay?.plans).toEqual({ annual: { productId: 'prod_annual' } });
+  });
+
+  it('requires the annual product before configuring an optional lifetime product', () => {
+    expect(() => loadConfig({
+      ABACATEPAY_API_KEY: 'test-abacatepay-api-key',
+      ABACATEPAY_WEBHOOK_SECRET: 'a'.repeat(32),
+      ABACATEPAY_WEBHOOK_SIGNATURE_KEY: 'test-public-signature-key'.repeat(3),
+      ABACATEPAY_PRODUCT_LIFETIME_ID: 'prod_lifetime',
+    })).toThrow('Set ABACATEPAY_PRODUCT_ANNUAL_ID before configuring the optional lifetime product.');
   });
 });
+
+function productionEnvironment(): NodeJS.ProcessEnv {
+  return {
+    NODE_ENV: 'production',
+    AUTH_PUBLIC_APP_URL: 'https://app.example.com',
+    PUBLIC_API_URL: 'https://api.example.com',
+    PUBLIC_APP_URL: 'https://app.example.com',
+    MINIO_USE_SSL: 'true',
+    MINIO_ACCESS_KEY: 'production-minio-user',
+    MINIO_SECRET_KEY: 'production-minio-secret-value',
+    ADMIN_EMAIL: 'admin@example.com',
+    ADMIN_PASSWORD_HASH: `scrypt.32768.8.1.${'a'.repeat(22)}.${'b'.repeat(128)}`,
+    ADMIN_SESSION_SECRET: 'a'.repeat(43),
+    ABACATEPAY_API_KEY: 'production-abacatepay-key',
+    ABACATEPAY_WEBHOOK_SECRET: 'a'.repeat(32),
+    ABACATEPAY_WEBHOOK_SIGNATURE_KEY: 'A'.repeat(64),
+  };
+}

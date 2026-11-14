@@ -68,4 +68,39 @@ describe('checkout API', () => {
     expect(response.json().error.code).toBe('DRAFT_NOT_FOUND');
     expect(database.db.select().from(purchases).all()).toHaveLength(0);
   });
+
+  it('blocks platform-plan checkout when disabled while leaving message checkout available', async () => {
+    const { app, database } = await createTestApp(':memory:', { platformCheckoutEnabled: false });
+    close = async () => {
+      await app.close();
+      database.close();
+    };
+    insertTemplate(database.db);
+
+    const availability = await app.inject({ method: 'GET', url: '/api/v1/checkout/availability' });
+    expect(availability.statusCode).toBe(200);
+    expect(availability.json().data.enabled).toBe(false);
+
+    const platformCheckout = await app.inject({
+      method: 'POST',
+      url: '/api/v1/checkout',
+      payload: { plan: 'annual' },
+    });
+    expect(platformCheckout.statusCode).toBe(503);
+    expect(platformCheckout.json().error.code).toBe('PLATFORM_CHECKOUT_PAUSED');
+    expect(database.db.select().from(purchases).all()).toHaveLength(0);
+
+    const draftResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/drafts',
+      payload: { templateId: 'mensagem-exemplo', data: { message: 'Olá' } },
+    });
+    const messageCheckout = await app.inject({
+      method: 'POST',
+      url: '/api/v1/checkout',
+      payload: { draftId: draftResponse.json().data.id },
+    });
+
+    expect(messageCheckout.statusCode).toBe(201);
+  });
 });

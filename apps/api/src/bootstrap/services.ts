@@ -363,16 +363,16 @@ export function createCommerceServices(
   const abacatePayPlans = options.abacatePay?.plans;
   const abacatePayPlanLinks = options.abacatePay && abacatePayPlans
     ? {
-      annual: new AbacatePayHostedCheckoutLink({
+      ...(abacatePayPlans.annual ? { annual: new AbacatePayHostedCheckoutLink({
         apiKey: options.abacatePay.apiKey,
         productId: abacatePayPlans.annual.productId,
         publicAppUrl: options.abacatePay.publicAppUrl,
-      }),
-      lifetime: new AbacatePayHostedCheckoutLink({
+      }) } : {}),
+      ...(abacatePayPlans.lifetime ? { lifetime: new AbacatePayHostedCheckoutLink({
         apiKey: options.abacatePay.apiKey,
         productId: abacatePayPlans.lifetime.productId,
         publicAppUrl: options.abacatePay.publicAppUrl,
-      }),
+      }) } : {}),
     }
     : undefined;
   const legacyCaktoPlans = [options.plans, options.legacyCaktoPlans].filter(
@@ -383,19 +383,12 @@ export function createCommerceServices(
     ...(options.webhookSecret ? [options.webhookSecret] : []),
   ];
   const expectedProductIds = [
-    ...(abacatePayPlanLinks && abacatePayPlans
-      ? [abacatePayPlans.annual.productId, abacatePayPlans.lifetime.productId]
-      : []),
+    ...Object.values(abacatePayPlans ?? {}).map((plan) => plan.productId),
     ...legacyCaktoPlans.flatMap((plans) => [plans.annual.productId, plans.lifetime.productId]),
     ...(options.expectedProductId ? [options.expectedProductId] : []),
   ];
   const productPlans = Object.fromEntries([
-    ...(abacatePayPlanLinks && abacatePayPlans
-      ? [
-        [abacatePayPlans.annual.productId, 'annual'],
-        [abacatePayPlans.lifetime.productId, 'lifetime'],
-      ]
-      : []),
+    ...Object.entries(abacatePayPlans ?? {}).map(([planName, plan]) => [plan.productId, planName]),
     ...legacyCaktoPlans.flatMap((plans) => [
       [plans.annual.productId, 'annual'],
       [plans.lifetime.productId, 'lifetime'],
@@ -406,18 +399,19 @@ export function createCommerceServices(
   const clock = options.clock ?? (() => new Date());
 
   return {
-    createCheckout: (input: { draftId: string; userId?: string; plan?: CheckoutPlan }) => {
+    createCheckout: (input: { draftId?: string; userId?: string; plan?: CheckoutPlan }) => {
+      if (!input.draftId && !input.plan) {
+        throw new CheckoutPlanRequiredError();
+      }
       if (options.abacatePay && !options.abacatePay.plans) {
         throw new CheckoutNotConfiguredError();
       }
       if ((abacatePayPlanLinks || planLinks) && !input.plan) {
         throw new CheckoutPlanRequiredError();
       }
-      const checkoutLink = abacatePayPlanLinks && input.plan
-        ? abacatePayPlanLinks[input.plan]
-        : planLinks && input.plan
-          ? planLinks[input.plan]
-          : checkoutLinks;
+      const checkoutLink = input.plan
+        ? abacatePayPlanLinks?.[input.plan] ?? planLinks?.[input.plan] ?? checkoutLinks
+        : checkoutLinks;
       if (!checkoutLink || expectedProductIds.length === 0) {
         throw new CheckoutNotConfiguredError();
       }

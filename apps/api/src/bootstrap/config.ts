@@ -2,6 +2,10 @@ import { z } from 'zod';
 
 const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PLATFORM_CHECKOUT_ENABLED: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.enum(['true', 'false']).optional(),
+  ),
   HOST: z.string().min(1).default('0.0.0.0'),
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   LOG_LEVEL: z
@@ -146,8 +150,8 @@ export type AbacatePayConfig = {
   webhookSecret: string;
   signatureKey: string;
   plans?: {
-    annual: { productId: string };
-    lifetime: { productId: string };
+    annual?: { productId: string };
+    lifetime?: { productId: string };
   };
 };
 
@@ -170,6 +174,7 @@ export type AppConfig = {
   authPublicAppUrl: string;
   publicApiUrl: string;
   publicAppUrl: string;
+  platformCheckoutEnabled: boolean;
   smtpUrl?: string;
   emailFrom?: string;
   abacatePay?: AbacatePayConfig;
@@ -245,6 +250,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     authPublicAppUrl: parsed.AUTH_PUBLIC_APP_URL,
     publicApiUrl: parsed.PUBLIC_API_URL,
     publicAppUrl: parsed.PUBLIC_APP_URL,
+    platformCheckoutEnabled: parsed.PLATFORM_CHECKOUT_ENABLED === undefined
+      ? parsed.NODE_ENV !== 'production'
+      : parsed.PLATFORM_CHECKOUT_ENABLED === 'true',
     ...(parsed.SMTP_URL ? { smtpUrl: parsed.SMTP_URL } : {}),
     ...(parsed.EMAIL_FROM ? { emailFrom: parsed.EMAIL_FROM } : {}),
     ...abacatePayFrom(parsed),
@@ -277,8 +285,8 @@ function abacatePayFrom(
   if (!signatureKey) {
     throw new Error('Set ABACATEPAY_WEBHOOK_SIGNATURE_KEY for AbacatePay webhook signature verification.');
   }
-  if (hasAnnualProduct !== hasLifetimeProduct) {
-    throw new Error('Set ABACATEPAY_PRODUCT_ANNUAL_ID and ABACATEPAY_PRODUCT_LIFETIME_ID together to enable AbacatePay checkout.');
+  if (hasLifetimeProduct && !hasAnnualProduct) {
+    throw new Error('Set ABACATEPAY_PRODUCT_ANNUAL_ID before configuring the optional lifetime product.');
   }
   if (hasAnnualProduct && annualProductId === lifetimeProductId) {
     throw new Error('ABACATEPAY_PRODUCT_ANNUAL_ID and ABACATEPAY_PRODUCT_LIFETIME_ID must be different products.');
@@ -288,8 +296,13 @@ function abacatePayFrom(
       apiKey: parsed.ABACATEPAY_API_KEY!,
       webhookSecret: parsed.ABACATEPAY_WEBHOOK_SECRET!,
       signatureKey,
-      ...(hasAnnualProduct && hasLifetimeProduct
-        ? { plans: { annual: { productId: annualProductId! }, lifetime: { productId: lifetimeProductId! } } }
+      ...(hasAnnualProduct
+        ? {
+          plans: {
+            annual: { productId: annualProductId! },
+            ...(hasLifetimeProduct ? { lifetime: { productId: lifetimeProductId! } } : {}),
+          },
+        }
         : {}),
     },
   };

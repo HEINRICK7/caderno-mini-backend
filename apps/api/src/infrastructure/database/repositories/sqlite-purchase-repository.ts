@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { and, eq, gt, isNull, or } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, isNull, or } from 'drizzle-orm';
 
 import type {
   PurchaseRepository,
@@ -20,6 +20,7 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       .values({
         id: purchase.id,
         draftId: purchase.draftId,
+        accessPlan: purchase.accessPlan ?? null,
         ownerUserId: purchase.ownerUserId ?? null,
         callbackHash: purchase.callbackHash,
         status: 'pending',
@@ -150,7 +151,7 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
           })
           .run();
 
-        if (existingUser) {
+        if (existingUser && current.draftId) {
           transaction
             .update(drafts)
             .set({ ownerUserId: existingUser.id })
@@ -219,9 +220,10 @@ export class SqlitePurchaseRepository implements PurchaseRepository {
       })
       .from(accessGrants)
       .innerJoin(purchases, eq(purchases.id, accessGrants.purchaseId))
-      .where(eq(accessGrants.userId, userId))
+      .where(and(eq(accessGrants.userId, userId), isNotNull(purchases.draftId)))
       .orderBy(purchases.createdAt)
       .all()
+      .filter((row): row is typeof row & { draftId: string } => row.draftId !== null)
       .map((row) => ({
         ...row,
         expiresAt: row.expiresAt ?? null,

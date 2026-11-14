@@ -27,7 +27,7 @@ export class AbacatePayHostedCheckoutLink implements CheckoutLink {
 
   async createUrl(
     callbackToken: string,
-    context: { purchaseId: string; draftId: string },
+    context: { purchaseId: string; draftId?: string },
   ): Promise<string> {
     try {
       const fetcher = this.options.fetcher ?? fetch;
@@ -43,7 +43,9 @@ export class AbacatePayHostedCheckoutLink implements CheckoutLink {
           items: [{ id: this.options.productId, quantity: 1 }],
           externalId: callbackToken,
           completionUrl: new URL(`/compras/${encodeURIComponent(context.purchaseId)}`, this.appUrl).toString(),
-          returnUrl: new URL(`/mensagens/${encodeURIComponent(context.draftId)}`, this.appUrl).toString(),
+          returnUrl: context.draftId
+            ? new URL(`/mensagens/${encodeURIComponent(context.draftId)}`, this.appUrl).toString()
+            : new URL('/#planos', this.appUrl).toString(),
         }),
       });
       const payload = await response.json() as AbacatePayEnvelope;
