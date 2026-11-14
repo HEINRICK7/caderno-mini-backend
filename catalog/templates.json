@@ -1,7 +1,7 @@
 [
   {
     "id": "boas-vindas",
-    "version": 8,
+    "version": 9,
     "name": "Boas-vindas",
     "description": "Recebe novos clientes de forma acolhedora.",
     "isActive": true,
@@ -279,7 +279,7 @@
   },
   {
     "id": "agradecimento-compra",
-    "version": 7,
+    "version": 8,
     "name": "Agradecimento pela compra",
     "description": "Valoriza o cliente após a venda.",
     "isActive": true,
@@ -575,7 +575,7 @@
   },
   {
     "id": "parcela-proxima",
-    "version": 8,
+    "version": 9,
     "name": "Parcela próxima do vencimento",
     "description": "Lembra a data com antecedência.",
     "isActive": true,
@@ -916,7 +916,7 @@
   },
   {
     "id": "parcela-hoje",
-    "version": 8,
+    "version": 9,
     "name": "Parcela vence hoje",
     "description": "Avisa que o pagamento é para hoje.",
     "isActive": true,
@@ -1258,7 +1258,7 @@
   },
   {
     "id": "parcela-atrasada",
-    "version": 8,
+    "version": 9,
     "name": "Parcela em atraso",
     "description": "Informa que já está em atraso.",
     "isActive": true,
@@ -1600,7 +1600,7 @@
   },
   {
     "id": "cobranca-pix",
-    "version": 8,
+    "version": 9,
     "name": "Cobrança Pix",
     "description": "Envia os dados Pix informados pela empresa.",
     "isActive": true,
@@ -1947,7 +1947,7 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 9,
+    "version": 10,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
@@ -2286,7 +2286,7 @@
   },
   {
     "id": "caderneta-quitada",
-    "version": 8,
+    "version": 9,
     "name": "Caderneta quitada",
     "description": "Celebra quando todas as parcelas foram pagas.",
     "isActive": true,
@@ -2574,7 +2574,7 @@
   },
   {
     "id": "servico-contratado",
-    "version": 7,
+    "version": 8,
     "name": "Serviço contratado",
     "description": "Confirma a contratação e informa os dados do serviço.",
     "isActive": true,
@@ -2885,7 +2885,7 @@
   },
   {
     "id": "servico-concluido",
-    "version": 7,
+    "version": 8,
     "name": "Serviço concluído",
     "description": "Informa que o serviço foi finalizado e convida à avaliação.",
     "isActive": true,
@@ -3166,7 +3166,7 @@
   },
   {
     "id": "aniversario",
-    "version": 7,
+    "version": 8,
     "name": "Aniversário",
     "description": "Parabeniza o cliente em uma data especial.",
     "isActive": true,
@@ -3423,7 +3423,7 @@
   },
   {
     "id": "produto-destaque",
-    "version": 7,
+    "version": 8,
     "name": "Produto em destaque",
     "description": "Apresenta um produto com destaque.",
     "isActive": true,
@@ -3677,7 +3677,7 @@
   },
   {
     "id": "oferta-especial",
-    "version": 7,
+    "version": 8,
     "name": "Oferta especial",
     "description": "Divulga uma promoção ou oportunidade.",
     "isActive": true,
@@ -3965,7 +3965,7 @@
   },
   {
     "id": "novidades-colecao",
-    "version": 7,
+    "version": 8,
     "name": "Novidades e coleção",
     "description": "Apresenta novidades da loja e da coleção.",
     "isActive": true,
@@ -4227,7 +4227,7 @@
   },
   {
     "id": "reativacao-cliente",
-    "version": 7,
+    "version": 8,
     "name": "Reativação de cliente",
     "description": "Retoma o contato com clientes que não interagem há um tempo.",
     "isActive": true,
@@ -4499,7 +4499,7 @@
   },
   {
     "id": "lembrete-aprovacao",
-    "version": 9,
+    "version": 10,
     "name": "Lembrete com aprovação",
     "description": "Pede uma resposta do cliente antes de seguir com o serviço.",
     "isActive": true,
