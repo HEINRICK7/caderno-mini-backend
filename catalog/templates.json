@@ -1947,7 +1947,7 @@
   },
   {
     "id": "pagamento-confirmado",
-    "version": 8,
+    "version": 9,
     "name": "Pagamento confirmado",
     "description": "Confirma que o pagamento foi identificado.",
     "isActive": true,
@@ -2065,21 +2065,19 @@
           "type": "number",
           "label": "Valor pago",
           "format": "currency",
-          "required": false,
+          "required": true,
           "section": "Detalhes do pagamento",
           "width": "half",
-          "editable": false,
-          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+          "helpText": "Informe o valor recebido. Confirme o pagamento somente após conferir o crédito no banco."
         },
         {
           "id": "paidAt",
           "type": "date",
           "label": "Data do pagamento",
-          "required": false,
+          "required": true,
           "section": "Detalhes do pagamento",
           "width": "half",
-          "editable": false,
-          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+          "helpText": "Informe a data em que o crédito apareceu no banco."
         },
         {
           "id": "installmentNumber",
@@ -2088,8 +2086,7 @@
           "section": "Detalhes do pagamento",
           "width": "half",
           "required": false,
-          "editable": false,
-          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+          "helpText": "Opcional. Preencha junto com o total de parcelas."
         },
         {
           "id": "installmentTotal",
@@ -2098,18 +2095,18 @@
           "section": "Detalhes do pagamento",
           "width": "half",
           "required": false,
-          "editable": false,
-          "helpText": "Preenchido somente quando confirmado pelo estado financeiro da aplicação."
+          "helpText": "Opcional. Preencha junto com o número da parcela."
         },
         {
           "id": "detailsLink",
           "type": "url",
           "label": "Link dos detalhes do pagamento",
+          "placeholder": "https://sualoja.com/comprovante",
           "maxLength": 2048,
           "section": "Ação",
           "width": "full",
-          "required": false,
-          "helpText": "Aceita apenas destinos HTTP ou HTTPS."
+          "required": true,
+          "helpText": "O botão publicado abre este link. Aceita destinos HTTP ou HTTPS."
         },
         {
           "id": "primaryActionLabel",
@@ -2117,22 +2114,21 @@
           "label": "Texto do botão principal",
           "placeholder": "Texto do botão",
           "maxLength": 120,
-          "required": false,
+          "required": true,
           "section": "Ações",
-          "width": "full"
+          "width": "full",
+          "helpText": "Este texto será exibido no botão que abre o link dos detalhes."
         },
         {
           "id": "paymentStatus",
           "type": "select",
-          "label": "Situação do pagamento",
+          "label": "Confirmar após conferir no banco",
           "options": [
-            "confirmed",
-            "pending"
+            "confirmed"
           ],
-          "editable": false,
-          "required": false,
+          "required": true,
           "section": "Estado financeiro",
-          "helpText": "Fornecido somente pelo domínio financeiro."
+          "helpText": "Marque somente depois de verificar o crédito no banco. O Caderno não consulta sua conta bancária."
         },
         {
           "id": "instagramUrl",
@@ -2283,13 +2279,14 @@
         "installmentNumber": 1,
         "installmentTotal": 4,
         "paymentStatus": "confirmed",
+        "detailsLink": "https://example.invalid/pagamento",
         "primaryActionLabel": "Ver detalhes"
       }
     }
   },
   {
     "id": "caderneta-quitada",
-    "version": 7,
+    "version": 8,
     "name": "Caderneta quitada",
     "description": "Celebra quando todas as parcelas foram pagas.",
     "isActive": true,
@@ -2385,25 +2382,22 @@
         {
           "id": "settlementStatus",
           "type": "select",
-          "label": "Situação da caderneta",
+          "label": "Confirmar após conferir as parcelas",
           "options": [
-            "settled",
-            "open"
+            "settled"
           ],
-          "editable": false,
-          "required": false,
+          "required": true,
           "section": "Estado financeiro",
-          "helpText": "Fornecido somente pelo domínio financeiro."
+          "helpText": "Marque somente depois de verificar que todas as parcelas foram pagas."
         },
         {
           "id": "outstandingBalance",
           "type": "number",
           "format": "currency",
           "label": "Saldo pendente",
-          "editable": false,
-          "required": false,
+          "required": true,
           "section": "Estado financeiro",
-          "helpText": "Fornecido somente pelo domínio financeiro."
+          "helpText": "Informe 0,00 somente depois de conferir que não há saldo em aberto."
         },
         {
           "id": "settlementLabel",
