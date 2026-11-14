@@ -127,6 +127,34 @@
       "when": 1794577379800,
       "tag": "0017_customer_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1794618769438,
+      "tag": "0018_glamorous_layla_miller",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1794619796733,
+      "tag": "0019_pink_union_jack",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1794620326731,
+      "tag": "0020_fair_whizzer",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1794622303533,
+      "tag": "0021_loose_blackheart",
+      "breakpoints": true
     }
   ]
 }

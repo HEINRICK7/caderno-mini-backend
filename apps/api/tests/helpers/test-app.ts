@@ -13,6 +13,10 @@ import {
   createDemoServices,
   createImageServices,
   createAdminServices,
+  createMerchantDirectoryServices,
+  createMerchantLedgerServices,
+  createMerchantRecurringServices,
+  createMerchantChargeMessageServices,
 } from '../../src/bootstrap/services.js';
 import { buildApp } from '../../src/bootstrap/app.js';
 import { createDatabase } from '../../src/infrastructure/database/connection.js';
@@ -83,6 +87,10 @@ export async function createTestApp(
     }),
     commerceServices,
     adminServices: createAdminServices(database.db, options.admin ? { adminEmail: options.admin.email } : {}),
+    merchantDirectoryServices: createMerchantDirectoryServices(database.db),
+    merchantLedgerServices: createMerchantLedgerServices(database.db),
+    merchantRecurringServices: createMerchantRecurringServices(database.db),
+    merchantChargeMessageServices: createMerchantChargeMessageServices(database.db, { idGenerator: randomUUID, clock: () => new Date() }),
     imageServices: createImageServices(imageStorage),
     previewServices: createPreviewServices(database.db, renderer),
     publishingServices: createPublishingServices(database.db, renderer, {

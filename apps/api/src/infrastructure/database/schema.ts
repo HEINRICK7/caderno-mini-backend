@@ -49,6 +49,225 @@ export const users = sqliteTable(
   (table) => [uniqueIndex('users_email_unique').on(table.email)],
 );
 
+export const merchantCustomers = sqliteTable(
+  'merchant_customers',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    name: text('name').notNull(),
+    whatsapp: text('whatsapp'),
+    email: text('email'),
+    address: text('address'),
+    notes: text('notes'),
+    status: text('status').$type<'active' | 'archived'>().notNull().default('active'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.ownerUserId], foreignColumns: [users.id], name: 'merchant_customers_owner_fk' }).onDelete('cascade'),
+    index('merchant_customers_owner_status_updated').on(table.ownerUserId, table.status, table.updatedAt),
+    index('merchant_customers_owner_name').on(table.ownerUserId, table.name),
+  ],
+);
+
+export const merchantCatalogItems = sqliteTable(
+  'merchant_catalog_items',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    kind: text('kind').$type<'product' | 'service'>().notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    priceMinor: integer('price_minor').notNull(),
+    status: text('status').$type<'active' | 'archived'>().notNull().default('active'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.ownerUserId], foreignColumns: [users.id], name: 'merchant_catalog_items_owner_fk' }).onDelete('cascade'),
+    index('merchant_catalog_items_owner_status_updated').on(table.ownerUserId, table.status, table.updatedAt),
+    index('merchant_catalog_items_owner_kind_name').on(table.ownerUserId, table.kind, table.name),
+  ],
+);
+
+export const merchantSales = sqliteTable(
+  'merchant_sales',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    condition: text('condition').$type<'cash' | 'single_due' | 'installments'>().notNull(),
+    totalMinor: integer('total_minor').notNull(),
+    downPaymentMinor: integer('down_payment_minor').notNull(),
+    financedMinor: integer('financed_minor').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.ownerUserId], foreignColumns: [users.id], name: 'merchant_sales_owner_fk' }).onDelete('cascade'),
+    foreignKey({ columns: [table.customerId], foreignColumns: [merchantCustomers.id], name: 'merchant_sales_customer_fk' }).onDelete('restrict'),
+    index('merchant_sales_owner_customer_created').on(table.ownerUserId, table.customerId, table.createdAt),
+  ],
+);
+
+export const merchantSaleItems = sqliteTable(
+  'merchant_sale_items',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    saleId: text('sale_id').notNull(),
+    catalogItemId: text('catalog_item_id'),
+    kind: text('kind').$type<'product' | 'service' | 'other'>().notNull(),
+    name: text('name').notNull(),
+    quantity: integer('quantity').notNull(),
+    unitPriceMinor: integer('unit_price_minor').notNull(),
+    lineTotalMinor: integer('line_total_minor').notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.saleId], foreignColumns: [merchantSales.id], name: 'merchant_sale_items_sale_fk' }).onDelete('cascade'),
+    index('merchant_sale_items_owner_sale').on(table.ownerUserId, table.saleId),
+  ],
+);
+
+export const merchantInstallments = sqliteTable(
+  'merchant_installments',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    saleId: text('sale_id').notNull(),
+    number: integer('number').notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    dueDate: text('due_date').notNull(),
+    status: text('status').$type<'open' | 'canceled'>().notNull().default('open'),
+  },
+  (table) => [
+    foreignKey({ columns: [table.saleId], foreignColumns: [merchantSales.id], name: 'merchant_installments_sale_fk' }).onDelete('cascade'),
+    uniqueIndex('merchant_installments_sale_number_unique').on(table.saleId, table.number),
+    index('merchant_installments_owner_customer_due').on(table.ownerUserId, table.customerId, table.dueDate),
+    index('merchant_installments_owner_due_status').on(table.ownerUserId, table.dueDate, table.status),
+  ],
+);
+
+export const merchantPayments = sqliteTable(
+  'merchant_payments',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    saleId: text('sale_id').notNull(),
+    installmentId: text('installment_id'),
+    amountMinor: integer('amount_minor').notNull(),
+    method: text('method').$type<'pix' | 'cash' | 'bank_transfer' | 'other'>().notNull(),
+    reference: text('reference'),
+    paidAt: integer('paid_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.saleId], foreignColumns: [merchantSales.id], name: 'merchant_payments_sale_fk' }).onDelete('restrict'),
+    foreignKey({ columns: [table.installmentId], foreignColumns: [merchantInstallments.id], name: 'merchant_payments_installment_fk' }).onDelete('restrict'),
+    index('merchant_payments_owner_sale_paid').on(table.ownerUserId, table.saleId, table.paidAt),
+    index('merchant_payments_owner_installment').on(table.ownerUserId, table.installmentId),
+  ],
+);
+
+export const merchantRecurringPlans = sqliteTable(
+  'merchant_recurring_plans',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    description: text('description').notNull(),
+    catalogItemId: text('catalog_item_id'),
+    amountMinor: integer('amount_minor').notNull(),
+    frequency: text('frequency').$type<'weekly' | 'fortnightly' | 'monthly'>().notNull(),
+    startDate: text('start_date').notNull(),
+    dueDay: integer('due_day'),
+    endDate: text('end_date'),
+    totalCycles: integer('total_cycles'),
+    status: text('status').$type<'active' | 'paused' | 'ended'>().notNull().default('active'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.customerId], foreignColumns: [merchantCustomers.id], name: 'merchant_recurring_customer_fk' }).onDelete('restrict'),
+    index('merchant_recurring_owner_status').on(table.ownerUserId, table.status),
+    index('merchant_recurring_owner_customer').on(table.ownerUserId, table.customerId),
+  ],
+);
+
+export const merchantRecurringRates = sqliteTable(
+  'merchant_recurring_rates',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    planId: text('plan_id').notNull(),
+    effectiveDate: text('effective_date').notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.planId], foreignColumns: [merchantRecurringPlans.id], name: 'merchant_recurring_rates_plan_fk' }).onDelete('cascade'),
+    uniqueIndex('merchant_recurring_rates_plan_effective_unique').on(table.planId, table.effectiveDate),
+    index('merchant_recurring_rates_owner_plan').on(table.ownerUserId, table.planId, table.effectiveDate),
+  ],
+);
+
+export const merchantRecurringPauses = sqliteTable(
+  'merchant_recurring_pauses',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    planId: text('plan_id').notNull(),
+    startDate: text('start_date').notNull(),
+    endDate: text('end_date'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.planId], foreignColumns: [merchantRecurringPlans.id], name: 'merchant_recurring_pauses_plan_fk' }).onDelete('cascade'),
+    index('merchant_recurring_pauses_owner_plan').on(table.ownerUserId, table.planId, table.startDate),
+  ],
+);
+
+export const merchantRecurringCharges = sqliteTable(
+  'merchant_recurring_charges',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    planId: text('plan_id').notNull(),
+    periodKey: text('period_key').notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    dueDate: text('due_date').notNull(),
+    status: text('status').$type<'open' | 'canceled'>().notNull().default('open'),
+  },
+  (table) => [
+    foreignKey({ columns: [table.planId], foreignColumns: [merchantRecurringPlans.id], name: 'merchant_recurring_charges_plan_fk' }).onDelete('restrict'),
+    uniqueIndex('merchant_recurring_charges_plan_period_unique').on(table.planId, table.periodKey),
+    index('merchant_recurring_charges_owner_due').on(table.ownerUserId, table.dueDate, table.status),
+    index('merchant_recurring_charges_owner_customer').on(table.ownerUserId, table.customerId, table.dueDate),
+  ],
+);
+
+export const merchantRecurringPayments = sqliteTable(
+  'merchant_recurring_payments',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    planId: text('plan_id').notNull(),
+    chargeId: text('charge_id').notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    method: text('method').$type<'pix' | 'cash' | 'bank_transfer' | 'other'>().notNull(),
+    reference: text('reference'),
+    paidAt: integer('paid_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.chargeId], foreignColumns: [merchantRecurringCharges.id], name: 'merchant_recurring_payments_charge_fk' }).onDelete('restrict'),
+    index('merchant_recurring_payments_owner_charge').on(table.ownerUserId, table.chargeId),
+    index('merchant_recurring_payments_owner_paid').on(table.ownerUserId, table.paidAt),
+  ],
+);
+
 export const adminAuditLog = sqliteTable(
   'admin_audit_log',
   {
@@ -89,6 +308,27 @@ export const drafts = sqliteTable(
     }).onDelete('set null'),
     index('drafts_template_reference').on(table.templateId, table.templateVersion),
     index('drafts_owner_user_id').on(table.ownerUserId),
+  ],
+);
+
+export const merchantChargeMessages = sqliteTable(
+  'merchant_charge_messages',
+  {
+    id: text('id').primaryKey(),
+    ownerUserId: text('owner_user_id').notNull(),
+    customerId: text('customer_id').notNull(),
+    sourceType: text('source_type').$type<'sale' | 'sale_installment' | 'sale_payment' | 'recurring_charge' | 'recurring_payment'>().notNull(),
+    sourceId: text('source_id').notNull(),
+    draftId: text('draft_id').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    foreignKey({ columns: [table.ownerUserId], foreignColumns: [users.id], name: 'merchant_charge_messages_owner_fk' }).onDelete('cascade'),
+    foreignKey({ columns: [table.customerId], foreignColumns: [merchantCustomers.id], name: 'merchant_charge_messages_customer_fk' }).onDelete('cascade'),
+    foreignKey({ columns: [table.draftId], foreignColumns: [drafts.id], name: 'merchant_charge_messages_draft_fk' }).onDelete('cascade'),
+    uniqueIndex('merchant_charge_messages_draft_unique').on(table.draftId),
+    index('merchant_charge_messages_owner_customer_created').on(table.ownerUserId, table.customerId, table.createdAt),
+    index('merchant_charge_messages_owner_source').on(table.ownerUserId, table.sourceType, table.sourceId),
   ],
 );
 
