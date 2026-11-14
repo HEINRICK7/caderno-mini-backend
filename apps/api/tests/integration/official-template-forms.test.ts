@@ -110,7 +110,8 @@ describe('formulários do catálogo oficial de modelos', () => {
       expect(officialCatalog.find((template) => template.id === id)?.version).toBe(8);
     }
     expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(8);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(8);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(9);
+    expect(officialCatalog.find((template) => template.id === 'caderneta-quitada')?.version).toBe(8);
     expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(9);
   });
 
@@ -301,20 +302,35 @@ describe('formulários do catálogo oficial de modelos', () => {
     })).toThrow();
   });
 
-  it('protege estado pago e saldo quitado no domínio financeiro', () => {
+  it('permite informar dados financeiros e exige confirmação explícita antes de publicar', () => {
     const payment = requireTemplate('pagamento-confirmado');
     const paymentData = { paymentStatus: 'confirmed' } as JsonObject;
     expect(() => assertTemplateFinancialState(payment.definition as unknown as JsonObject, paymentData)).not.toThrow();
     expect(() => assertTemplateFinancialState(payment.definition as unknown as JsonObject, {})).toThrow(TemplateFinancialStateError);
     expect(() => assertTemplateFinancialState(payment.definition as unknown as JsonObject, { paymentStatus: 'pending' })).toThrow(TemplateFinancialStateError);
-    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, { title: 'Pagamento recebido', paymentStatus: 'confirmed' })).toThrow();
+    const validPaymentInput = {
+      title: 'Pagamento recebido',
+      amount: 70,
+      paidAt: '2026-11-13',
+      paymentStatus: 'confirmed',
+      detailsLink: 'https://loja.example/pagamento',
+      primaryActionLabel: 'Ver detalhes',
+    } as JsonObject;
+    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, validPaymentInput)).not.toThrow();
+    const paymentWithoutActionDestination = { ...validPaymentInput } as JsonObject;
+    delete paymentWithoutActionDestination.detailsLink;
+    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, paymentWithoutActionDestination)).toThrow();
+    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, { ...validPaymentInput, paymentStatus: 'pending' })).toThrow();
+    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, { ...validPaymentInput, amount: 0 })).toThrow();
+    expect(() => validateTemplateInput(payment.definition as unknown as JsonObject, { ...validPaymentInput, paidAt: '' })).toThrow();
 
     const settled = requireTemplate('caderneta-quitada');
     const settledData = { settlementStatus: 'settled', outstandingBalance: 0 } as JsonObject;
     expect(() => assertTemplateFinancialState(settled.definition as unknown as JsonObject, settledData)).not.toThrow();
     expect(() => assertTemplateFinancialState(settled.definition as unknown as JsonObject, { settlementStatus: 'open', outstandingBalance: 0 })).toThrow(TemplateFinancialStateError);
     expect(() => assertTemplateFinancialState(settled.definition as unknown as JsonObject, { settlementStatus: 'settled', outstandingBalance: 0.01 })).toThrow(TemplateFinancialStateError);
-    expect(() => validateTemplateInput(settled.definition as unknown as JsonObject, { title: 'Quitado', settlementStatus: 'settled', outstandingBalance: 0 })).toThrow();
+    expect(() => validateTemplateInput(settled.definition as unknown as JsonObject, { title: 'Quitado', settlementStatus: 'settled', outstandingBalance: 0 })).not.toThrow();
+    expect(() => validateTemplateInput(settled.definition as unknown as JsonObject, { title: 'Quitado', settlementStatus: 'settled', outstandingBalance: -0.01 })).toThrow();
   });
 
   it('bloqueia versões antigas de templates financeiros sem estado verificável', () => {
