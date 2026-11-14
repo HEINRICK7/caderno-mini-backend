@@ -3,6 +3,7 @@ import type { MerchantChargeMessageRepository, MerchantChargeSourceType } from '
 import type { MerchantDirectoryRepository } from '../ports/merchant-directory-repository.js';
 import type { MerchantLedgerRepository } from '../ports/merchant-ledger-repository.js';
 import type { MerchantRecurringRepository } from '../ports/merchant-recurring-repository.js';
+import { businessDate } from '../../domain/merchant/business-date.js';
 import { MerchantLedgerNotFoundError } from './merchant-ledger.js';
 
 export class MerchantChargeMessageConflictError extends Error {
@@ -110,7 +111,7 @@ export function getMerchantPaymentMessageContext(input: {
       installmentNumber: installment?.number ?? null,
       installmentTotal: installment ? sale.installments.length : null,
       itemNames: sale.items.map((item) => item.name),
-      paidAt: payment.paidAt.toISOString().slice(0, 10),
+      paidAt: businessDate(payment.paidAt),
     };
   }
 
@@ -129,7 +130,7 @@ export function getMerchantPaymentMessageContext(input: {
     installmentNumber: null,
     installmentTotal: null,
     itemNames: [plan.description],
-    paidAt: payment.paidAt.toISOString().slice(0, 10),
+    paidAt: businessDate(payment.paidAt),
   };
 }
 

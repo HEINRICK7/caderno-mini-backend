@@ -10,6 +10,7 @@ import {
 } from '../../domain/merchant/merchant-recurring.js';
 import { MerchantLedgerNotFoundError } from './merchant-ledger.js';
 import { MerchantLedgerRuleError } from '../../domain/merchant/merchant-ledger.js';
+import { businessDate } from '../../domain/merchant/business-date.js';
 
 type Dependencies = {
   directory: MerchantDirectoryRepository;
@@ -68,7 +69,7 @@ export function createMerchantRecurringPlan(input: {
 }
 
 export function generateMerchantRecurringCharges(input: { ownerUserId?: string | undefined; throughDate?: string | undefined }, dependencies: Dependencies): number {
-  const today = dependencies.clock().toISOString().slice(0, 10);
+  const today = businessDate(dependencies.clock());
   const horizon = new Date(`${today}T00:00:00.000Z`);
   horizon.setUTCDate(horizon.getUTCDate() + 90);
   const throughDate = input.throughDate ?? horizon.toISOString().slice(0, 10);
@@ -116,7 +117,7 @@ export function changeMerchantRecurringRate(input: {
 }, dependencies: Dependencies) {
   const plan = dependencies.recurring.findPlan(input.ownerUserId, input.planId);
   if (!plan || plan.status === 'ended') throw new MerchantLedgerNotFoundError();
-  const today = dependencies.clock().toISOString().slice(0, 10);
+  const today = businessDate(dependencies.clock());
   if (input.effectiveDate < today || input.effectiveDate < plan.startDate) throw new MerchantLedgerRuleError('A vigência deve começar hoje ou em uma data futura.');
   if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor < 1 || input.amountMinor > 99_999_999) throw new MerchantLedgerRuleError('O valor da cobrança é inválido.');
   dependencies.recurring.addRate({
@@ -130,14 +131,14 @@ export function pauseMerchantRecurringPlan(input: { ownerUserId: string; planId:
   const plan = dependencies.recurring.findPlan(input.ownerUserId, input.planId);
   if (!plan || plan.status !== 'active') throw new MerchantLedgerNotFoundError();
   const now = dependencies.clock();
-  dependencies.recurring.pausePlan({ ownerUserId: input.ownerUserId, planId: plan.id, pauseId: dependencies.generateId(), today: now.toISOString().slice(0, 10), now });
+  dependencies.recurring.pausePlan({ ownerUserId: input.ownerUserId, planId: plan.id, pauseId: dependencies.generateId(), today: businessDate(now), now });
 }
 
 export function resumeMerchantRecurringPlan(input: { ownerUserId: string; planId: string }, dependencies: Dependencies): void {
   const plan = dependencies.recurring.findPlan(input.ownerUserId, input.planId);
   if (!plan || plan.status !== 'paused') throw new MerchantLedgerNotFoundError();
   const now = dependencies.clock();
-  dependencies.recurring.resumePlan({ ownerUserId: input.ownerUserId, planId: plan.id, today: now.toISOString().slice(0, 10), now });
+  dependencies.recurring.resumePlan({ ownerUserId: input.ownerUserId, planId: plan.id, today: businessDate(now), now });
   generateMerchantRecurringCharges({ ownerUserId: input.ownerUserId }, dependencies);
 }
 
@@ -145,7 +146,7 @@ export function endMerchantRecurringPlan(input: { ownerUserId: string; planId: s
   const plan = dependencies.recurring.findPlan(input.ownerUserId, input.planId);
   if (!plan || plan.status === 'ended') throw new MerchantLedgerNotFoundError();
   const now = dependencies.clock();
-  dependencies.recurring.endPlan({ ownerUserId: input.ownerUserId, planId: plan.id, today: now.toISOString().slice(0, 10), now });
+  dependencies.recurring.endPlan({ ownerUserId: input.ownerUserId, planId: plan.id, today: businessDate(now), now });
 }
 
 export function recordMerchantRecurringPayment(input: {
@@ -179,7 +180,7 @@ export function getMerchantRecurringChargeMessageContext(input: { ownerUserId: s
   const payments = dependencies.recurring.listChargePayments(input.ownerUserId, charge.id);
   const paidMinor = payments.reduce((sum, payment) => sum + payment.amountMinor, 0);
   const balanceMinor = Math.max(0, charge.amountMinor - paidMinor);
-  const status = getRecurringChargeStatus(charge, paidMinor, dependencies.clock().toISOString().slice(0, 10));
+  const status = getRecurringChargeStatus(charge, paidMinor, businessDate(dependencies.clock()));
   if (status === 'paid' || status === 'canceled' || balanceMinor <= 0) throw new MerchantLedgerRuleError('Esta cobrança não possui saldo pendente para cobrar.');
   return {
     sourceType: 'recurring_charge' as const,
@@ -200,13 +201,13 @@ export function listMerchantRecurringCharges(input: { ownerUserId: string; planI
 }
 
 export function getMerchantRecurringOverview(input: { ownerUserId: string }, dependencies: Dependencies) {
-  const today = dependencies.clock().toISOString().slice(0, 10);
+  const today = businessDate(dependencies.clock());
   const charges = listMerchantRecurringCharges(input, dependencies);
   return {
     activePlanCount: dependencies.recurring.listPlans(input.ownerUserId, 'active').length,
     dueToday: charges.filter((charge) => charge.derivedStatus === 'due_today'),
     overdue: charges.filter((charge) => charge.derivedStatus === 'overdue'),
-    upcoming: charges.filter((charge) => charge.dueDate > today && charge.dueDate <= addDays(today, 14) && charge.balanceMinor > 0),
+    upcoming: charges.filter((charge) => charge.status === 'open' && charge.dueDate > today && charge.dueDate <= addDays(today, 14) && charge.balanceMinor > 0),
   };
 }
 
@@ -227,7 +228,7 @@ function presentCharge(charge: ReturnType<MerchantRecurringRepository['listCharg
     payments: charge.payments,
     paidMinor,
     balanceMinor: Math.max(0, charge.amountMinor - paidMinor),
-    derivedStatus: getRecurringChargeStatus(charge, paidMinor, now.toISOString().slice(0, 10)),
+    derivedStatus: getRecurringChargeStatus(charge, paidMinor, businessDate(now)),
   };
 }
 

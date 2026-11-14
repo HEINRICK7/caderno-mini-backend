@@ -11,6 +11,7 @@ import {
   type SaleCondition,
   type SaleItemInput,
 } from '../../domain/merchant/merchant-ledger.js';
+import { businessDate } from '../../domain/merchant/business-date.js';
 
 export class MerchantLedgerNotFoundError extends Error {
   constructor() { super('Merchant ledger record not found.'); this.name = 'MerchantLedgerNotFoundError'; }
@@ -85,7 +86,7 @@ export function registerMerchantSale(input: {
 export function getMerchantCustomerLedger(input: { ownerUserId: string; customerId: string }, dependencies: Dependencies) {
   const customer = dependencies.directory.findCustomer(input.ownerUserId, input.customerId);
   if (!customer) throw new MerchantLedgerNotFoundError();
-  const today = dependencies.clock().toISOString().slice(0, 10);
+  const today = businessDate(dependencies.clock());
   const sales = dependencies.ledger.getLedger(input.ownerUserId, input.customerId).map((sale) => ({
     ...sale,
     installments: sale.installments.map((installment) => {
@@ -152,7 +153,7 @@ export function getMerchantInstallmentMessageContext(input: { ownerUserId: strin
 }
 
 export function getMerchantLedgerOverview(input: { ownerUserId: string; upcomingDays?: number }, dependencies: Dependencies) {
-  const today = dependencies.clock().toISOString().slice(0, 10);
+  const today = businessDate(dependencies.clock());
   const until = new Date(`${today}T00:00:00.000Z`);
   until.setUTCDate(until.getUTCDate() + (input.upcomingDays ?? 14));
   const throughDate = until.toISOString().slice(0, 10);
