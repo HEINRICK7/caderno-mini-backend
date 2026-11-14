@@ -83,6 +83,9 @@ describe('merchant recurring API', () => {
     expect(end.json().data.status).toBe('ended');
     const afterEnd = await app.inject({ method: 'GET', url: '/api/v1/merchant/recurrences', headers: { cookie: ownerCookie } });
     expect(afterEnd.json().data[0].charges.find((charge: { periodKey: string }) => charge.periodKey === '2026-12').status).toBe('canceled');
+    const overviewAfterEnd = await app.inject({ method: 'GET', url: '/api/v1/merchant/recurring-overview', headers: { cookie: ownerCookie } });
+    expect(overviewAfterEnd.json().data.activePlanCount).toBe(0);
+    expect(overviewAfterEnd.json().data.upcoming).toEqual([]);
     const otherPlans = await app.inject({ method: 'GET', url: '/api/v1/merchant/recurrences', headers: { cookie: otherCookie } });
     expect(otherPlans.json().data).toHaveLength(0);
   });

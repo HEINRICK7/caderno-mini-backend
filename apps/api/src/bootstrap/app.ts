@@ -45,6 +45,7 @@ import {
 import { MAX_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_UPLOAD_BODY_BYTES } from '../domain/images/image-limits.js';
 import type { Draft } from '../domain/drafts/draft.js';
 import { resolveTemplateBusinessName } from '../domain/templates/template-brand.js';
+import { businessDate } from '../domain/merchant/business-date.js';
 import { normalizeEmail } from '../domain/identity/identity.js';
 import { MerchantRecordNotFoundError } from '../application/use-cases/merchant-directory.js';
 import { MerchantLedgerNotFoundError } from '../application/use-cases/merchant-ledger.js';
@@ -160,7 +161,7 @@ const customerProfileBodySchema = z.object({
     const length = value.replace(/\D/g, '').length;
     return length >= 10 && length <= 15;
   }),
-  birthDate: z.iso.date().refine((value) => value <= new Date().toISOString().slice(0, 10)),
+  birthDate: z.iso.date().refine((value) => value <= businessDate(new Date())),
 }).strict();
 const authMessageResponseSchema = z.object({ data: z.object({ message: z.string() }) });
 const adminSessionBodySchema = z.object({

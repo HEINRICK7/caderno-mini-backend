@@ -101,6 +101,21 @@ describe('merchant directory API', () => {
     });
     expect(invalidPrice.statusCode).toBe(400);
 
+    const missingPrice = await app.inject({
+      method: 'POST', url: '/api/v1/merchant/catalog-items',
+      headers: { cookie: ownerCookie, origin: 'http://localhost:3000' },
+      payload: { kind: 'product', name: 'Preço ausente' },
+    });
+    expect(missingPrice.statusCode).toBe(400);
+
+    const freeItem = await app.inject({
+      method: 'POST', url: '/api/v1/merchant/catalog-items',
+      headers: { cookie: ownerCookie, origin: 'http://localhost:3000' },
+      payload: { kind: 'service', name: 'Orientação gratuita', priceMinor: 0 },
+    });
+    expect(freeItem.statusCode).toBe(201);
+    expect(freeItem.json().data.priceMinor).toBe(0);
+
     const create = await app.inject({
       method: 'POST',
       url: '/api/v1/merchant/catalog-items',
