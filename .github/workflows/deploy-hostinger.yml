@@ -201,11 +201,9 @@ jobs:
             echo 'ABACATEPAY_WEBHOOK_SIGNATURE_KEY contains unsupported characters or has an invalid length.' >&2
             exit 1
           fi
-          if [ -n "$ABACATEPAY_PRODUCT_ANNUAL_ID" ] || [ -n "$ABACATEPAY_PRODUCT_LIFETIME_ID" ]; then
-            if [ -z "$ABACATEPAY_PRODUCT_ANNUAL_ID" ] || [ -z "$ABACATEPAY_PRODUCT_LIFETIME_ID" ]; then
-              echo 'Set both AbacatePay product IDs to enable checkout, or leave both empty to deploy webhook receiving only.' >&2
-              exit 1
-            fi
+          if [ -n "$ABACATEPAY_PRODUCT_LIFETIME_ID" ] && [ -z "$ABACATEPAY_PRODUCT_ANNUAL_ID" ]; then
+            echo 'Set the annual AbacatePay product ID before configuring the optional lifetime product.' >&2
+            exit 1
           fi
           for product_id in "$ABACATEPAY_PRODUCT_ANNUAL_ID" "$ABACATEPAY_PRODUCT_LIFETIME_ID"; do
             if [ -z "$product_id" ]; then continue; fi

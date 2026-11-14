@@ -19,8 +19,8 @@ export type AdminCustomerProfile = {
 
 export type AdminPurchaseSummary = {
   purchaseId: string;
-  draftId: string;
-  templateId: string;
+  draftId: string | null;
+  templateId: string | null;
   templateName: string;
   purchaseStatus: string;
   accessStatus: 'active' | 'revoked' | null;

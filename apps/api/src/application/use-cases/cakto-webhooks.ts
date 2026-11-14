@@ -135,7 +135,7 @@ function processPurchaseEvent(
       dedupeKey: `server:purchase_paid:${purchase.id}`,
       name: 'purchase_paid',
       purchaseId: purchase.id,
-      draftId: purchase.draftId,
+      ...(purchase.draftId ? { draftId: purchase.draftId } : {}),
       occurredAt: accessEffectiveAt,
     });
   }

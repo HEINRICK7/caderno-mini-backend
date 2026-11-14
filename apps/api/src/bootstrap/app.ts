@@ -176,7 +176,7 @@ const attributionSchema = z.object({
   referrerUrl: z.url().max(2_048).optional(),
 }).strict();
 const createCheckoutBodySchema = z.object({
-  draftId: z.uuid(),
+  draftId: z.uuid().optional(),
   plan: z.enum(['annual', 'lifetime']).optional(),
   attribution: attributionSchema.optional(),
 }).strict();
@@ -210,10 +210,13 @@ const publicDemoPublicationResponseSchema = z.object({
 const checkoutResponseSchema = z.object({
   data: z.object({ purchaseId: z.uuid(), checkoutUrl: z.url(), status: z.literal('pending') }),
 });
+const platformCheckoutAvailabilityResponseSchema = z.object({
+  data: z.object({ enabled: z.boolean() }),
+});
 const purchaseStatusResponseSchema = z.object({
   data: z.object({
     purchaseId: z.uuid(),
-    draftId: z.uuid(),
+    draftId: z.uuid().nullable(),
     status: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
     accessStatus: z.enum(['active', 'revoked', 'none']),
     amountMinor: z.number().int().positive().nullable(),
@@ -539,8 +542,8 @@ const adminUserResponseSchema = z.object({
     }),
     purchases: z.array(z.object({
       purchaseId: z.uuid(),
-      draftId: z.uuid(),
-      templateId: z.string(),
+      draftId: z.uuid().nullable(),
+      templateId: z.string().nullable(),
       templateName: z.string(),
       purchaseStatus: z.enum(['pending', 'paid', 'refunded', 'chargedback', 'canceled', 'refused']),
       accessStatus: z.enum(['active', 'revoked']).nullable(),
@@ -703,6 +706,7 @@ export type BuildAppOptions = {
   authPublicAppUrl?: string;
   publicApiUrl?: string;
   publicAppUrl?: string;
+  platformCheckoutEnabled?: boolean;
   trustedProxyAddresses?: string[];
   healthCheck?: () => unknown | Promise<unknown>;
 };
@@ -1057,6 +1061,18 @@ export function buildApp(options: BuildAppOptions = {}) {
         return response.code(503).send({ status: 'unavailable' as const });
       }
     },
+    );
+
+    app.get(
+      '/api/v1/checkout/availability',
+      {
+        schema: {
+          tags: ['commerce'],
+          summary: 'Informa se a compra do plano da plataforma está disponível',
+          response: { 200: platformCheckoutAvailabilityResponseSchema },
+        },
+      },
+      async () => ({ data: { enabled: options.platformCheckoutEnabled ?? true } }),
     );
 
     if (options.imageServices) {
@@ -2755,9 +2771,21 @@ export function buildApp(options: BuildAppOptions = {}) {
           preHandler: checkoutRateLimit,
         },
         async (request, response) => {
+          if (
+            request.body.plan &&
+            !request.body.draftId &&
+            options.platformCheckoutEnabled === false
+          ) {
+            return response.code(503).send({
+              error: {
+                code: 'PLATFORM_CHECKOUT_PAUSED',
+                message: 'A compra do plano está temporariamente indisponível.',
+              },
+            });
+          }
           const user = getAuthenticatedUser(request);
           const checkout = await commerce.createCheckout({
-            draftId: request.body.draftId,
+            ...(request.body.draftId ? { draftId: request.body.draftId } : {}),
             ...(request.body.plan ? { plan: request.body.plan } : {}),
             ...(user ? { userId: user.id } : {}),
           });
@@ -2769,7 +2797,7 @@ export function buildApp(options: BuildAppOptions = {}) {
             name: 'checkout_started',
             entityKey: checkout.purchaseId,
             purchaseId: checkout.purchaseId,
-            draftId: request.body.draftId,
+            ...(request.body.draftId ? { draftId: request.body.draftId } : {}),
             ...(user ? { userId: user.id } : {}),
             ...(attribution?.source ? { source: attribution.source } : {}),
             ...(attribution?.medium ? { medium: attribution.medium } : {}),

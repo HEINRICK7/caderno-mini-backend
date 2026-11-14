@@ -72,6 +72,7 @@ const app = buildApp({
   ...(config.analyticsReadToken ? { analyticsReadToken: config.analyticsReadToken } : {}),
   publicApiUrl: config.publicApiUrl,
   publicAppUrl: config.publicAppUrl,
+  platformCheckoutEnabled: config.platformCheckoutEnabled,
   authPublicAppUrl: config.authPublicAppUrl,
   identityServices: createIdentityServices(database.db, {
     emailSender: new NodemailerEmailSender({

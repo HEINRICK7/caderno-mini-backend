@@ -90,6 +90,7 @@ export class SqliteIdentityRepository implements IdentityRepository {
         .where(eq(accessGrants.userId, user.id))
         .all();
       for (const purchasedDraft of purchasedDrafts) {
+        if (!purchasedDraft.id) continue;
         transaction
           .update(drafts)
           .set({ ownerUserId: user.id })

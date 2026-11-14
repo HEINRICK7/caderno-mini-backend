@@ -2,7 +2,7 @@ export type PurchaseStatus = 'pending' | 'paid' | 'refunded' | 'chargedback' | '
 
 export type Purchase = {
   id: string;
-  draftId: string;
+  draftId: string | null;
   callbackHash: string;
   providerOrderId?: string;
   customerEmail?: string;

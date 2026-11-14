@@ -369,7 +369,7 @@ export const purchases = sqliteTable(
   'purchases',
   {
     id: text('id').primaryKey(),
-    draftId: text('draft_id').notNull(),
+    draftId: text('draft_id'),
     ownerUserId: text('owner_user_id'),
     callbackHash: text('callback_hash').notNull(),
     providerOrderId: text('provider_order_id'),

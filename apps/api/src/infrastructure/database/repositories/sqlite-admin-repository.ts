@@ -83,7 +83,7 @@ export class SqliteAdminRepository implements AdminRepository {
         purchaseId: purchases.id,
         draftId: purchases.draftId,
         templateId: drafts.templateId,
-        templateName: templates.name,
+        templateName: sql<string>`coalesce(${templates.name}, 'Acesso da plataforma')`,
         purchaseStatus: purchases.status,
         accessStatus: accessGrants.status,
         expiresAt: accessGrants.expiresAt,
@@ -98,8 +98,8 @@ export class SqliteAdminRepository implements AdminRepository {
         updatedAt: purchases.updatedAt,
       })
       .from(purchases)
-      .innerJoin(drafts, eq(drafts.id, purchases.draftId))
-      .innerJoin(templates, and(eq(templates.id, drafts.templateId), eq(templates.version, drafts.templateVersion)))
+      .leftJoin(drafts, eq(drafts.id, purchases.draftId))
+      .leftJoin(templates, and(eq(templates.id, drafts.templateId), eq(templates.version, drafts.templateVersion)))
       .leftJoin(accessGrants, eq(accessGrants.purchaseId, purchases.id))
       .where(or(eq(purchases.ownerUserId, input.userId), eq(accessGrants.userId, input.userId)))
       .orderBy(desc(purchases.createdAt))

@@ -44,6 +44,7 @@ export async function createTestApp(
       publicAppUrl: string;
     };
     admin?: { email: string; passwordHash: string; sessionSecret: string };
+    platformCheckoutEnabled?: boolean;
   } = {},
 ): Promise<{
   app: FastifyInstance;
@@ -101,6 +102,7 @@ export async function createTestApp(
     analyticsReadToken: 'test-analytics-read-token-with-at-least-32-chars',
     publicApiUrl: options.publicApiUrl ?? 'https://api.example.test',
     publicAppUrl: options.publicAppUrl ?? 'https://app.example.test',
+    ...(options.platformCheckoutEnabled === undefined ? {} : { platformCheckoutEnabled: options.platformCheckoutEnabled }),
     authPublicAppUrl: 'http://localhost:3000',
     identityServices: createIdentityServices(database.db, {
       emailSender: {
