@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { AppDatabase } from '../infrastructure/database/connection.js';
 import { SqliteDraftRepository } from '../infrastructure/database/repositories/sqlite-draft-repository.js';
+import { SqliteMerchantChargeMessageRepository } from '../infrastructure/database/repositories/sqlite-merchant-charge-message-repository.js';
 import { SqliteTemplateRepository } from '../infrastructure/database/repositories/sqlite-template-repository.js';
 import { createDraft } from '../application/use-cases/create-draft.js';
 import { getDraft } from '../application/use-cases/get-draft.js';
@@ -62,6 +63,45 @@ import {
   validateAdminTemplateDefinition,
 } from '../application/use-cases/admin-templates.js';
 import { recordAdminManualPayment } from '../application/use-cases/admin-manual-payment.js';
+import {
+  createMerchantCatalogItemRecord,
+  createMerchantCustomerRecord,
+  getMerchantCatalogItem,
+  getMerchantCustomer,
+  listMerchantCatalogItems,
+  listMerchantCustomers,
+  updateMerchantCatalogItemRecord,
+  updateMerchantCustomerRecord,
+} from '../application/use-cases/merchant-directory.js';
+import { SqliteMerchantDirectoryRepository } from '../infrastructure/database/repositories/sqlite-merchant-directory-repository.js';
+import { SqliteMerchantLedgerRepository } from '../infrastructure/database/repositories/sqlite-merchant-ledger-repository.js';
+import { SqliteMerchantRecurringRepository } from '../infrastructure/database/repositories/sqlite-merchant-recurring-repository.js';
+import {
+  getMerchantPaymentMessageContext,
+  getMerchantSaleMessageContext,
+  linkMerchantChargeMessage,
+  listMerchantChargeMessages,
+} from '../application/use-cases/merchant-charge-messages.js';
+import {
+  getMerchantCustomerLedger,
+  getMerchantInstallmentMessageContext,
+  getMerchantLedgerOverview,
+  recordMerchantInstallmentPayment,
+  registerMerchantSale,
+} from '../application/use-cases/merchant-ledger.js';
+import {
+  changeMerchantRecurringRate,
+  createMerchantRecurringPlan,
+  endMerchantRecurringPlan,
+  generateMerchantRecurringCharges,
+  getMerchantRecurringOverview,
+  getMerchantRecurringChargeMessageContext,
+  listMerchantRecurringCharges,
+  listMerchantRecurringPlans,
+  pauseMerchantRecurringPlan,
+  recordMerchantRecurringPayment,
+  resumeMerchantRecurringPlan,
+} from '../application/use-cases/merchant-recurring.js';
 
 export type ApplicationServices = ReturnType<typeof createApplicationServices>;
 
@@ -117,6 +157,106 @@ export function createPreviewServices(db: AppDatabase, renderer: PngRenderer) {
 }
 
 export type IdentityServices = ReturnType<typeof createIdentityServices>;
+
+export type MerchantDirectoryServices = ReturnType<typeof createMerchantDirectoryServices>;
+
+export function createMerchantDirectoryServices(
+  db: AppDatabase,
+  options: { idGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const records = new SqliteMerchantDirectoryRepository(db);
+  const dependencies = {
+    records,
+    generateId: options.idGenerator ?? randomUUID,
+    clock: options.clock ?? (() => new Date()),
+  };
+
+  return {
+    listCustomers: (input: Parameters<typeof listMerchantCustomers>[0]) => listMerchantCustomers(input, dependencies),
+    createCustomer: (input: Parameters<typeof createMerchantCustomerRecord>[0]) => createMerchantCustomerRecord(input, dependencies),
+    getCustomer: (input: Parameters<typeof getMerchantCustomer>[0]) => getMerchantCustomer(input, dependencies),
+    updateCustomer: (input: Parameters<typeof updateMerchantCustomerRecord>[0]) => updateMerchantCustomerRecord(input, dependencies),
+    listCatalogItems: (input: Parameters<typeof listMerchantCatalogItems>[0]) => listMerchantCatalogItems(input, dependencies),
+    createCatalogItem: (input: Parameters<typeof createMerchantCatalogItemRecord>[0]) => createMerchantCatalogItemRecord(input, dependencies),
+    getCatalogItem: (input: Parameters<typeof getMerchantCatalogItem>[0]) => getMerchantCatalogItem(input, dependencies),
+    updateCatalogItem: (input: Parameters<typeof updateMerchantCatalogItemRecord>[0]) => updateMerchantCatalogItemRecord(input, dependencies),
+  };
+}
+
+export type MerchantLedgerServices = ReturnType<typeof createMerchantLedgerServices>;
+
+export function createMerchantLedgerServices(
+  db: AppDatabase,
+  options: { idGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const directory = new SqliteMerchantDirectoryRepository(db);
+  const ledger = new SqliteMerchantLedgerRepository(db);
+  const dependencies = {
+    directory,
+    ledger,
+    generateId: options.idGenerator ?? randomUUID,
+    clock: options.clock ?? (() => new Date()),
+  };
+  return {
+    registerSale: (input: Parameters<typeof registerMerchantSale>[0]) => registerMerchantSale(input, dependencies),
+    getCustomerLedger: (input: Parameters<typeof getMerchantCustomerLedger>[0]) => getMerchantCustomerLedger(input, dependencies),
+    recordPayment: (input: Parameters<typeof recordMerchantInstallmentPayment>[0]) => recordMerchantInstallmentPayment(input, dependencies),
+    getOverview: (input: Parameters<typeof getMerchantLedgerOverview>[0]) => getMerchantLedgerOverview(input, dependencies),
+    getMessageContext: (input: Parameters<typeof getMerchantInstallmentMessageContext>[0]) => getMerchantInstallmentMessageContext(input, dependencies),
+  };
+}
+
+export type MerchantRecurringServices = ReturnType<typeof createMerchantRecurringServices>;
+
+export function createMerchantRecurringServices(
+  db: AppDatabase,
+  options: { idGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const directory = new SqliteMerchantDirectoryRepository(db);
+  const recurring = new SqliteMerchantRecurringRepository(db);
+  const dependencies = {
+    directory,
+    recurring,
+    generateId: options.idGenerator ?? randomUUID,
+    clock: options.clock ?? (() => new Date()),
+  };
+  return {
+    createPlan: (input: Parameters<typeof createMerchantRecurringPlan>[0]) => createMerchantRecurringPlan(input, dependencies),
+    listPlans: (input: Parameters<typeof listMerchantRecurringPlans>[0]) => listMerchantRecurringPlans(input, dependencies),
+    listCharges: (input: Parameters<typeof listMerchantRecurringCharges>[0]) => listMerchantRecurringCharges(input, dependencies),
+    changeRate: (input: Parameters<typeof changeMerchantRecurringRate>[0]) => changeMerchantRecurringRate(input, dependencies),
+    pausePlan: (input: Parameters<typeof pauseMerchantRecurringPlan>[0]) => pauseMerchantRecurringPlan(input, dependencies),
+    resumePlan: (input: Parameters<typeof resumeMerchantRecurringPlan>[0]) => resumeMerchantRecurringPlan(input, dependencies),
+    endPlan: (input: Parameters<typeof endMerchantRecurringPlan>[0]) => endMerchantRecurringPlan(input, dependencies),
+    recordPayment: (input: Parameters<typeof recordMerchantRecurringPayment>[0]) => recordMerchantRecurringPayment(input, dependencies),
+    getOverview: (input: Parameters<typeof getMerchantRecurringOverview>[0]) => getMerchantRecurringOverview(input, dependencies),
+    getMessageContext: (input: Parameters<typeof getMerchantRecurringChargeMessageContext>[0]) => getMerchantRecurringChargeMessageContext(input, dependencies),
+    generateUpcomingCharges: (input: Parameters<typeof generateMerchantRecurringCharges>[0] = {}) => generateMerchantRecurringCharges(input, dependencies),
+  };
+}
+
+export type MerchantChargeMessageServices = ReturnType<typeof createMerchantChargeMessageServices>;
+
+export function createMerchantChargeMessageServices(
+  db: AppDatabase,
+  options: { idGenerator?: () => string; clock?: () => Date } = {},
+) {
+  const dependencies = {
+    drafts: new SqliteDraftRepository(db),
+    directory: new SqliteMerchantDirectoryRepository(db),
+    ledger: new SqliteMerchantLedgerRepository(db),
+    recurring: new SqliteMerchantRecurringRepository(db),
+    messages: new SqliteMerchantChargeMessageRepository(db),
+    generateId: options.idGenerator ?? randomUUID,
+    clock: options.clock ?? (() => new Date()),
+  };
+  return {
+    link: (input: Parameters<typeof linkMerchantChargeMessage>[0]) => linkMerchantChargeMessage(input, dependencies),
+    listForCustomer: (input: Parameters<typeof listMerchantChargeMessages>[0]) => listMerchantChargeMessages(input, dependencies),
+    getSaleContext: (input: Parameters<typeof getMerchantSaleMessageContext>[0]) => getMerchantSaleMessageContext(input, dependencies),
+    getPaymentContext: (input: Parameters<typeof getMerchantPaymentMessageContext>[0]) => getMerchantPaymentMessageContext(input, dependencies),
+  };
+}
 
 export function createIdentityServices(
   db: AppDatabase,

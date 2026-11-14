@@ -46,6 +46,13 @@ import { MAX_IMAGE_DATA_URL_LENGTH, MAX_IMAGE_UPLOAD_BODY_BYTES } from '../domai
 import type { Draft } from '../domain/drafts/draft.js';
 import { resolveTemplateBusinessName } from '../domain/templates/template-brand.js';
 import { normalizeEmail } from '../domain/identity/identity.js';
+import { MerchantRecordNotFoundError } from '../application/use-cases/merchant-directory.js';
+import { MerchantLedgerNotFoundError } from '../application/use-cases/merchant-ledger.js';
+import { MerchantLedgerRuleError } from '../domain/merchant/merchant-ledger.js';
+import { MerchantChargeMessageConflictError } from '../application/use-cases/merchant-charge-messages.js';
+import type { InstallmentStatus, MerchantPayment, MerchantSale, SaleInstallment, SaleItem } from '../domain/merchant/merchant-ledger.js';
+import type { RecurringPayment } from '../domain/merchant/merchant-recurring.js';
+import type { MerchantLedgerSale } from '../application/ports/merchant-ledger-repository.js';
 import type {
   AnalyticsServices,
   ApplicationServices,
@@ -56,6 +63,10 @@ import type {
   ImageServices,
   DemoServices,
   AdminServices,
+  MerchantDirectoryServices,
+  MerchantLedgerServices,
+  MerchantRecurringServices,
+  MerchantChargeMessageServices,
 } from './services.js';
 
 // Request bodies have already passed through Fastify's JSON parser; arbitrary JSON values are valid here.
@@ -245,6 +256,260 @@ const customerPortalResponseSchema = z.object({
     })),
   }),
 });
+const merchantCustomerStatusSchema = z.enum(['active', 'archived']);
+const merchantRecordStatusQuerySchema = z.enum(['active', 'archived', 'all']);
+const merchantCustomerBodySchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  whatsapp: z.string().trim().max(24).regex(/^\+?[\d\s().-]*$/).optional(),
+  email: z.string().trim().email().max(254).optional(),
+  address: z.string().trim().max(300).optional(),
+  notes: z.string().trim().max(2_000).optional(),
+  status: merchantCustomerStatusSchema.optional(),
+}).strict();
+const merchantCustomerUpdateBodySchema = merchantCustomerBodySchema.extend({ status: merchantCustomerStatusSchema });
+const merchantCatalogItemKindSchema = z.enum(['product', 'service']);
+const merchantCatalogItemBodySchema = z.object({
+  kind: merchantCatalogItemKindSchema,
+  name: z.string().trim().min(2).max(120),
+  description: z.string().trim().max(1_000).optional(),
+  priceMinor: z.number().int().min(0).max(99_999_999),
+  status: merchantCustomerStatusSchema.optional(),
+}).strict();
+const merchantCatalogItemUpdateBodySchema = merchantCatalogItemBodySchema.extend({ status: merchantCustomerStatusSchema });
+const merchantDirectoryIdParamsSchema = z.object({ id: z.uuid() }).strict();
+const merchantLedgerIdParamsSchema = z.object({ id: z.string().min(1).max(120) }).strict();
+const merchantDirectoryListQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  status: merchantRecordStatusQuerySchema.optional(),
+  kind: merchantCatalogItemKindSchema.optional(),
+}).strict();
+const merchantCustomerResponseSchema = z.object({
+  id: z.uuid(), name: z.string(), whatsapp: z.string().nullable(), email: z.string().nullable(),
+  address: z.string().nullable(), notes: z.string().nullable(), status: merchantCustomerStatusSchema,
+  createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+});
+const merchantCatalogItemResponseSchema = z.object({
+  id: z.uuid(), kind: merchantCatalogItemKindSchema, name: z.string(), description: z.string().nullable(),
+  priceMinor: z.number().int().nonnegative(), status: merchantCustomerStatusSchema,
+  createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+});
+const merchantCustomerListResponseSchema = z.object({ data: z.array(merchantCustomerResponseSchema) });
+const merchantCustomerResponseEnvelopeSchema = z.object({ data: merchantCustomerResponseSchema });
+const merchantCatalogItemListResponseSchema = z.object({ data: z.array(merchantCatalogItemResponseSchema) });
+const merchantCatalogItemResponseEnvelopeSchema = z.object({ data: merchantCatalogItemResponseSchema });
+const merchantSaleConditionSchema = z.enum(['cash', 'single_due', 'installments']);
+const merchantPaymentMethodSchema = z.enum(['pix', 'cash', 'bank_transfer', 'other']);
+const merchantSaleLineBodySchema = z.object({
+  catalogItemId: z.uuid().optional(),
+  name: z.string().trim().min(1).max(120).optional(),
+  kind: z.enum(['product', 'service', 'other']).optional(),
+  quantity: z.number().int().min(1).max(10_000),
+  unitPriceMinor: z.number().int().min(0).max(99_999_999).optional(),
+}).strict().refine((item) => Boolean(item.catalogItemId) || Boolean(item.name && item.kind && item.unitPriceMinor !== undefined));
+const merchantRegisterSaleBodySchema = z.object({
+  customerId: z.uuid(),
+  items: z.array(merchantSaleLineBodySchema).min(1).max(100),
+  condition: merchantSaleConditionSchema,
+  downPaymentMinor: z.number().int().min(0).max(99_999_999).optional(),
+  initialPaymentMethod: merchantPaymentMethodSchema.optional(),
+  installmentCount: z.number().int().min(2).max(120).optional(),
+  firstDueDate: z.iso.date().optional(),
+}).strict().refine((input) => input.condition !== 'installments' || input.installmentCount !== undefined);
+const merchantPaymentBodySchema = z.object({
+  amountMinor: z.number().int().min(1).max(99_999_999),
+  method: merchantPaymentMethodSchema,
+  reference: z.string().trim().max(240).optional(),
+}).strict();
+const merchantSaleItemResponseSchema = z.object({
+  id: z.string(), catalogItemId: z.string().nullable(), kind: z.enum(['product', 'service', 'other']),
+  name: z.string(), quantity: z.number().int().positive(), unitPriceMinor: z.number().int().nonnegative(), lineTotalMinor: z.number().int().nonnegative(),
+});
+const merchantInstallmentResponseSchema = z.object({
+  id: z.string(), number: z.number().int().positive(), amountMinor: z.number().int().positive(), dueDate: z.iso.date(),
+  status: z.enum(['open', 'canceled']), paidMinor: z.number().int().nonnegative().optional(),
+  balanceMinor: z.number().int().nonnegative().optional(),
+  derivedStatus: z.enum(['pending', 'due_today', 'overdue', 'partially_paid', 'paid', 'canceled']).optional(),
+});
+const merchantPaymentResponseSchema = z.object({
+  id: z.string(), saleId: z.uuid(), installmentId: z.string().nullable(), amountMinor: z.number().int().positive(),
+  method: merchantPaymentMethodSchema, reference: z.string().nullable(), paidAt: z.string().datetime(),
+});
+const merchantSaleResponseSchema = z.object({
+  id: z.uuid(), customerId: z.uuid(), condition: merchantSaleConditionSchema,
+  totalMinor: z.number().int().positive(), downPaymentMinor: z.number().int().nonnegative(), financedMinor: z.number().int().nonnegative(),
+  items: z.array(merchantSaleItemResponseSchema), installments: z.array(merchantInstallmentResponseSchema),
+  payments: z.array(merchantPaymentResponseSchema), balanceMinor: z.number().int().nonnegative().optional(),
+  createdAt: z.string().datetime(),
+});
+const merchantSaleResponseEnvelopeSchema = z.object({ data: merchantSaleResponseSchema });
+const merchantCustomerLedgerResponseSchema = z.object({ data: z.object({
+  customer: merchantCustomerResponseSchema,
+  sales: z.array(merchantSaleResponseSchema),
+}) });
+const merchantPaymentResponseEnvelopeSchema = z.object({ data: merchantPaymentResponseSchema });
+const merchantLedgerOverviewResponseSchema = z.object({ data: z.object({
+  customerCount: z.number().int().nonnegative(), saleCount: z.number().int().nonnegative(),
+  dueToday: z.array(z.any()), overdue: z.array(z.any()), upcoming: z.array(z.any()), recentPayments: z.array(z.any()),
+}) });
+const merchantChargeMessageSourceTypeSchema = z.enum(['sale', 'sale_installment', 'sale_payment', 'recurring_charge', 'recurring_payment']);
+const merchantChargeMessageBodySchema = z.object({
+  sourceType: merchantChargeMessageSourceTypeSchema,
+  sourceId: z.string().trim().min(1).max(120),
+  draftId: z.uuid(),
+}).strict();
+const merchantChargeMessageResponseSchema = z.object({
+  id: z.uuid(), customerId: z.uuid(), sourceType: merchantChargeMessageSourceTypeSchema,
+  sourceId: z.string(), draftId: z.uuid(), templateId: z.string(), templateName: z.string(), createdAt: z.string().datetime(),
+});
+const merchantChargeMessageLinkedSchema = z.object({
+  id: z.uuid(), customerId: z.uuid(), sourceType: merchantChargeMessageSourceTypeSchema,
+  sourceId: z.string(), draftId: z.uuid(), createdAt: z.string().datetime(),
+});
+const merchantChargeMessageEnvelopeSchema = z.object({ data: merchantChargeMessageLinkedSchema });
+const merchantChargeMessageListResponseSchema = z.object({ data: z.array(merchantChargeMessageResponseSchema) });
+const merchantRecurringFrequencySchema = z.enum(['weekly', 'fortnightly', 'monthly']);
+const merchantRecurringStatusSchema = z.enum(['active', 'paused', 'ended']);
+const merchantRecurringCreateBodySchema = z.object({
+  customerId: z.uuid(),
+  description: z.string().trim().min(2).max(160).optional(),
+  catalogItemId: z.uuid().optional(),
+  amountMinor: z.number().int().min(1).max(99_999_999).optional(),
+  frequency: merchantRecurringFrequencySchema,
+  startDate: z.iso.date(),
+  dueDay: z.number().int().min(1).max(31).optional(),
+  endDate: z.iso.date().optional(),
+  totalCycles: z.number().int().min(1).max(120).optional(),
+}).strict().refine((input) => input.frequency !== 'monthly' || input.dueDay !== undefined);
+const merchantRecurringRateBodySchema = z.object({
+  effectiveDate: z.iso.date(),
+  amountMinor: z.number().int().min(1).max(99_999_999),
+}).strict();
+const merchantRecurringPlanParamsSchema = z.object({ id: z.uuid() }).strict();
+const merchantRecurringListQuerySchema = z.object({ status: z.enum(['active', 'paused', 'ended', 'all']).optional() }).strict();
+const merchantRecurringChargesQuerySchema = z.object({ planId: z.uuid().optional(), customerId: z.uuid().optional() }).strict();
+const merchantRecurringPaymentBodySchema = merchantPaymentBodySchema;
+const merchantRecurringPaymentResponseSchema = z.object({
+  id: z.uuid(), chargeId: z.uuid(), amountMinor: z.number().int().positive(), method: merchantPaymentMethodSchema,
+  reference: z.string().nullable(), paidAt: z.string().datetime(),
+});
+const merchantRecurringChargeResponseSchema = z.object({
+  id: z.uuid(), customerId: z.uuid(), planId: z.uuid(), periodKey: z.string(), amountMinor: z.number().int().positive(),
+  dueDate: z.iso.date(), status: z.enum(['open', 'canceled']), description: z.string(), frequency: merchantRecurringFrequencySchema,
+  customer: z.object({ id: z.uuid(), name: z.string(), whatsapp: z.string().nullable() }),
+  payments: z.array(merchantRecurringPaymentResponseSchema), paidMinor: z.number().int().nonnegative(), balanceMinor: z.number().int().nonnegative(),
+  derivedStatus: z.enum(['pending', 'due_today', 'overdue', 'partially_paid', 'paid', 'canceled']),
+});
+const merchantRecurringPlanResponseSchema = z.object({
+  id: z.uuid(), customerId: z.uuid(), description: z.string(), catalogItemId: z.string().nullable(), amountMinor: z.number().int().nonnegative(),
+  currentAmountMinor: z.number().int().nonnegative(), frequency: merchantRecurringFrequencySchema, startDate: z.iso.date(), dueDay: z.number().int().nullable(),
+  endDate: z.iso.date().nullable(), totalCycles: z.number().int().nullable(), status: merchantRecurringStatusSchema,
+  rates: z.array(z.object({ effectiveDate: z.iso.date(), amountMinor: z.number().int().nonnegative() })),
+  pauses: z.array(z.object({ startDate: z.iso.date(), endDate: z.iso.date().nullable() })),
+  charges: z.array(merchantRecurringChargeResponseSchema), createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+});
+const merchantRecurringPlansResponseSchema = z.object({ data: z.array(merchantRecurringPlanResponseSchema) });
+const merchantRecurringPlanEnvelopeSchema = z.object({ data: merchantRecurringPlanResponseSchema });
+const merchantRecurringChargesResponseSchema = z.object({ data: z.array(merchantRecurringChargeResponseSchema) });
+const merchantRecurringPaymentEnvelopeSchema = z.object({ data: merchantRecurringPaymentResponseSchema });
+const merchantRecurringOverviewResponseSchema = z.object({
+  data: z.object({ activePlanCount: z.number().int().nonnegative(), dueToday: z.array(merchantRecurringChargeResponseSchema), overdue: z.array(merchantRecurringChargeResponseSchema), upcoming: z.array(merchantRecurringChargeResponseSchema) }),
+});
+const merchantChargeMessageContextResponseSchema = z.object({ data: z.object({
+  sourceType: merchantChargeMessageSourceTypeSchema, sourceId: z.string(), customerId: z.uuid(),
+  customerName: z.string(), businessName: z.string(), amountMinor: z.number().int().positive(), dueDate: z.iso.date().nullable(),
+  installmentNumber: z.number().int().positive().nullable(), installmentTotal: z.number().int().positive().nullable(), itemNames: z.array(z.string()),
+  paidAt: z.iso.date().nullable(),
+}) });
+
+function presentMerchantPayment(payment: MerchantPayment) {
+  return {
+    id: payment.id,
+    saleId: payment.saleId,
+    installmentId: payment.installmentId,
+    amountMinor: payment.amountMinor,
+    method: payment.method,
+    reference: payment.reference,
+    paidAt: payment.paidAt.toISOString(),
+  };
+}
+
+function presentMerchantSale(sale: MerchantSale | (MerchantLedgerSale & { balanceMinor: number })) {
+  const payments = 'payments' in sale ? sale.payments : sale.initialPayment ? [sale.initialPayment] : [];
+  return {
+    id: sale.id,
+    customerId: sale.customerId,
+    condition: sale.condition,
+    totalMinor: sale.totalMinor,
+    downPaymentMinor: sale.downPaymentMinor,
+    financedMinor: sale.financedMinor,
+    ...( 'balanceMinor' in sale ? { balanceMinor: sale.balanceMinor } : {}),
+    items: sale.items.map((item: SaleItem) => ({
+      id: item.id, catalogItemId: item.catalogItemId ?? null, kind: item.kind, name: item.name,
+      quantity: item.quantity, unitPriceMinor: item.unitPriceMinor, lineTotalMinor: item.lineTotalMinor,
+    })),
+    installments: sale.installments.map((installment: SaleInstallment & { paidMinor?: number; balanceMinor?: number; derivedStatus?: InstallmentStatus }) => ({
+      id: installment.id, number: installment.number, amountMinor: installment.amountMinor,
+      dueDate: installment.dueDate, status: installment.status,
+      ...(installment.paidMinor === undefined ? {} : { paidMinor: installment.paidMinor }),
+      ...(installment.balanceMinor === undefined ? {} : { balanceMinor: installment.balanceMinor }),
+      ...(installment.derivedStatus === undefined ? {} : { derivedStatus: installment.derivedStatus }),
+    })),
+    payments: payments.map(presentMerchantPayment),
+    createdAt: sale.createdAt.toISOString(),
+  };
+}
+
+function presentRecurringPayment(payment: RecurringPayment) {
+  return {
+    id: payment.id,
+    chargeId: payment.chargeId,
+    amountMinor: payment.amountMinor,
+    method: payment.method,
+    reference: payment.reference,
+    paidAt: payment.paidAt.toISOString(),
+  };
+}
+
+function presentRecurringCharge(charge: ReturnType<MerchantRecurringServices['listCharges']>[number]) {
+  return {
+    id: charge.id,
+    customerId: charge.customerId,
+    planId: charge.planId,
+    periodKey: charge.periodKey,
+    amountMinor: charge.amountMinor,
+    dueDate: charge.dueDate,
+    status: charge.status,
+    description: charge.description,
+    frequency: charge.frequency,
+    customer: charge.customer,
+    payments: charge.payments.map(presentRecurringPayment),
+    paidMinor: charge.paidMinor,
+    balanceMinor: charge.balanceMinor,
+    derivedStatus: charge.derivedStatus,
+  };
+}
+
+function presentRecurringPlan(plan: ReturnType<MerchantRecurringServices['listPlans']>[number]) {
+  return {
+    id: plan.id,
+    customerId: plan.customerId,
+    description: plan.description,
+    catalogItemId: plan.catalogItemId,
+    amountMinor: plan.amountMinor,
+    currentAmountMinor: plan.currentAmountMinor,
+    frequency: plan.frequency,
+    startDate: plan.startDate,
+    dueDay: plan.dueDay,
+    endDate: plan.endDate,
+    totalCycles: plan.totalCycles,
+    status: plan.status,
+    rates: plan.rates,
+    pauses: plan.pauses,
+    charges: plan.charges.map(presentRecurringCharge),
+    createdAt: plan.createdAt.toISOString(),
+    updatedAt: plan.updatedAt.toISOString(),
+  };
+}
 const adminAccountStatusSchema = z.enum(['active', 'suspended']);
 const adminUserSummarySchema = z.object({
   id: z.uuid(),
@@ -425,6 +690,10 @@ export type BuildAppOptions = {
   imageServices?: ImageServices;
   analyticsServices?: AnalyticsServices;
   adminServices?: AdminServices;
+  merchantDirectoryServices?: MerchantDirectoryServices;
+  merchantLedgerServices?: MerchantLedgerServices;
+  merchantRecurringServices?: MerchantRecurringServices;
+  merchantChargeMessageServices?: MerchantChargeMessageServices;
   adminEmail?: string;
   adminPasswordHash?: string;
   adminSessionSecret?: string;
@@ -513,6 +782,19 @@ export function buildApp(options: BuildAppOptions = {}) {
       '/api/v1/drafts',
       '/api/v1/drafts/:id',
       '/api/v1/account/profile',
+      '/api/v1/merchant/customers',
+      '/api/v1/merchant/customers/:id',
+      '/api/v1/merchant/catalog-items',
+      '/api/v1/merchant/catalog-items/:id',
+      '/api/v1/merchant/sales',
+      '/api/v1/merchant/installments/:id/payments',
+      '/api/v1/merchant/recurrences',
+      '/api/v1/merchant/recurrences/:id/rate',
+      '/api/v1/merchant/recurrences/:id/pause',
+      '/api/v1/merchant/recurrences/:id/resume',
+      '/api/v1/merchant/recurrences/:id/end',
+      '/api/v1/merchant/recurring-charges/:id/payments',
+      '/api/v1/merchant/charge-messages',
       '/api/v1/checkout',
       '/api/v1/drafts/:id/publication',
       '/api/v1/analytics/events',
@@ -566,6 +848,7 @@ export function buildApp(options: BuildAppOptions = {}) {
       request.routeOptions.url?.startsWith('/api/v1/auth') ||
       request.routeOptions.url?.startsWith('/api/v1/checkout') ||
       request.routeOptions.url?.startsWith('/api/v1/account') ||
+      request.routeOptions.url?.startsWith('/api/v1/merchant') ||
       request.routeOptions.url?.startsWith('/api/v1/purchases') ||
       request.routeOptions.url?.startsWith('/api/v1/publications') ||
       request.routeOptions.url?.startsWith('/api/v1/demo-publications') ||
@@ -583,6 +866,20 @@ export function buildApp(options: BuildAppOptions = {}) {
   });
 
   app.setErrorHandler((error, request, response) => {
+    if (error instanceof MerchantChargeMessageConflictError) {
+      return response.code(409).send({ error: { code: 'MERCHANT_CHARGE_MESSAGE_CONFLICT', message: error.message } });
+    }
+    if (error instanceof MerchantLedgerNotFoundError) {
+      return response.code(404).send({ error: { code: 'MERCHANT_LEDGER_RECORD_NOT_FOUND', message: 'Este compromisso não foi encontrado.' } });
+    }
+    if (error instanceof MerchantLedgerRuleError) {
+      return response.code(400).send({ error: { code: 'MERCHANT_LEDGER_RULE_INVALID', message: error.message } });
+    }
+    if (error instanceof MerchantRecordNotFoundError) {
+      return response.code(404).send({
+        error: { code: 'MERCHANT_RECORD_NOT_FOUND', message: 'Este registro não foi encontrado.' },
+      });
+    }
     if (error instanceof TemplateNotFoundError) {
       return response.code(404).send({
         error: { code: 'TEMPLATE_NOT_FOUND', message: 'Modelo não encontrado.' },
@@ -1777,6 +2074,545 @@ export function buildApp(options: BuildAppOptions = {}) {
             return response.code(404).send({ error: { code: 'ADMIN_USER_NOT_FOUND', message: 'Cliente não encontrado.' } });
           }
           return { data: { status: request.body.status, ...result } };
+        },
+      );
+    }
+
+    if (options.merchantDirectoryServices) {
+      const directory = options.merchantDirectoryServices;
+      app.get(
+        '/api/v1/merchant/customers',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Lista clientes comerciais da conta autenticada',
+            querystring: merchantDirectoryListQuerySchema,
+            response: { 200: merchantCustomerListResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const customers = directory.listCustomers({
+            ownerUserId: user.id,
+            ...(request.query.q ? { query: request.query.q } : {}),
+            status: request.query.status ?? 'active',
+          });
+          return { data: customers.map((customer) => ({
+            ...customer,
+            createdAt: customer.createdAt.toISOString(),
+            updatedAt: customer.updatedAt.toISOString(),
+          })) };
+        },
+      );
+
+      app.post(
+        '/api/v1/merchant/customers',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Cadastra um cliente comercial',
+            body: merchantCustomerBodySchema,
+            response: { 201: merchantCustomerResponseEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const customer = directory.createCustomer({ ...request.body, ownerUserId: user.id });
+          return response.code(201).send({
+            data: { ...customer, createdAt: customer.createdAt.toISOString(), updatedAt: customer.updatedAt.toISOString() },
+          });
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/customers/:id',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Consulta um cliente comercial',
+            params: merchantDirectoryIdParamsSchema,
+            response: { 200: merchantCustomerResponseEnvelopeSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const customer = directory.getCustomer({ ownerUserId: user.id, id: request.params.id });
+          return { data: { ...customer, createdAt: customer.createdAt.toISOString(), updatedAt: customer.updatedAt.toISOString() } };
+        },
+      );
+
+      app.put(
+        '/api/v1/merchant/customers/:id',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Atualiza ou arquiva um cliente comercial',
+            params: merchantDirectoryIdParamsSchema,
+            body: merchantCustomerUpdateBodySchema,
+            response: { 200: merchantCustomerResponseEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const customer = directory.updateCustomer({ ...request.body, ownerUserId: user.id, id: request.params.id });
+          return { data: { ...customer, createdAt: customer.createdAt.toISOString(), updatedAt: customer.updatedAt.toISOString() } };
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/catalog-items',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Lista produtos e serviços cadastrados pela conta',
+            querystring: merchantDirectoryListQuerySchema,
+            response: { 200: merchantCatalogItemListResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const items = directory.listCatalogItems({
+            ownerUserId: user.id,
+            ...(request.query.q ? { query: request.query.q } : {}),
+            ...(request.query.kind ? { kind: request.query.kind } : {}),
+            status: request.query.status ?? 'active',
+          });
+          return { data: items.map((item) => ({
+            ...item,
+            createdAt: item.createdAt.toISOString(),
+            updatedAt: item.updatedAt.toISOString(),
+          })) };
+        },
+      );
+
+      app.post(
+        '/api/v1/merchant/catalog-items',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Cadastra um produto ou serviço',
+            body: merchantCatalogItemBodySchema,
+            response: { 201: merchantCatalogItemResponseEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const item = directory.createCatalogItem({ ...request.body, ownerUserId: user.id });
+          return response.code(201).send({
+            data: { ...item, createdAt: item.createdAt.toISOString(), updatedAt: item.updatedAt.toISOString() },
+          });
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/catalog-items/:id',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Consulta um produto ou serviço',
+            params: merchantDirectoryIdParamsSchema,
+            response: { 200: merchantCatalogItemResponseEnvelopeSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const item = directory.getCatalogItem({ ownerUserId: user.id, id: request.params.id });
+          return { data: { ...item, createdAt: item.createdAt.toISOString(), updatedAt: item.updatedAt.toISOString() } };
+        },
+      );
+
+      app.put(
+        '/api/v1/merchant/catalog-items/:id',
+        {
+          schema: {
+            tags: ['merchant-directory'],
+            summary: 'Atualiza ou arquiva um produto ou serviço',
+            params: merchantDirectoryIdParamsSchema,
+            body: merchantCatalogItemUpdateBodySchema,
+            response: { 200: merchantCatalogItemResponseEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const item = directory.updateCatalogItem({ ...request.body, ownerUserId: user.id, id: request.params.id });
+          return { data: { ...item, createdAt: item.createdAt.toISOString(), updatedAt: item.updatedAt.toISOString() } };
+        },
+      );
+    }
+
+    if (options.merchantLedgerServices) {
+      const ledger = options.merchantLedgerServices;
+      app.post(
+        '/api/v1/merchant/sales',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Registra uma venda e cria os vencimentos correspondentes',
+            body: merchantRegisterSaleBodySchema,
+            response: { 201: merchantSaleResponseEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const sale = ledger.registerSale({ ...request.body, ownerUserId: user.id });
+          return response.code(201).send({ data: presentMerchantSale(sale) });
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/customers/:id/ledger',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Consulta a caderneta comercial de um cliente',
+            params: merchantDirectoryIdParamsSchema,
+            response: { 200: merchantCustomerLedgerResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const result = ledger.getCustomerLedger({ ownerUserId: user.id, customerId: request.params.id });
+          return {
+            data: {
+              customer: {
+                id: result.customer.id, name: result.customer.name, whatsapp: result.customer.whatsapp,
+                email: result.customer.email, address: result.customer.address, notes: result.customer.notes,
+                status: result.customer.status,
+                createdAt: result.customer.createdAt.toISOString(), updatedAt: result.customer.updatedAt.toISOString(),
+              },
+              sales: result.sales.map(presentMerchantSale),
+            },
+          };
+        },
+      );
+
+      app.post(
+        '/api/v1/merchant/installments/:id/payments',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Registra um pagamento integral ou parcial de parcela',
+            params: merchantLedgerIdParamsSchema,
+            body: merchantPaymentBodySchema,
+            response: { 201: merchantPaymentResponseEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const payment = ledger.recordPayment({ ...request.body, ownerUserId: user.id, installmentId: request.params.id });
+          return response.code(201).send({ data: presentMerchantPayment(payment) });
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/installments/:id/message-context',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Preenche uma mensagem com os dados atuais de uma parcela',
+            params: merchantLedgerIdParamsSchema,
+            response: { 200: merchantChargeMessageContextResponseSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const context = ledger.getMessageContext({ ownerUserId: user.id, installmentId: request.params.id });
+          return { data: { ...context, businessName: user.name ?? '', paidAt: null } };
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/overview',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Resume os compromissos comerciais da conta autenticada',
+            response: { 200: merchantLedgerOverviewResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const overview = ledger.getOverview({ ownerUserId: user.id });
+          const presentCommitment = (row: typeof overview.dueToday[number]) => ({
+            installment: {
+              id: row.installment.id, saleId: row.installment.saleId, customerId: row.installment.customerId,
+              number: row.installment.number, amountMinor: row.installment.amountMinor, dueDate: row.installment.dueDate,
+              status: row.installment.status, paidMinor: row.paidMinor, balanceMinor: row.balanceMinor,
+              derivedStatus: row.derivedStatus,
+            },
+            customer: row.customer,
+            saleItems: row.saleItems.map((item) => ({
+              id: item.id, kind: item.kind, name: item.name, quantity: item.quantity,
+              unitPriceMinor: item.unitPriceMinor, lineTotalMinor: item.lineTotalMinor,
+            })),
+            payments: row.payments.map(presentMerchantPayment),
+          });
+          return {
+            data: {
+              customerCount: overview.customerCount,
+              saleCount: overview.saleCount,
+              dueToday: overview.dueToday.map(presentCommitment),
+              overdue: overview.overdue.map(presentCommitment),
+              upcoming: overview.upcoming.map(presentCommitment),
+              recentPayments: overview.recentPayments.map(presentMerchantPayment),
+            },
+          };
+        },
+      );
+    }
+
+    if (options.merchantRecurringServices) {
+      const recurring = options.merchantRecurringServices;
+      app.get(
+        '/api/v1/merchant/recurrences',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Lista planos recorrentes e cobranças geradas',
+            querystring: merchantRecurringListQuerySchema,
+            response: { 200: merchantRecurringPlansResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          return { data: recurring.listPlans({ ownerUserId: user.id, status: request.query.status ?? 'all' }).map(presentRecurringPlan) };
+        },
+      );
+
+      app.post(
+        '/api/v1/merchant/recurrences',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Cria um plano de cobrança recorrente',
+            body: merchantRecurringCreateBodySchema,
+            response: { 201: merchantRecurringPlanEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const plan = recurring.createPlan({ ...request.body, ownerUserId: user.id });
+          const saved = recurring.listPlans({ ownerUserId: user.id, status: 'all' }).find((item) => item.id === plan.id);
+          if (!saved) throw new MerchantLedgerNotFoundError();
+          return response.code(201).send({ data: presentRecurringPlan(saved) });
+        },
+      );
+
+      app.put(
+        '/api/v1/merchant/recurrences/:id/rate',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Agenda a alteração do valor de uma recorrência',
+            params: merchantRecurringPlanParamsSchema,
+            body: merchantRecurringRateBodySchema,
+            response: { 200: z.object({ data: z.object({ rates: merchantRecurringPlanResponseSchema.shape.rates }) }), 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const rates = recurring.changeRate({ ...request.body, ownerUserId: user.id, planId: request.params.id });
+          return { data: { rates } };
+        },
+      );
+
+      for (const action of ['pause', 'resume', 'end'] as const) {
+        app.post(
+          `/api/v1/merchant/recurrences/:id/${action}`,
+          {
+            schema: {
+              tags: ['merchant-recurring'],
+              summary: `${action} um plano recorrente`,
+              params: merchantRecurringPlanParamsSchema,
+              response: { 200: z.object({ data: z.object({ status: merchantRecurringStatusSchema }) }), 401: errorResponseSchema, 404: errorResponseSchema },
+            },
+          },
+          async (request, response) => {
+            const user = requireCustomerSession(request, response);
+            if (!user) return response;
+            recurring[`${action}Plan`]({ ownerUserId: user.id, planId: request.params.id });
+            const status: 'active' | 'paused' | 'ended' = action === 'pause' ? 'paused' : action === 'resume' ? 'active' : 'ended';
+            return { data: { status } };
+          },
+        );
+      }
+
+      app.get(
+        '/api/v1/merchant/recurring-charges',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Lista cobranças recorrentes com pagamentos e situação atual',
+            querystring: merchantRecurringChargesQuerySchema,
+            response: { 200: merchantRecurringChargesResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          return { data: recurring.listCharges({
+            ownerUserId: user.id,
+            ...(request.query.planId ? { planId: request.query.planId } : {}),
+            ...(request.query.customerId ? { customerId: request.query.customerId } : {}),
+          }).map(presentRecurringCharge) };
+        },
+      );
+
+      app.post(
+        '/api/v1/merchant/recurring-charges/:id/payments',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Registra um pagamento manual de cobrança recorrente',
+            params: merchantRecurringPlanParamsSchema,
+            body: merchantRecurringPaymentBodySchema,
+            response: { 201: merchantRecurringPaymentEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const payment = recurring.recordPayment({ ...request.body, ownerUserId: user.id, chargeId: request.params.id });
+          return response.code(201).send({ data: presentRecurringPayment(payment) });
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/recurring-charges/:id/message-context',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Preenche uma mensagem com os dados atuais de uma cobrança recorrente',
+            params: merchantRecurringPlanParamsSchema,
+            response: { 200: merchantChargeMessageContextResponseSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const context = recurring.getMessageContext({ ownerUserId: user.id, chargeId: request.params.id });
+          return { data: { ...context, businessName: user.name ?? '', paidAt: null } };
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/recurring-overview',
+        {
+          schema: {
+            tags: ['merchant-recurring'],
+            summary: 'Resume compromissos recorrentes próximos e atrasados',
+            response: { 200: merchantRecurringOverviewResponseSchema, 401: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const overview = recurring.getOverview({ ownerUserId: user.id });
+          return { data: {
+            activePlanCount: overview.activePlanCount,
+            dueToday: overview.dueToday.map(presentRecurringCharge),
+            overdue: overview.overdue.map(presentRecurringCharge),
+            upcoming: overview.upcoming.map(presentRecurringCharge),
+          } };
+        },
+      );
+    }
+
+    if (options.merchantChargeMessageServices) {
+      const chargeMessages = options.merchantChargeMessageServices;
+      app.get(
+        '/api/v1/merchant/sales/:id/message-context',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Preenche uma mensagem de agradecimento com os dados atuais da venda',
+            params: merchantLedgerIdParamsSchema,
+            response: { 200: merchantChargeMessageContextResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const context = chargeMessages.getSaleContext({ ownerUserId: user.id, saleId: request.params.id });
+          return { data: { ...context, businessName: user.name ?? '' } };
+        },
+      );
+
+      for (const paymentType of ['sale_payment', 'recurring_payment'] as const) {
+        app.get(
+          `/api/v1/merchant/${paymentType === 'sale_payment' ? 'sales' : 'recurring-charges'}/payments/:id/message-context`,
+          {
+            schema: {
+              tags: ['merchant-ledger'],
+              summary: 'Preenche uma mensagem de pagamento manualmente registrado',
+              params: merchantLedgerIdParamsSchema,
+              response: { 200: merchantChargeMessageContextResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+            },
+          },
+          async (request, response) => {
+            const user = requireCustomerSession(request, response);
+            if (!user) return response;
+            const context = chargeMessages.getPaymentContext({ ownerUserId: user.id, paymentType, paymentId: request.params.id });
+            return { data: { ...context, businessName: user.name ?? '' } };
+          },
+        );
+      }
+
+      app.post(
+        '/api/v1/merchant/charge-messages',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Associa um rascunho a uma cobrança da conta autenticada',
+            body: merchantChargeMessageBodySchema,
+            response: { 201: merchantChargeMessageEnvelopeSchema, 400: errorResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema, 409: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          const linked = chargeMessages.link({ ...request.body, ownerUserId: user.id });
+          return response.code(201).send({ data: {
+            id: linked.id, customerId: linked.customerId, sourceType: linked.sourceType, sourceId: linked.sourceId,
+            draftId: linked.draftId, createdAt: linked.createdAt.toISOString(),
+          } });
+        },
+      );
+
+      app.get(
+        '/api/v1/merchant/customers/:id/charge-messages',
+        {
+          schema: {
+            tags: ['merchant-ledger'],
+            summary: 'Lista mensagens de cobrança associadas a um cliente da conta autenticada',
+            params: merchantDirectoryIdParamsSchema,
+            response: { 200: merchantChargeMessageListResponseSchema, 401: errorResponseSchema, 404: errorResponseSchema },
+          },
+        },
+        async (request, response) => {
+          const user = requireCustomerSession(request, response);
+          if (!user) return response;
+          return { data: chargeMessages.listForCustomer({ ownerUserId: user.id, customerId: request.params.id }).map((message) => ({
+            id: message.id, customerId: message.customerId, sourceType: message.sourceType, sourceId: message.sourceId,
+            draftId: message.draftId, templateId: message.templateId, templateName: message.templateName,
+            createdAt: message.createdAt.toISOString(),
+          })) };
         },
       );
     }

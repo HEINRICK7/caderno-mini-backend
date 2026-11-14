@@ -12,6 +12,10 @@ import {
   createPublishingServices,
   createDemoServices,
   createAdminServices,
+  createMerchantDirectoryServices,
+  createMerchantLedgerServices,
+  createMerchantRecurringServices,
+  createMerchantChargeMessageServices,
 } from './bootstrap/services.js';
 import { createDatabase } from './infrastructure/database/connection.js';
 import { NodemailerEmailSender } from './infrastructure/email/nodemailer-email-sender.js';
@@ -34,6 +38,7 @@ const commerceServices = createCommerceServices(database.db, {
   ...(config.caktoWebhookSecret ? { webhookSecret: config.caktoWebhookSecret } : {}),
   ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
 });
+const merchantRecurringServices = createMerchantRecurringServices(database.db);
 const imageStorage = new MinioImageStorage(config.imageStorage);
 const imageServices = createImageServices(imageStorage);
 const renderer = new SharpPngRenderer(imageStorage);
@@ -52,6 +57,10 @@ const app = buildApp({
   services: createApplicationServices(database.db),
   commerceServices,
   adminServices: createAdminServices(database.db, config.adminEmail ? { adminEmail: config.adminEmail } : {}),
+  merchantDirectoryServices: createMerchantDirectoryServices(database.db),
+  merchantLedgerServices: createMerchantLedgerServices(database.db),
+  merchantRecurringServices,
+  merchantChargeMessageServices: createMerchantChargeMessageServices(database.db),
   ...(config.adminEmail ? { adminEmail: config.adminEmail } : {}),
   ...(config.adminPasswordHash ? { adminPasswordHash: config.adminPasswordHash } : {}),
   ...(config.adminSessionSecret ? { adminSessionSecret: config.adminSessionSecret } : {}),
@@ -76,14 +85,26 @@ const app = buildApp({
   healthCheck: () => database.sqlite.prepare('select 1').get(),
 });
 let webhookWorker: NodeJS.Timeout | undefined;
+let merchantRecurringWorker: NodeJS.Timeout | undefined;
 app.addHook('onClose', () => {
   if (webhookWorker) {
     clearInterval(webhookWorker);
   }
+  if (merchantRecurringWorker) clearInterval(merchantRecurringWorker);
 });
 
 try {
   await app.listen({ host: config.host, port: config.port });
+  const runRecurringGeneration = () => {
+    try {
+      merchantRecurringServices.generateUpcomingCharges();
+    } catch (error) {
+      app.log.error({ errorType: error instanceof Error ? error.name : 'UnknownError' }, 'Falha ao gerar cobranças recorrentes');
+    }
+  };
+  runRecurringGeneration();
+  merchantRecurringWorker = setInterval(runRecurringGeneration, 60 * 60 * 1_000);
+  merchantRecurringWorker.unref();
   const runWebhookWorker = () => {
     try {
       commerceServices.processPaymentInboxBatch();
