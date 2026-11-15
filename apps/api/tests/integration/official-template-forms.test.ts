@@ -107,12 +107,12 @@ describe('formulários do catálogo oficial de modelos', () => {
 
   it('publica versões novas para as mudanças no contrato de edição', () => {
     for (const id of ['parcela-proxima', 'parcela-hoje', 'parcela-atrasada', 'cobranca-pix']) {
-      expect(officialCatalog.find((template) => template.id === id)?.version).toBe(8);
+      expect(officialCatalog.find((template) => template.id === id)?.version).toBe(9);
     }
-    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(8);
-    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(9);
-    expect(officialCatalog.find((template) => template.id === 'caderneta-quitada')?.version).toBe(8);
-    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(9);
+    expect(officialCatalog.find((template) => template.id === 'boas-vindas')?.version).toBe(9);
+    expect(officialCatalog.find((template) => template.id === 'pagamento-confirmado')?.version).toBe(10);
+    expect(officialCatalog.find((template) => template.id === 'caderneta-quitada')?.version).toBe(9);
+    expect(officialCatalog.find((template) => template.id === 'lembrete-aprovacao')?.version).toBe(10);
   });
 
   it('mantém cada seção de edição em um único bloco e conecta todos os campos ao cartão', () => {
